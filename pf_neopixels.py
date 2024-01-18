@@ -1,4 +1,4 @@
-# Example using PIO to drive a set of WS2812 LEDs.
+""" Pi Foundation example: using PIO to drive a set of WS2812 LEDs """
 
 import array
 import time
