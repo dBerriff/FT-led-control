@@ -8,8 +8,10 @@ from neo_pixel import NPStrip
 
 
 async def main():
-    """ test LED methods """
-    
+    """
+        test LED methods
+        - NeoPixel display uses MicroPython library
+    """
     onboard = Led('LED', 100)
     onboard.set_dc_pc(20)  # duty-cycle percent
     # start blinking to demo multitasking
