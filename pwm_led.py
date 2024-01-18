@@ -14,7 +14,7 @@ class PwmChannel:
     """
     Control PWM output
         - frequency and duty cycle: no range checking
-        - set_dc_u16() stores duty cycle
+        - set_dc_u16() stores duty cycle; does not change state
         - call set_on() for output
     """
 
