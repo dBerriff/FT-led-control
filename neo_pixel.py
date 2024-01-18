@@ -2,11 +2,9 @@
 
 """ LED-related classes """
 
-import asyncio
 from micropython import const
 from rp2 import PIO, StateMachine, asm_pio
 from machine import Pin
-from pwm_led import PwmChannel
 from neopixel import NeoPixel
 
 
@@ -24,7 +22,6 @@ class NPStrip(NeoPixel):
     YEL = (Lev, Lev, 0x00)
     FLL = (0xff, 0xff, 0xff)
     COLOURS = {WHT, BLK, RED, GRN, BLU, CYN, MGT, YEL}
-
 
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
