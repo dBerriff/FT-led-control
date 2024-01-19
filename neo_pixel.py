@@ -1,6 +1,5 @@
-# led.py
-
-""" LED-related classes """
+# neo_pixel.py
+""" drive NeoPixel strip lighting """
 
 from machine import Pin
 from neopixel import NeoPixel
@@ -15,14 +14,15 @@ class NPStrip(NeoPixel):
         - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
         
-        Adafruit reference:
+        Adafruit documentation is acknowledged as the main reference for this work.
+        See as an initial reference:
         https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     """
 
-    # selected colours as rgb values
+    # selected colours as rgb "full-on" values
     # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
-    # api.html#adafruit-led-animation-color
+    #      api.html#adafruit-led-animation-color
     Colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -48,27 +48,28 @@ class NPStrip(NeoPixel):
         self.np_pin = np_pin
         self.n_pixels = n_pixels
         self.name = str(np_pin)
-        self.n_pixels = n_pixels
-        self.gamma = 2.6
-        self.rgb_gamma = self.get_rgb_gamma(self.gamma)
+        self.gamma = 2.6  # Adafruit value
+        self.rgb_gamma = self.get_rgb_gamma()
 
-    @staticmethod
-    def get_rgb_gamma(gamma_):
+    def get_rgb_gamma(self):
         """ return rgb gamma conversion tuple """
-        return tuple([int(((x / 255) ** gamma_) * 255 + 0.5) for x in range(0, 256)])
+        return tuple([round(pow(x / 255, self.gamma) * 255) for x in range(0, 256)])
 
     def set_pixel_rgb(self, pixel, rgb, level):
-        """ set pixel[pixel] to n-1 to RGB colour
+        """ set NPStrip[pixel] to rgb colour
             - level is with ref to 255
             - consider using float maths
         """
-        level = max(level, 0)
-        level = min(level, 255)
         r = rgb[0] * level // 255
         g = rgb[1] * level // 255
         b = rgb[2] * level // 255
         self[pixel] = (
             self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b])
+
+    def strip_fill_rgb(self, rgb, level):
+        """ fill all pixels with rgb colour """
+        for i in range(self.n_pixels):
+            self.set_pixel_rgb(i, rgb, level)
 
     def get_gamma_rgb(self, rgb, level):
         """ for testing and debug """
@@ -78,10 +79,6 @@ class NPStrip(NeoPixel):
         g = rgb[1] * level // 255
         b = rgb[2] * level // 255
         return self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b]
-
-    def strip_fill_rgb(self, pixel, count, rgb):
-        """ fill a range of pixels with rgb colour """
-        pass
 
     def hsv(self, hue, saturation, value):
         """ return (R, G, B) values for HSV colour """
