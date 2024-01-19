@@ -13,13 +13,13 @@ async def main():
         - NeoPixel display uses MicroPython library
     """
 
-    async def dim(nps_, pixel, level):
+    async def dim(nps_, pixel, rgb_, level_):
         """ dim pixel to zero """
-        while level > 0:
-            nps_.set_pixel_rgb(pixel, (level, level, level))
+        while level_ > 0:
+            nps_.set_pixel_rgb(pixel, rgb_, level_)
             nps_.write()
             await asyncio.sleep_ms(20)
-            level -= 1
+            level_ -= 1
 
     led_f = 400
     onboard = Led('LED', led_f)
@@ -33,26 +33,18 @@ async def main():
     colours = nps.Colours
 
     np_index = 0  # NeoPixel index in range 0 to n-1
+    # level defines brightness with respect to 255 peak
+    level = 127
     for colour in colours:
-        print(colour)
-        nps.set_pixel_rgb(np_index, nps.colour_rgb(colour, 63))
+        nps.set_pixel_rgb(np_index, colours[colour], level)
+        print(f'{colour} gamma corrected: {nps.get_gamma_rgb(np_index, colours[colour], level)}')
         nps.write()
-        await asyncio.sleep_ms(1000)
+        await asyncio.sleep_ms(2_000)
 
-    c = (0xff // 2, 0xa5 // 2, 0x00 // 2)
-    print(f'orange rgb: {c}')
-    nps.set_pixel_rgb(np_index, c)
-    nps.write()
-    await asyncio.sleep_ms(2000)
-
-    c = (0xff // 3, 0xc0 // 3, 0xcb // 3)
-    print(f'pink rgb: {c}')
-    nps.set_pixel_rgb(np_index, c)
-    nps.write()
-    await asyncio.sleep_ms(2000)
-
-    await dim(nps, np_index, 127)
-    nps.set_pixel_rgb(np_index, nps.colour_rgb('BLK', 0))
+    colour = 'white'
+    print(f'{colour} gamma corrected: {nps.get_gamma_rgb(np_index, colours[colour], level)}')
+    await dim(nps, np_index, colours['white'], level)
+    nps.set_pixel_rgb(np_index, colours['black'], level)
     nps.write()
     task_blink.cancel()
     onboard.set_off()
