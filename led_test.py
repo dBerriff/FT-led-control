@@ -37,12 +37,12 @@ async def main():
     level = 127
     for colour in colours:
         nps.set_pixel_rgb(np_index, colours[colour], level)
-        print(f'{colour} gamma corrected: {nps.get_gamma_rgb(np_index, colours[colour], level)}')
+        print(f'{colour} gamma corrected: {nps.get_gamma_rgb(colours[colour], level)}')
         nps.write()
         await asyncio.sleep_ms(2_000)
 
     colour = 'white'
-    print(f'{colour} gamma corrected: {nps.get_gamma_rgb(np_index, colours[colour], level)}')
+    print(f'{colour} gamma corrected: {nps.get_gamma_rgb(colours[colour], level)}')
     await dim(nps, np_index, colours['white'], level)
     nps.set_pixel_rgb(np_index, colours['black'], level)
     nps.write()

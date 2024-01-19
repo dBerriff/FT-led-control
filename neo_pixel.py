@@ -2,7 +2,6 @@
 
 """ LED-related classes """
 
-from micropython import const
 from machine import Pin
 from neopixel import NeoPixel
 
@@ -20,9 +19,7 @@ class NPStrip(NeoPixel):
         https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     """
-    GAMMA = const(2.6)
-    # basic gamma correction tuple: Adafruit algorithm
-    RgbGamma = tuple([int(((x / 255) ** GAMMA) * 255 + 0.5) for x in range(0, 256)])
+
     # selected colours as rgb values
     # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
     # api.html#adafruit-led-animation-color
@@ -52,6 +49,13 @@ class NPStrip(NeoPixel):
         self.n_pixels = n_pixels
         self.name = str(np_pin)
         self.n_pixels = n_pixels
+        self.gamma = 2.6
+        self.rgb_gamma = self.get_rgb_gamma(self.gamma)
+
+    @staticmethod
+    def get_rgb_gamma(gamma_):
+        """ return rgb gamma conversion tuple """
+        return tuple([int(((x / 255) ** gamma_) * 255 + 0.5) for x in range(0, 256)])
 
     def set_pixel_rgb(self, pixel, rgb, level):
         """ set pixel[pixel] to n-1 to RGB colour
@@ -64,16 +68,16 @@ class NPStrip(NeoPixel):
         g = rgb[1] * level // 255
         b = rgb[2] * level // 255
         self[pixel] = (
-            NPStrip.RgbGamma[r], NPStrip.RgbGamma[g], NPStrip.RgbGamma[b])
+            self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b])
 
-    def get_gamma_rgb(self, pixel, rgb, level):
+    def get_gamma_rgb(self, rgb, level):
         """ for testing and debug """
         level = max(level, 0)
         level = min(level, 255)
         r = rgb[0] * level // 255
         g = rgb[1] * level // 255
         b = rgb[2] * level // 255
-        return NPStrip.RgbGamma[r], NPStrip.RgbGamma[g], NPStrip.RgbGamma[b]
+        return self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b]
 
     def strip_fill_rgb(self, pixel, count, rgb):
         """ fill a range of pixels with rgb colour """
