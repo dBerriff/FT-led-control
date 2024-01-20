@@ -1,6 +1,7 @@
 # neo_pixel.py
 """ drive NeoPixel strip lighting """
 
+import asyncio
 from machine import Pin
 from neopixel import NeoPixel
 
@@ -60,16 +61,28 @@ class NPStrip(NeoPixel):
             - level is with ref to 255
             - consider using float maths
         """
-        r = rgb[0] * level // 255
-        g = rgb[1] * level // 255
-        b = rgb[2] * level // 255
-        self[pixel] = (
-            self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b])
+        gma = self.rgb_gamma
+        r = gma[rgb[0] * level // 255]
+        g = gma[rgb[1] * level // 255]
+        b = gma[rgb[2] * level // 255]
+        self[pixel] = (r, g, b)
+
+    async def as_strip_fill_rgb(self, rgb, level):
+        """ fill all pixels with rgb colour """
+        r = self.rgb_gamma[rgb[0] * level // 255]
+        g = self.rgb_gamma[rgb[1] * level // 255]
+        b = self.rgb_gamma[rgb[2] * level // 255]
+        for i in range(self.n_pixels):
+            self[i] = (r, g, b)
+            await asyncio.sleep_ms(0)
 
     def strip_fill_rgb(self, rgb, level):
         """ fill all pixels with rgb colour """
+        r = self.rgb_gamma[rgb[0] * level // 255]
+        g = self.rgb_gamma[rgb[1] * level // 255]
+        b = self.rgb_gamma[rgb[2] * level // 255]
         for i in range(self.n_pixels):
-            self.set_pixel_rgb(i, rgb, level)
+            self[i] = (r, g, b)
 
     def get_gamma_rgb(self, rgb, level):
         """ for testing and debug """

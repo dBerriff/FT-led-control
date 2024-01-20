@@ -6,6 +6,8 @@ import asyncio
 from pwm_led import Led
 from neo_pixel import NPStrip
 
+import time
+
 
 async def main():
     """
@@ -32,23 +34,28 @@ async def main():
     nps = NPStrip(pin_number, n_np)
     colours = nps.Colours
 
-    print('Fill strip')
-    nps.strip_fill_rgb(colours['white'], 31)
-    nps.write()
-    print('finished')
-    np_index = 0  # NeoPixel index in range 0 to n-1
     # level defines brightness with respect to 255 peak
     level = 127
+
+    print('Fill strip')
+    c_time = time.ticks_us()
+    nps.strip_fill_rgb(colours['white'], level)
+    print(f'filled: {time.ticks_diff(time.ticks_us(), c_time):,}us')
+    nps.write()
+    print(f'written: {time.ticks_diff(time.ticks_us(), c_time):,}us')
+
+    np_index = 0  # NeoPixel index in range 0 to n_np - 1
     for colour in colours:
         nps.set_pixel_rgb(np_index, colours[colour], level)
         print(f'{colour} gamma corrected: {nps.get_gamma_rgb(colours[colour], level)}')
         nps.write()
-        await asyncio.sleep_ms(2_000)
+        await asyncio.sleep_ms(500)
 
     colour = 'white'
     print(f'{colour} gamma corrected: {nps.get_gamma_rgb(colours[colour], level)}')
     await dim(nps, np_index, colours['white'], level)
-    nps.set_pixel_rgb(np_index, colours['black'], level)
+
+    nps.set_pixel_rgb(np_index, colours['black'], 0)
     nps.write()
     task_blink.cancel()
     onboard.set_off()
