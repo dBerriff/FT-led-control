@@ -1,6 +1,7 @@
 # neo_pixel.py
 """ drive NeoPixel strip lighting """
 
+import asyncio
 from machine import Pin
 from neopixel import NeoPixel
 
@@ -14,8 +15,19 @@ class NPStrip(NeoPixel):
         - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
 
-        Additional parameter:
-        - gamma for visual intensity correction
+        Additional methods:
+        - get_rgb_gamma(gamma):
+            - return a tuple of gamma-corrected rgb levels for range(0, 256)
+            - used for speed of conversion for largen number of NeoPixels
+        - get_rgb_level(rgb, level):
+            - colours are defined reference 255 peak intensity;
+                return rgb tuple adjusted to lower level
+        - get_rgb_g_corrected(rgb_):
+            - return gamma-corrected rgb tuple
+        - strip_fill_rgb(rgb, level):
+            - set all NeoPixels in a strip to a common rgb value
+        - dim(pixel, colour, level, period_ms=500):
+            - dim a NeoPixel from an initial rgb value to off over period_ms
 
         Adafruit documentation is acknowledged as the main reference for this work.
         See as an initial reference:
@@ -62,24 +74,41 @@ class NPStrip(NeoPixel):
     @staticmethod
     def get_rgb_level(rgb_, level_):
         """ return level-converted rgb value """
+        level_ = max(level_, 0)
+        level_ = min(level_, 255)
         return (rgb_[0] * level_ // 255,
                 rgb_[1] * level_ // 255,
                 rgb_[2] * level_ // 255)
 
-    def get_rgb_g_corrected(self, rgb_, level_):
+    def get_rgb_g_corrected(self, rgb_):
         """ return gamma-corrected rgb value
             - level in range(0, 256)
         """
-        level_ = max(level_, 0)
-        level_ = min(level_, 255)
-        rgb_l = self.get_rgb_level(rgb_, level_)
-        rgb_c = (self.rgb_gamma[rgb_l[0]],
-                 self.rgb_gamma[rgb_l[1]],
-                 self.rgb_gamma[rgb_l[2]])
-        return rgb_c
+        return self.rgb_gamma[rgb_[0]], self.rgb_gamma[rgb_[1]], self.rgb_gamma[rgb_[2]]
 
-    def strip_fill_rgb(self, rgb, level):
-        """ fill all pixels with rgb colour """
-        rgb = self.get_rgb_g_corrected(rgb, level)
+    def strip_fill_rgb(self, rgb_):
+        """ fill all pixels with rgb colour
+            - blocks asyncio scheduler """
         for pixel in range(self.n_pixels):
+            self.__setitem__(pixel, rgb_)
+
+    async def as_strip_fill_rgb(self, rgb_):
+        """ fill all pixels with rgb colour as coro()
+            - scheduler adds significant overhead """
+        for pixel in range(self.n_pixels):
+            self.__setitem__(pixel, rgb_)
+            await asyncio.sleep_ms(0)
+
+    async def dim_g(self, pixel, colour_, level_, period_ms=500):
+        """ dim pixel to zero
+            - adds gamma correction
+        """
+        pause = period_ms // level_
+        while level_ > 0:
+            rgb = self.get_rgb_g_corrected(self.get_rgb_level(colour_, level_))
             self.__setitem__(pixel, rgb)
+            self.write()
+            await asyncio.sleep_ms(pause)
+            if rgb == (0, 0, 0):
+                break
+            level_ -= 1
