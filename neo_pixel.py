@@ -1,7 +1,6 @@
 # neo_pixel.py
 """ drive NeoPixel strip lighting """
 
-import asyncio
 from machine import Pin
 from neopixel import NeoPixel
 
@@ -14,14 +13,17 @@ class NPStrip(NeoPixel):
         - n is the number of LEDs in the strip.
         - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
-        
+
+        Additional parameter:
+        - gamma for visual intensity correction
+
         Adafruit documentation is acknowledged as the main reference for this work.
         See as an initial reference:
         https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     """
 
-    # selected colours as rgb "full-on" values
+    # selection of colours as rgb values (full intensity)
     # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
     #      api.html#adafruit-led-animation-color
     Colours = {
@@ -44,55 +46,40 @@ class NPStrip(NeoPixel):
         'yellow': (255, 255, 0)
         }
 
-    def __init__(self, np_pin, n_pixels):
+    def __init__(self, np_pin, n_pixels, gamma=2.6):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin
         self.n_pixels = n_pixels
-        self.name = str(np_pin)
-        self.gamma = 2.6  # Adafruit value
-        self.rgb_gamma = self.get_rgb_gamma()
+        self.gamma = gamma  # 2.6: Adafruit suggested value
+        self.rgb_gamma = self.get_rgb_gamma(self.gamma)  # conversion tuple
+        self.name = str(np_pin)  # for debug/logging
 
-    def get_rgb_gamma(self):
-        """ return rgb gamma conversion tuple """
-        return tuple([round(pow(x / 255, self.gamma) * 255) for x in range(0, 256)])
+    @staticmethod
+    def get_rgb_gamma(gamma):
+        """ return rgb gamma-compensation tuple """
+        return tuple([round(pow(x / 255, gamma) * 255) for x in range(0, 256)])
 
-    def set_pixel_rgb(self, pixel, rgb, level):
-        """ set NPStrip[pixel] to rgb colour
-            - level is with ref to 255
-            - consider using float maths
+    @staticmethod
+    def get_rgb_level(rgb_, level_):
+        """ return level-converted rgb value """
+        return (rgb_[0] * level_ // 255,
+                rgb_[1] * level_ // 255,
+                rgb_[2] * level_ // 255)
+
+    def get_rgb_g_corrected(self, rgb_, level_):
+        """ return gamma-corrected rgb value
+            - level in range(0, 256)
         """
-        gma = self.rgb_gamma
-        r = gma[rgb[0] * level // 255]
-        g = gma[rgb[1] * level // 255]
-        b = gma[rgb[2] * level // 255]
-        self[pixel] = (r, g, b)
-
-    async def as_strip_fill_rgb(self, rgb, level):
-        """ fill all pixels with rgb colour """
-        r = self.rgb_gamma[rgb[0] * level // 255]
-        g = self.rgb_gamma[rgb[1] * level // 255]
-        b = self.rgb_gamma[rgb[2] * level // 255]
-        for i in range(self.n_pixels):
-            self[i] = (r, g, b)
-            await asyncio.sleep_ms(0)
+        level_ = max(level_, 0)
+        level_ = min(level_, 255)
+        rgb_l = self.get_rgb_level(rgb_, level_)
+        rgb_c = (self.rgb_gamma[rgb_l[0]],
+                 self.rgb_gamma[rgb_l[1]],
+                 self.rgb_gamma[rgb_l[2]])
+        return rgb_c
 
     def strip_fill_rgb(self, rgb, level):
         """ fill all pixels with rgb colour """
-        r = self.rgb_gamma[rgb[0] * level // 255]
-        g = self.rgb_gamma[rgb[1] * level // 255]
-        b = self.rgb_gamma[rgb[2] * level // 255]
-        for i in range(self.n_pixels):
-            self[i] = (r, g, b)
-
-    def get_gamma_rgb(self, rgb, level):
-        """ for testing and debug """
-        level = max(level, 0)
-        level = min(level, 255)
-        r = rgb[0] * level // 255
-        g = rgb[1] * level // 255
-        b = rgb[2] * level // 255
-        return self.rgb_gamma[r], self.rgb_gamma[g], self.rgb_gamma[b]
-
-    def hsv(self, hue, saturation, value):
-        """ return (R, G, B) values for HSV colour """
-        return 0, 0, 0
+        rgb = self.get_rgb_g_corrected(rgb, level)
+        for pixel in range(self.n_pixels):
+            self.__setitem__(pixel, rgb)
