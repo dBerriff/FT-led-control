@@ -11,11 +11,6 @@ import time
 
 async def main():
     """ blink onboard LED and set NeoPixel values """
-
-    def rgb_gamma(rgb_, level_):
-        """ return level and gamma adjusted rgb """
-        rgb_l = nps.get_rgb_level(rgb_, level_)
-        return nps.get_rgb_g_corrected(rgb_l)
                
     # set onboard LED to blink to demo multitasking
     led_f = 800  # to match typical NeoPixel strip
@@ -33,28 +28,30 @@ async def main():
     level = 127
 
     print('Fill strip')
+    colour = 'white'
     c_time = time.ticks_us()
-    rgb = rgb_gamma(colours['white'], level)
-    nps.strip_fill_rgb(rgb)
+    nps.strip_fill_rgb((0, 0, 0))
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps.write()
     print(f'Time to write: {time.ticks_diff(time.ticks_us(), c_time):,}us')
-    time.sleep_ms(1000)
+    await asyncio.sleep_ms(2_000)
 
     # set colour of single NeoPixel; whole strip must be written
     for colour in colours:
-        nps[np_index] = rgb_gamma(colours[colour], level)
+        nps[np_index] = nps.get_rgb_l_g_c(colours[colour], level)
         nps.write()
         print(f'{colour}: {nps[np_index]}')
         await asyncio.sleep_ms(500)
 
     # test dim() coro
     colour = 'white'
-    # dim() adds gamma correction
-    await nps.dim_g(np_index, colours[colour], level)
+    # dim() sets level and adds gamma correction
+    await nps.dim_g_c(np_index, colours[colour], level)
 
-    nps[np_index] = nps.get_rgb_level(colours['black'], 0)
+    c_time = time.ticks_us()
+    nps.strip_fill_rgb((0, 0, 0))
+    print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     nps.write()
     task_blink.cancel()
     onboard.set_off()

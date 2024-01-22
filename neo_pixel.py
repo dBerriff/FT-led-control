@@ -63,15 +63,15 @@ class NPStrip(NeoPixel):
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels
         self.gamma = gamma  # 2.6: Adafruit suggested value
-        self.rgb_gamma = self.get_rgb_gamma(self.gamma)
+        self.rgb_gamma = self.get_rgb_gamma_tuple(self.gamma)
 
     @staticmethod
-    def get_rgb_gamma(gamma):
+    def get_rgb_gamma_tuple(gamma):
         """ return rgb gamma-compensation tuple """
         return tuple([round(pow(x / 255, gamma) * 255) for x in range(0, 256)])
 
     @staticmethod
-    def get_rgb_level(rgb_, level_):
+    def get_rgb_l(rgb_, level_):
         """ return level-converted rgb value """
         level_ = max(level_, 0)
         level_ = min(level_, 255)
@@ -79,13 +79,23 @@ class NPStrip(NeoPixel):
                 rgb_[1] * level_ // 255,
                 rgb_[2] * level_ // 255)
 
-    def get_rgb_g_corrected(self, rgb_):
+    def get_rgb_g_c(self, rgb_):
         """ return gamma-corrected rgb value
             - level in range(0, 256)
         """
         return (self.rgb_gamma[rgb_[0]],
                 self.rgb_gamma[rgb_[1]],
                 self.rgb_gamma[rgb_[2]])
+
+    def get_rgb_l_g_c(self, rgb_, level_):
+        """ return gamma-corrected rgb value
+            - level in range(0, 256)
+        """
+        level_ = max(level_, 0)
+        level_ = min(level_, 255)
+        return (self.rgb_gamma[rgb_[0] * level_ // 255],
+                self.rgb_gamma[rgb_[1] * level_ // 255],
+                self.rgb_gamma[rgb_[2] * level_ // 255])
 
     def strip_fill_rgb(self, rgb_):
         """ fill all pixels with rgb colour
@@ -100,11 +110,11 @@ class NPStrip(NeoPixel):
             self.__setitem__(pixel, rgb_)
             await asyncio.sleep_ms(0)
 
-    async def dim_gamma(self, pixel, colour_, level_, period_ms=500):
+    async def dim_g_c(self, pixel, colour_, level_, period_ms=500):
         """ dim pixel to zero applying gamma correction """
         pause = period_ms // level_
         while level_ > 0:
-            rgb = self.get_rgb_g_corrected(self.get_rgb_level(colour_, level_))
+            rgb = self.get_rgb_l_g_c(colour_, level_)
             self.__setitem__(pixel, rgb)
             self.write()
             await asyncio.sleep_ms(pause)
