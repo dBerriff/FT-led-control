@@ -80,15 +80,13 @@ class NPStrip(NeoPixel):
                 rgb_[2] * level_ // 255)
 
     def get_rgb_g_c(self, rgb_):
-        """ return gamma-corrected rgb value
-            - level in range(0, 256)
-        """
+        """ return gamma-corrected rgb value """
         return (self.rgb_gamma[rgb_[0]],
                 self.rgb_gamma[rgb_[1]],
                 self.rgb_gamma[rgb_[2]])
 
     def get_rgb_l_g_c(self, rgb_, level_):
-        """ return gamma-corrected rgb value
+        """ return level-set, gamma-corrected rgb value
             - level in range(0, 256)
         """
         level_ = max(level_, 0)
@@ -111,7 +109,7 @@ class NPStrip(NeoPixel):
             await asyncio.sleep_ms(0)
 
     async def dim_g_c(self, pixel, colour_, level_, period_ms=500):
-        """ dim pixel to zero applying gamma correction """
+        """ dim pixel, applying gamma correction """
         pause = period_ms // level_
         while level_ > 0:
             rgb = self.get_rgb_l_g_c(colour_, level_)
