@@ -1,4 +1,4 @@
-# np_pio_test.py
+# test_np_pio.py
 from rp2 import StateMachine
 from machine import Pin
 from neo_pixel import NPStrip
