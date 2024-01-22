@@ -15,10 +15,10 @@ class NPStrip(NeoPixel):
         - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
 
-        Additional methods:
+        Additional methods extending class:
         - get_rgb_gamma(gamma):
             - return a tuple of gamma-corrected rgb levels for range(0, 256)
-            - used for speed of conversion for largen number of NeoPixels
+            - used for speed of conversion
         - get_rgb_level(rgb, level):
             - colours are defined reference 255 peak intensity;
                 return rgb tuple adjusted to lower level
@@ -60,11 +60,10 @@ class NPStrip(NeoPixel):
 
     def __init__(self, np_pin, n_pixels, gamma=2.6):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
-        self.np_pin = np_pin
+        self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels
         self.gamma = gamma  # 2.6: Adafruit suggested value
-        self.rgb_gamma = self.get_rgb_gamma(self.gamma)  # conversion tuple
-        self.name = str(np_pin)  # for debug/logging
+        self.rgb_gamma = self.get_rgb_gamma(self.gamma)
 
     @staticmethod
     def get_rgb_gamma(gamma):
@@ -84,7 +83,9 @@ class NPStrip(NeoPixel):
         """ return gamma-corrected rgb value
             - level in range(0, 256)
         """
-        return self.rgb_gamma[rgb_[0]], self.rgb_gamma[rgb_[1]], self.rgb_gamma[rgb_[2]]
+        return (self.rgb_gamma[rgb_[0]],
+                self.rgb_gamma[rgb_[1]],
+                self.rgb_gamma[rgb_[2]])
 
     def strip_fill_rgb(self, rgb_):
         """ fill all pixels with rgb colour
@@ -99,10 +100,8 @@ class NPStrip(NeoPixel):
             self.__setitem__(pixel, rgb_)
             await asyncio.sleep_ms(0)
 
-    async def dim_g(self, pixel, colour_, level_, period_ms=500):
-        """ dim pixel to zero
-            - adds gamma correction
-        """
+    async def dim_gamma(self, pixel, colour_, level_, period_ms=500):
+        """ dim pixel to zero applying gamma correction """
         pause = period_ms // level_
         while level_ > 0:
             rgb = self.get_rgb_g_corrected(self.get_rgb_level(colour_, level_))
