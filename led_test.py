@@ -19,10 +19,10 @@ async def main():
     task_blink = asyncio.create_task(onboard.blink(100))
 
     pin_number = 28
-    n_np = 500  # number of NeoPixels
+    n_np = 8  # number of NeoPixels
     nps = NPStrip(pin_number, n_np)
     colours = nps.Colours
-    np_index = 0  # for testing use first pixel
+    np_index = 0  # use first pixel for tests
 
     # level defines brightness with respect to 255 peak
     level = 127

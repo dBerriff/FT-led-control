@@ -101,13 +101,13 @@ class NPStrip(NeoPixel):
         """ fill all pixels with rgb colour
             - blocks asyncio scheduler """
         for pixel in range(self.n_pixels):
-            self.__setitem__(pixel, rgb_)
+            self[pixel] = rgb_
 
     async def as_strip_fill_rgb(self, rgb_):
         """ fill all pixels with rgb colour as coro()
             - scheduler adds significant overhead """
         for pixel in range(self.n_pixels):
-            self.__setitem__(pixel, rgb_)
+            self[pixel] = rgb_
             await asyncio.sleep_ms(0)
 
     async def dim_g_c(self, pixel, colour_, level_, period_ms=500):
@@ -115,7 +115,7 @@ class NPStrip(NeoPixel):
         pause = period_ms // level_
         while level_ > 0:
             rgb = self.get_rgb_l_g_c(colour_, level_)
-            self.__setitem__(pixel, rgb)
+            self[pixel] = rgb
             self.write()
             await asyncio.sleep_ms(pause)
             if rgb == (0, 0, 0):
