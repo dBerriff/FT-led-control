@@ -6,7 +6,7 @@ from machine import Pin
 from neopixel import NeoPixel
 
 
-class NPStrip(NeoPixel):
+class PixelStrip(NeoPixel):
     """ extend NeoPixel class. From micropython.org:
         class neopixel.NeoPixel(pin, n, *, bpp=3, timing=1)
         Construct a NeoPixel object. The parameters are:

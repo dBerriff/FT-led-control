@@ -6,10 +6,10 @@ import asyncio
 from machine import Pin
 from collections import namedtuple
 from micropython import const
-from neo_pixel import NPStrip
+from neo_pixel import PixelStrip
 
 
-class NPGrid(NPStrip):
+class PixelGrid(PixelStrip):
     """ extend NPStrip to support BTF-Lighting grid
         - grid is wired 'snake' style; coord_dict corrects
     """
@@ -19,13 +19,10 @@ class NPGrid(NPStrip):
     def __init__(self, np_pin, n_cols, n_rows, gamma=2.6):
         self.n_pixels = n_cols * n_rows
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels, gamma)
-        self.np_pin = np_pin  # for logging/debug
         self.n_cols = n_cols
         self.n_rows = n_rows
         self.max_col = n_cols - 1
         self.max_row = n_rows - 1
-        self.gamma = gamma  # 2.6: Adafruit suggested value
-        self.rgb_gamma = self.get_rgb_gamma_tuple(self.gamma)
         self.c_r_dim = self.Coord(self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
 
@@ -129,7 +126,7 @@ async def main():
     """ set NeoPixel values on grid """
 
     pin_number = 27
-    npg = NPGrid(pin_number, 8, 8)
+    npg = PixelGrid(pin_number, 8, 8)
     vis_colours = npg.Colours
     vis_colours.pop('black')
     colour_list = list(vis_colours.keys())

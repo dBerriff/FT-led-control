@@ -1,7 +1,7 @@
 # test_np_pio.py
 from rp2 import StateMachine
 from machine import Pin
-from neo_pixel import NPStrip
+from neo_pixel import PixelStrip
 import array
 import time
 
@@ -14,7 +14,7 @@ n_leds = 8
 brightness = 0.2
 
 
-nps = NPStrip(pin_number, n_leds)
+nps = PixelStrip(pin_number, n_leds)
 np_ws = nps.ws2812
 sm = StateMachine(0, np_ws, freq=8_000_000, sideset_base=Pin(pin_number))
 

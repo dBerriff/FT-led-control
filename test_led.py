@@ -4,7 +4,7 @@
 
 import asyncio
 from pwm_led import Led
-from neo_pixel import NPStrip
+from neo_pixel import PixelStrip
 
 import time
 
@@ -12,7 +12,7 @@ import time
 async def main():
     """ blink onboard LED and set NeoPixel values """
     
-    async cycle_pixel(index):
+    async def cycle_pixel(index):
         """ cycle pixel through colour set """
 
         for colour in colours:
@@ -21,7 +21,7 @@ async def main():
             print(f'{colour}: {nps[np_index]}')
             await asyncio.sleep_ms(500)
 
-    def test_fill_strip(n_pixels):
+    async def test_fill_strip(n_pixels):
         """ test and time fill-strip method """
         return  # make sure adequate current can be supplied
         print('Fill strip')
@@ -34,7 +34,6 @@ async def main():
         print(f'Time to write: {time.ticks_diff(time.ticks_us(), c_time):,}us')
         await asyncio.sleep_ms(2_000)
 
-               
     # set onboard LED to blink to demo multitasking
     led_f = 800  # to match typical NeoPixel strip
     onboard = Led('LED', led_f)
@@ -43,7 +42,7 @@ async def main():
 
     pin_number = 27
     n_np = 64  # number of NeoPixels
-    nps = NPStrip(pin_number, n_np)
+    nps = PixelStrip(pin_number, n_np)
     colours = nps.Colours
     np_index = 8  # use first pixel for tests
 
@@ -51,8 +50,6 @@ async def main():
     level = 127
 
     # set colour of single NeoPixel; whole strip must be written
-    
-
 
     task_blink.cancel()
     onboard.set_off()
