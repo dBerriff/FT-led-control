@@ -53,7 +53,7 @@ class PixelGrid(PixelStrip):
         return self.Coord(c_, r_)
 
     def coord_dec(self, coord):
-        """ increment cell coordinate """
+        """ decrement cell coordinate """
         c_ = coord.c - 1
         if c_ == -1:
             c_ = self.c_r_dim.c - 1
@@ -71,13 +71,13 @@ class PixelGrid(PixelStrip):
             self[index] = rgb
 
     def fill_col(self, col, rgb):
-        """ fill row with rgb value"""
+        """ fill col with rgb value"""
         for row in range(self.n_rows):
             index = self.coord_index[col, row]
             self[index] = rgb
 
     def fill_diagonal(self, rgb, reverse=False):
-        """ fill row with rgb value"""
+        """ fill diagonallll with rgb value"""
         if reverse:
             for col in range(self.n_cols):
                 r_col = self.max_col - col
@@ -91,7 +91,7 @@ class PixelGrid(PixelStrip):
                 self[index] = rgb
 
     def fill_grid(self, rgb):
-        """ fill row with rgb value"""
+        """ fill grid with rgb value"""
         for index in range(self.n_pixels):
             self[index] = rgb
 
