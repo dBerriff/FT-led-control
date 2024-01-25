@@ -2,6 +2,7 @@
 """ drive NeoPixel strip lighting """
 
 import asyncio
+from micropython import const
 from machine import Pin
 from neopixel import NeoPixel
 
@@ -38,6 +39,9 @@ class PixelStrip(NeoPixel):
     # selection of colours as rgb values (full intensity)
     # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
     #      api.html#adafruit-led-animation-color
+
+    OFF = const((0, 0, 0))
+
     Colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),

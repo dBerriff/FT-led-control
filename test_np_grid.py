@@ -3,9 +3,8 @@
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
-from machine import Pin
 from collections import namedtuple
-from micropython import const
+from machine import Pin
 from neo_pixel import PixelStrip
 
 
@@ -13,8 +12,8 @@ class PixelGrid(PixelStrip):
     """ extend NPStrip to support BTF-Lighting grid
         - grid is wired 'snake' style; coord_dict corrects
     """
+
     Coord = namedtuple('Coord', ['c', 'r'])
-    OFF = const((0, 0, 0))
 
     def __init__(self, np_pin, n_cols, n_rows, gamma=2.6):
         self.n_pixels = n_cols * n_rows
@@ -34,8 +33,7 @@ class PixelGrid(PixelStrip):
         max_row = self.n_rows - 1
         for col in range(self.n_cols):
             for row in range(self.n_rows):
-                # odd rows: scan in reverse direction
-                if col % 2:  # == 1
+                if col % 2:  # odd row
                     r = max_row - row
                 else:
                     r = row
@@ -65,35 +63,6 @@ class PixelGrid(PixelStrip):
         else:
             r_ = coord.r
         return self.Coord(c_, r_)
-
-    async def step_through_indices(self, rgb_, pause_ms=20):
-        """ step through all pixels in index sequence """
-        for index in range(self.n_pixels):
-            self[index] = rgb_
-            self.write()
-            await asyncio.sleep_ms(pause_ms)
-            self[index] = self.OFF
-            self.write()
-
-    async def step_through_grid(self, rgb_, pause_ms=20):
-        """ step through all pixels in index sequence """
-        for r in range(self.n_rows):
-            for c in range(self.n_cols):
-                index = self.coord_index[(c, r)]
-                self[index] = rgb_
-                self.write()
-                await asyncio.sleep_ms(pause_ms)
-                self[index] = self.OFF
-                self.write()
-    
-        for c in range(self.n_cols):
-            for r in range(self.n_rows):
-                index = self.coord_index[(c, r)]
-                self[index] = rgb_
-                self.write()
-                await asyncio.sleep_ms(pause_ms)
-                self[index] = self.OFF
-                self.write()
 
     def fill_row(self, row, rgb):
         """ fill row with rgb value"""
@@ -139,9 +108,23 @@ async def main():
         rgb = npg.get_rgb_l_g_c(vis_colours[colour], level)
         # step forwards through all pixels
         print('Step through pixels in index order')
-        await npg.step_through_indices(rgb)
+        for index in range(npg.n_pixels):
+            npg[index] = rgb
+            npg.write()
+            await asyncio.sleep_ms(20)
+            npg[index] = npg.OFF
+            npg.write()
+            
         print('Step through pixels in grid (column, row) order')
-        await npg.step_through_grid(rgb)
+        p_coord = npg.Coord(0, 0)
+        for step in range(npg.n_pixels):
+            index = npg.coord_index[p_coord]
+            npg[index] = rgb
+            npg.write()
+            await asyncio.sleep_ms(20)
+            npg[index] = npg.OFF
+            await asyncio.sleep_ms(20)
+            p_coord = npg.coord_inc(p_coord)
 
         # fill rows
         print('Fill rows in row order')
@@ -196,7 +179,7 @@ async def main():
         npg.fill_diagonal(npg.OFF)
         npg.fill_diagonal(npg.OFF, reverse=True)
         npg.write()
-        await asyncio.sleep_ms(200)
+        await asyncio.sleep_ms(1000)
         
         # alternate diagonals
         print('Switch between both diagonals')
