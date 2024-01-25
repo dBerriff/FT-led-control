@@ -90,9 +90,20 @@ class PixelGrid(PixelStrip):
                 index = self.coord_index[col, row]
                 self[index] = rgb
 
+    def fill_grid(self, rgb):
+        """ fill row with rgb value"""
+        for index in range(self.n_pixels):
+            self[index] = rgb
+
 
 async def main():
     """ set NeoPixel values on grid """
+    
+    async def blank_pause():
+        """ fill grid with (0, 0, 0) and pause 1s """
+        npg.fill_grid(npg.OFF)
+        npg.write()
+        await asyncio.sleep_ms(200)
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
@@ -101,11 +112,29 @@ async def main():
     colour_list = list(vis_colours.keys())
     print(colour_list)
     # level defines brightness with respect to 255 peak
-    level = 68
+    level = 128
 
     for colour in vis_colours:
         print(colour)
-        rgb = npg.get_rgb_l_g_c(vis_colours[colour], level)
+        rgb_ref = vis_colours[colour]
+        rgb = npg.get_rgb_l_g_c(rgb_ref, level)
+        print(vis_colours[colour], level, rgb)
+
+        # fill grid
+        print('fill grid')
+        npg.fill_grid(rgb)
+        npg.write()
+        await asyncio.sleep_ms(1000)
+        # fade out
+        fade_l = level
+        while fade_l > 20:
+            rgb_ = npg.get_rgb_l_g_c(rgb_ref, fade_l)
+            npg.fill_grid(rgb_)
+            npg.write()
+            await asyncio.sleep_ms(0)
+            fade_l -= 1
+        await blank_pause()
+
         # step forwards through all pixels
         print('Step through pixels in index order')
         for index in range(npg.n_pixels):
@@ -114,7 +143,9 @@ async def main():
             await asyncio.sleep_ms(20)
             npg[index] = npg.OFF
             npg.write()
+        await blank_pause()
             
+        rgb = npg.get_rgb_l_g_c(vis_colours[colour], level)
         print('Step through pixels in grid (column, row) order')
         p_coord = npg.Coord(0, 0)
         for step in range(npg.n_pixels):
@@ -125,6 +156,7 @@ async def main():
             npg[index] = npg.OFF
             await asyncio.sleep_ms(20)
             p_coord = npg.coord_inc(p_coord)
+        await blank_pause()
 
         # fill rows
         print('Fill rows in row order')
@@ -157,6 +189,7 @@ async def main():
             await asyncio.sleep_ms(100)
             npg.fill_col(col, npg.OFF)
             npg.write()
+        await blank_pause()
 
         # fill diagonal
         print('Fill diagonals')
@@ -177,10 +210,8 @@ async def main():
         npg.write()
         await asyncio.sleep_ms(1000)
         npg.fill_diagonal(npg.OFF)
-        npg.fill_diagonal(npg.OFF, reverse=True)
-        npg.write()
-        await asyncio.sleep_ms(1000)
-        
+        await blank_pause()
+
         # alternate diagonals
         print('Switch between both diagonals')
         for i in range(8):
@@ -194,6 +225,7 @@ async def main():
             await asyncio.sleep_ms(50)
             npg.fill_diagonal(npg.OFF, reverse=True)
             npg.write()
+        await blank_pause()
 
     # fade out
     colour = 'aqua'
@@ -206,6 +238,7 @@ async def main():
         npg.write()
         await asyncio.sleep_ms(20)
         level -= 2
+    await blank_pause()
             
 
 if __name__ == '__main__':
