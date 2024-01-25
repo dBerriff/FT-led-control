@@ -1,5 +1,5 @@
 # neo_pixel.py
-""" drive NeoPixel strip lighting """
+""" drive WS2812E/NeoPixel strip lighting """
 
 import asyncio
 from micropython import const
@@ -17,7 +17,7 @@ class PixelStrip(NeoPixel):
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
 
         Additional methods extending class:
-        - get_rgb_gamma(gamma):
+        - get_rgb_gamma_tuple(gamma):
             - return a tuple of gamma-corrected rgb levels for range(0, 256)
             - used for speed of conversion
         - get_rgb_level(rgb, level):
@@ -67,12 +67,8 @@ class PixelStrip(NeoPixel):
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels
         self.gamma = gamma  # 2.6: Adafruit suggested value
-        self.rgb_gamma = self.get_rgb_gamma_tuple(self.gamma)
-
-    @staticmethod
-    def get_rgb_gamma_tuple(gamma):
-        """ return rgb gamma-compensation tuple """
-        return tuple([round(pow(x / 255, gamma) * 255) for x in range(0, 256)])
+        self.rgb_gamma = tuple(
+            [round(pow(x / 255, gamma) * 255) for x in range(0, 256)])
 
     @staticmethod
     def get_rgb_l(rgb_, level_):
@@ -90,7 +86,7 @@ class PixelStrip(NeoPixel):
                 self.rgb_gamma[rgb_[2]])
 
     def get_rgb_l_g_c(self, rgb_, level_):
-        """ return level-set, gamma-corrected rgb value
+        """ return level-converted, gamma-corrected rgb value
             - level in range(0, 256)
         """
         level_ = max(level_, 0)
@@ -101,13 +97,15 @@ class PixelStrip(NeoPixel):
 
     def strip_fill_rgb(self, rgb_):
         """ fill all pixels with rgb colour
-            - blocks asyncio scheduler """
+            - blocking
+        """
         for pixel in range(self.n_pixels):
             self[pixel] = rgb_
 
     async def as_strip_fill_rgb(self, rgb_):
         """ fill all pixels with rgb colour as coro()
-            - scheduler adds significant overhead """
+            - non-blocking but scheduler adds overhead
+        """
         for pixel in range(self.n_pixels):
             self[pixel] = rgb_
             await asyncio.sleep_ms(0)
