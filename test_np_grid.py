@@ -29,7 +29,7 @@ class PixelGrid(PixelStrip):
 
     def get_coord_index_dict(self):
         """ correct grid addressing scheme
-            - columns across, rows down as for most computer display software
+            - columns left to right, rows top to bottom
         """
         coord_index_dict = {}
         max_row = self.max_row  # avoid repeated dict access
