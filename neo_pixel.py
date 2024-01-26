@@ -95,14 +95,14 @@ class PixelStrip(NeoPixel):
                 self.rgb_gamma[rgb_[1] * level_ // 255],
                 self.rgb_gamma[rgb_[2] * level_ // 255])
 
-    def strip_fill_rgb(self, rgb_):
+    def fill_strip(self, rgb_):
         """ fill all pixels with rgb colour
             - blocking
         """
         for pixel in range(self.n_pixels):
             self[pixel] = rgb_
 
-    async def as_strip_fill_rgb(self, rgb_):
+    async def as_fill_strip(self, rgb_):
         """ fill all pixels with rgb colour as coro()
             - non-blocking but scheduler adds overhead
         """
