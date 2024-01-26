@@ -11,7 +11,7 @@ from char_set import charset_2_8x8 as charset
 
 class PixelGrid(PixelStrip):
     """ extend NPixelStrip to support BTF-Lighting grid
-        - grid is wired 'snake' style; coord_dict corrects
+        - grid is wired 'snake' style; coord_index dict corrects
     """
 
     Coord = namedtuple('Coord', ['c', 'r'])
