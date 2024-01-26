@@ -72,7 +72,9 @@ class PixelGrid(PixelStrip):
             self[self.coord_index[col, row]] = rgb
 
     def fill_diagonal(self, rgb, reverse=False):
-        """ fill diagonal with rgb value"""
+        """ fill diagonal with rgb value
+        	- assumes square grid!
+        """
         if reverse:
             for col in range(self.n_cols):
                 r_col = self.max_col - col
