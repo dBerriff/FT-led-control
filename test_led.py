@@ -37,20 +37,21 @@ async def main():
     # set onboard LED to blink to demo multitasking
     led_f = 800  # to match typical NeoPixel strip
     onboard = Led('LED', led_f)
-    onboard.set_dc_pc(20)  # duty-cycle percent
+    onboard.set_dc_u16(onboard.pc_u16(20))  # duty-cycle percent
     task_blink = asyncio.create_task(onboard.blink(100))
 
+    l1 = Led(1, led_f)
+    l1.set_dc_u16(l1.pc_u16(20))  # duty-cycle percent
+    task_blink = asyncio.create_task(l1.blink(100))
+    l2 = Led(2, led_f)
+    l2.set_dc_u16(l2.pc_u16(20))  # duty-cycle percent
+    task_blink = asyncio.create_task(l2.blink(100))
     pin_number = 27
     n_np = 64  # number of NeoPixels
     nps = PixelStrip(pin_number, n_np)
     colours = nps.Colours
     np_index = 8  # use first pixel for tests
-
-    # level defines brightness with respect to 255 peak
-    level = 127
-
-    # set colour of single NeoPixel; whole strip must be written
-
+    await asyncio.sleep_ms(10_000)
     task_blink.cancel()
     onboard.set_off()
 

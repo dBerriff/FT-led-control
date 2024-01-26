@@ -21,7 +21,9 @@ class PwmChannel(PWM):
     """
 
     def __init__(self, pwm_pin, frequency):
-        super().__init__(Pin(pwm_pin), freq=frequency, duty_u16=0)
+        super().__init__(Pin(pwm_pin))
+        self.freq(frequency)
+        self.duty_u16(0)
         self.pin = pwm_pin
         self._dc_u16 = 0
 
@@ -77,9 +79,9 @@ class Led(PwmChannel):
             self.set_off()
             await asyncio.sleep_ms(900)
 
-	async def twinkle(self, steady_u16):
+    async def twinkle(self, steady_u16):
         """ replicate MERG gas-lamp twinkle
-        	- add/subract random values
+            - add/subract random values
         """
         while True:
             # sum(steady, twinkle(5 - 10s), pop(every 10s))

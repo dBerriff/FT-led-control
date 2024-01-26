@@ -117,17 +117,24 @@ async def main():
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
     colours = npg.Colours
-    # combining following list actions can raise errors
+    # following list actions raise errors if combined
     colour_list = list(colours.keys())
     colour_list.sort()
     colour_list = tuple(colour_list)
     print(f'colour list: {colour_list}')
     # level: intensity in range 0 to 255
     level = 64
-    rgb = npg.get_rgb_l_g_c(colours['aqua'], level)
+    rgb = npg.get_rgb_l_g_c(colours['orange'], level)
     off = npg.OFF
     npg.charset = charset  # for later module attribute
     
+    npg.fill_grid(rgb)
+    npg.write()
+    await asyncio.sleep_ms(500)
+    npg.fill_grid(off)
+    npg.write()
+    await asyncio.sleep_ms(500)
+
     for i in range(npg.n_pixels):
         npg[i] = rgb
         npg.write()
