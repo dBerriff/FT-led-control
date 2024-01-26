@@ -26,7 +26,7 @@ class PixelGrid(PixelStrip):
         self.c_r_dim = self.Coord(self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
         self.charset = None
-        self.fill_grid = self.fill_strip. # method alias
+        self.fill_grid = self.fill_strip  # method alias
 
     def get_coord_index_dict(self):
         """ correct grid addressing scheme
@@ -45,11 +45,11 @@ class PixelGrid(PixelStrip):
 
     def coord_inc(self, coord):
         """ increment cell coordinate """
-        coord.c +=  1
+        coord.c += 1
         if coord.c == self.n_cols:
             coord.c = 0
             coord.r += 1
-            coord.r %= self.n_rows:
+            coord.r %= self.n_rows
         return coord
 
     def coord_dec(self, coord):
@@ -74,7 +74,7 @@ class PixelGrid(PixelStrip):
 
     def fill_diagonal(self, rgb, reverse=False):
         """ fill diagonal with rgb value
-        	- assumes square grid!
+            - assumes square grid!
         """
         if reverse:
             for col in range(self.n_cols):
@@ -98,11 +98,12 @@ class PixelGrid(PixelStrip):
             self.fill_grid(self.OFF)
         self.write()
 
-    async def display_string(self, str_, rgb_, pause=200):
-        """ cycle throught the letters in a string """
+    async def display_string(self, str_, rgb_, pause=500):
+        """ cycle through the letters in a string """
         for char_ in str_:
             self.display_char(char_, rgb_)
             await asyncio.sleep_ms(pause)
+
 
 async def main():
     """ set NeoPixel values on grid """
@@ -123,23 +124,60 @@ async def main():
     print(f'colour list: {colour_list}')
     # level: intensity in range 0 to 255
     level = 64
+    rgb = npg.get_rgb_l_g_c(colours['aqua'], level)
+    off = npg.OFF
     npg.charset = charset  # for later module attribute
+    
+    for i in range(npg.n_pixels):
+        npg[i] = rgb
+        npg.write()
+        await asyncio.sleep_ms(20)
+        npg[i] = off
+        npg.write()
+        
+    for r in range(npg.n_rows):
+        npg.fill_row(r, rgb)
+        npg.write()
+        await asyncio.sleep_ms(200)
+        npg.fill_row(r, off)
+        npg.write()
 
+    for r in range(npg.n_cols):
+        npg.fill_col(r, rgb)
+        npg.write()
+        await asyncio.sleep_ms(200)
+        npg.fill_col(r, off)
+        npg.write()
+
+    pause = 2000
+    for _ in range(8):
+        npg.fill_diagonal(rgb)
+        npg.write()
+        await asyncio.sleep_ms(pause)
+        npg.fill_diagonal(off)
+        npg.write()
+        npg.fill_diagonal(rgb, True)
+        npg.write()
+        await asyncio.sleep_ms(pause)
+        npg.fill_diagonal(off, True)
+        npg.write()
+        pause = pause // 2
+    
     await blank_pause()
     rgb = npg.get_rgb_l_g_c(colours['aqua'], level)
+    """
     chars = list(npg.charset.keys())
     chars.sort()
     for c in chars:
         npg.display_char(c, rgb)
         await asyncio.sleep_ms(1000)
     await blank_pause()
+    """
 
-    for _ in range(2):
-        await npg.display_string('MERG ', rgb)
-        await asyncio.sleep_ms(1000)
-    for _ in range(2):
-        await npg.display_string('FAMOUS TRAINS DERBY ', rgb)
-        await asyncio.sleep_ms(1000)
+    await npg.display_string('MERG ', rgb)
+    await asyncio.sleep_ms(1000)
+    await npg.display_string('FAMOUS TRAINS DERBY ', rgb)
+    await asyncio.sleep_ms(1000)
 
     npg.fill_grid(npg.OFF)
 
