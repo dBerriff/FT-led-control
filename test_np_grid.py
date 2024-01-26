@@ -26,6 +26,7 @@ class PixelGrid(PixelStrip):
         self.c_r_dim = self.Coord(self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
         self.charset = None
+        self.fill_grid = self.fill_strip. # method alias
 
     def get_coord_index_dict(self):
         """ correct grid addressing scheme
@@ -82,13 +83,6 @@ class PixelGrid(PixelStrip):
         else:
             for col in range(self.n_cols):
                 self[self.coord_index[col, col]] = rgb
-
-    def fill_grid(self, rgb):
-        """ fill grid with rgb value
-        	- duplicates fill_strip()
-        """
-        for index in range(self.n_pixels):
-            self[index] = rgb
 
     def display_char(self, char_, rgb_):
         """ display char_ in colour rgb_ """
