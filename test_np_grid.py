@@ -55,10 +55,10 @@ class PixelGrid(PixelStrip):
         """ decrement cell coordinate """
         coord.c -= 1
         if coord.c == -1:
-            coord.c = self.n_cols - 1
+            coord.c = self.max_col
             coord.r -= 1
             if coord.r == -1:
-                coord.r = self.n_rows - 1
+                coord.r = self.max_row
         return coord
 
     def fill_row(self, row, rgb):
