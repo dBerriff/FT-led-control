@@ -10,7 +10,7 @@ from char_set import charset_2_8x8 as charset
 
 
 class PixelGrid(PixelStrip):
-    """ extend NPStrip to support BTF-Lighting grid
+    """ extend NPixelStrip to support BTF-Lighting grid
         - grid is wired 'snake' style; coord_dict corrects
     """
 
@@ -32,7 +32,7 @@ class PixelGrid(PixelStrip):
             - columns across, rows down as for most computer display software
         """
         coord_index_dict = {}
-        max_row = self.n_rows - 1
+        max_row = self.max_row  # avoid repeated dict access
         for col in range(self.n_cols):
             for row in range(self.n_rows):
                 if col % 2:  # odd row
@@ -44,75 +44,65 @@ class PixelGrid(PixelStrip):
 
     def coord_inc(self, coord):
         """ increment cell coordinate """
-        c_ = coord.c + 1
-        if c_ == self.c_r_dim.c:
-            c_ = 0
-            r_ = coord.r + 1
-            if r_ == self.c_r_dim.r:
-                r_ = 0
-        else:
-            r_ = coord.r
-        return self.Coord(c_, r_)
+        coord.c +=  1
+        if coord.c == self.n_cols:
+            coord.c = 0
+            coord.r += 1
+            coord.r %= self.n_rows:
+        return coord
 
     def coord_dec(self, coord):
         """ decrement cell coordinate """
-        c_ = coord.c - 1
-        if c_ == -1:
-            c_ = self.c_r_dim.c - 1
-            r_ = coord.r - 1
-            if r_ == -1:
-                r_ = self.c_r_dim.r - 1
-        else:
-            r_ = coord.r
-        return self.Coord(c_, r_)
+        coord.c -= 1
+        if coord.c == -1:
+            coord.c = self.n_cols - 1
+            coord.r -= 1
+            if coord.r == -1:
+                coord.r = self.n_rows - 1
+        return coord
 
     def fill_row(self, row, rgb):
         """ fill row with rgb value"""
         for col in range(self.n_cols):
-            index = self.coord_index[col, row]
-            self[index] = rgb
+            self[self.coord_index[col, row]] = rgb
 
     def fill_col(self, col, rgb):
         """ fill col with rgb value"""
         for row in range(self.n_rows):
-            index = self.coord_index[col, row]
-            self[index] = rgb
+            self[self.coord_index[col, row]] = rgb
 
     def fill_diagonal(self, rgb, reverse=False):
         """ fill diagonal with rgb value"""
         if reverse:
             for col in range(self.n_cols):
                 r_col = self.max_col - col
-                row = col
-                index = self.coord_index[r_col, row]
-                self[index] = rgb
+                self[self.coord_index[r_col, col]] = rgb
         else:
             for col in range(self.n_cols):
-                row = col
-                index = self.coord_index[col, row]
-                self[index] = rgb
+                self[self.coord_index[col, col]] = rgb
 
     def fill_grid(self, rgb):
-        """ fill grid with rgb value"""
+        """ fill grid with rgb value
+        	- duplicates fill_strip()
+        """
         for index in range(self.n_pixels):
             self[index] = rgb
 
     def display_char(self, char_, rgb_):
-        """ display the current charset character """
+        """ display char_ in colour rgb_ """
         if char_ in self.charset:
             char_grid = self.charset[char_]
             for row in range(self.n_rows):
                 for col in range(self.n_cols):
-                    index = self.coord_index[col, row]
                     if char_grid[row][col]:
-                        self[index] = rgb_
+                        self[self.coord_index[col, row]] = rgb_
                     else:
-                        self[index] = self.OFF
+                        self[self.coord_index[col, row]] = self.OFF
         else:
             self.fill_grid(self.OFF)
         self.write()
 
-    async def display_string(self, str_, rgb_, pause=1000):
+    async def display_string(self, str_, rgb_, pause=200):
         """ cycle throught the letters in a string """
         for char_ in str_:
             self.display_char(char_, rgb_)
@@ -122,25 +112,25 @@ async def main():
     """ set NeoPixel values on grid """
     
     async def blank_pause():
-        """ fill grid with (0, 0, 0) and pause 1s """
+        """ fill grid with (0, 0, 0) and pause """
         npg.fill_grid(npg.OFF)
         npg.write()
         await asyncio.sleep_ms(200)
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
-    vis_colours = npg.Colours
-    vis_colours.pop('black')
-    colour_list = list(vis_colours.keys())
+    colours = npg.Colours
+    # combining following list actions can raise errors
+    colour_list = list(colours.keys())
     colour_list.sort()
     colour_list = tuple(colour_list)
     print(f'colour list: {colour_list}')
-    # level defines brightness with respect to 255 peak
+    # level: intensity in range 0 to 255
     level = 64
-    npg.charset = charset
-    await blank_pause()
-    rgb = npg.get_rgb_l_g_c(vis_colours['aqua'], level)
+    npg.charset = charset  # for later module attribute
 
+    await blank_pause()
+    rgb = npg.get_rgb_l_g_c(colours['aqua'], level)
     chars = list(npg.charset.keys())
     chars.sort()
     for c in chars:
@@ -148,7 +138,6 @@ async def main():
         await asyncio.sleep_ms(1000)
     await blank_pause()
 
-    
     for _ in range(2):
         await npg.display_string('MERG ', rgb)
         await asyncio.sleep_ms(1000)
