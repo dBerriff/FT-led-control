@@ -5,6 +5,7 @@
 import asyncio
 from neo_pixel import PixelGrid
 from char_set import charset_2_8x8 as charset
+from neopixel import NeoPixel
 
 
 def blank_strip(strip):
@@ -45,6 +46,7 @@ async def main():
     
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
+    print(npg, npg.n)
     colours = npg.Colours
     # following list actions raise errors if combined
     colour_list = list(colours.keys())
@@ -63,11 +65,11 @@ async def main():
     blank_strip(npg)
     await asyncio.sleep_ms(200)
     
-    clr_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    await cycle_colours(npg, clr_set, level, 20)
+    cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
+    await cycle_colours(npg, cycle_set, level, 20)
     await asyncio.sleep_ms(5000)
     blank_strip(npg)
-    await cycle_grid_colours(npg, clr_set, level)
+    await cycle_grid_colours(npg, cycle_set, level)
     await asyncio.sleep_ms(5000)
     blank_strip(npg)
 

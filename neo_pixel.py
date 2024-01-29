@@ -54,7 +54,7 @@ class PixelStrip(NeoPixel):
         'jade': (0, 255, 40),
         'magenta': (255, 0, 255),
         'old_lace': (253, 245, 230),
-        'orange': (255, 140, 0),  # dark orange; g=165 for full
+        'orange': (255, 140, 0),  # dark orange g=140; g=165 for full
         'pink': (242, 90, 255),
         'purple': (180, 0, 255),
         'red': (255, 0, 0),
