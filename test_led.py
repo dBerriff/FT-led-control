@@ -72,9 +72,8 @@ async def main():
     blank_strip(nps)
 
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    c_rgb_set = [colours[c] for c in cycle_set]
-    rgb_set = tuple([nps.get_rgb_l_g_c(c, level) for c in c_rgb_set])
-    del c_rgb_set
+    rgb_set = [colours[c] for c in cycle_set]
+    rgb_set = tuple([nps.get_rgb_l_g_c(c, level) for c in rgb_set])
     await cycle_colours(nps, rgb_set, True, 200)
     await asyncio.sleep_ms(200)
     blank_strip(nps)
