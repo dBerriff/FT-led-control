@@ -8,10 +8,12 @@ from neo_pixel import PixelStrip
 
 import time
 
+
 def blank_strip(strip):
     """ fill grid with (0, 0, 0) and pause """
     strip.fill_strip(strip.OFF)
     strip.write()
+
 
 async def cycle_colours(strip, rgb_set_, reverse=False, pause=20):
     """ step through strip, cycling colour """
@@ -41,11 +43,11 @@ async def main():
             nps.write()
             await asyncio.sleep_ms(500)
 
-    async def test_fill_strip(n_pixels):
+    async def test_fill_strip(rgb_):
         """ test and time fill-strip method """
         print('Fill strip')
         c_time = time.ticks_us()
-        nps.fill_strip((31, 0, 0))
+        nps.fill_strip(rgb_)
         print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
         c_time = time.ticks_us()
         nps.write()
@@ -56,28 +58,23 @@ async def main():
     led_f = 800  # to match typical NeoPixel strip
     onboard = Led('LED', led_f)
     onboard.set_dc_u16(onboard.pc_u16(20))  # duty-cycle percent
-    task_blink = asyncio.create_task(onboard.blink(100))
+    asyncio.create_task(onboard.blink(100))
 
     pin_number = 27
     nps = PixelStrip(pin_number, 30)
     colours = nps.Colours
-    # following list actions raise errors if combined
-    colour_list = list(colours.keys())
-    colour_list.sort()
-    colour_list = tuple(colour_list)
     # level: intensity in range 0 to 255
     level = 63
     rgb = nps.get_rgb_l_g_c(colours['orange'], level)
-    off = nps.OFF
 
     await test_fill_strip(rgb)
     await asyncio.sleep_ms(200)
     blank_strip(nps)
 
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    colour_set = [nps.Colours[c] for c in cycle_set]
-    rgb_set = tuple([nps.get_rgb_l_g_c(c, level) for c in colour_set])
-    del(colour_set)
+    c_rgb_set = [colours[c] for c in cycle_set]
+    rgb_set = tuple([nps.get_rgb_l_g_c(c, level) for c in c_rgb_set])
+    del c_rgb_set
     await cycle_colours(nps, rgb_set, True, 200)
     await asyncio.sleep_ms(200)
     blank_strip(nps)
