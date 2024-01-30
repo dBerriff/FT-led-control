@@ -14,30 +14,26 @@ def blank_strip(strip):
     strip.write()
 
 
-async def cycle_colours(strip, colour_set, level, pause=200):
+async def cycle_colours(strip, rgb_set, pause=100):
     """ step through strip, cycling colour """
-    cs_mod = len(colour_set)
+    cs_mod = len(rgb_set)
     for index in range(strip.n_pixels):
-        rgb = strip.Colours[colour_set[index % cs_mod]]
-        rgb = strip.get_rgb_l_g_c(rgb, level)
+        rgb = rgb_set[index % cs_mod]
         strip[index] = rgb
         strip.write()
         await asyncio.sleep_ms(pause)
         # strip[index] = strip.OFF
         
 
-async def cycle_grid_colours(grid, colour_set, level, pause=200):
+async def cycle_grid_colours(grid, rgb_set, pause=20):
     """ step through grid in col, row order; cycling colour """
-    cs_mod = len(colour_set)
+    cs_mod = len(rgb_set)
     cr = grid.Coord(0, 0)
     for index in range(grid.n_pixels):
-        rgb = grid.Colours[colour_set[index % cs_mod]]
-        rgb = grid.get_rgb_l_g_c(rgb, level)
-        grid_index = grid.coord_index[cr]
-        grid[grid_index] = rgb
+        rgb = rgb_set[index % cs_mod]
+        grid[grid.coord_index[cr]] = rgb
         grid.write()
         await asyncio.sleep_ms(pause)
-        # grid[grid_index] = grid.OFF
         cr = grid.coord_inc(cr)
 
 
@@ -48,11 +44,6 @@ async def main():
     npg = PixelGrid(pin_number, 8, 8)
     print(npg, npg.n)
     colours = npg.Colours
-    # following list actions raise errors if combined
-    colour_list = list(colours.keys())
-    colour_list.sort()
-    colour_list = tuple(colour_list)
-    print(f'colour list: {colour_list}')
     # level: intensity in range 0 to 255
     level = 63
     rgb = npg.get_rgb_l_g_c(colours['orange'], level)
@@ -61,17 +52,22 @@ async def main():
     
     npg.fill_grid(rgb)
     npg.write()
-    await asyncio.sleep_ms(200)
+    await asyncio.sleep_ms(500)
     blank_strip(npg)
     await asyncio.sleep_ms(200)
     
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    await cycle_colours(npg, cycle_set, level, 20)
-    await asyncio.sleep_ms(5000)
+    rgb_set = [npg.get_rgb_l_g_c(npg.Colours[c], level) for c in cycle_set]
+
+    await cycle_colours(npg, rgb_set, 20)
+    await asyncio.sleep_ms(1000)
     blank_strip(npg)
-    await cycle_grid_colours(npg, cycle_set, level)
-    await asyncio.sleep_ms(5000)
+    
+    await cycle_grid_colours(npg, rgb_set)
+    await asyncio.sleep_ms(1000)
+    await cycle_grid_colours(npg, [off])
     blank_strip(npg)
+    await asyncio.sleep_ms(1000)
 
     pause = 2000
     for _ in range(8):
@@ -80,18 +76,21 @@ async def main():
         await asyncio.sleep_ms(pause)
         npg.fill_diagonal(off)
         npg.write()
-        npg.fill_diagonal(rgb, True)
+        npg.fill_diagonal(rgb, reverse=True)
         npg.write()
         await asyncio.sleep_ms(pause)
-        npg.fill_diagonal(off, True)
+        npg.fill_diagonal(off, reverse=True)
         npg.write()
         pause = pause // 2
     blank_strip(npg)
+    await asyncio.sleep_ms(1000)
 
     rgb = npg.get_rgb_l_g_c(colours['blue'], level)
-    await npg.display_string('MERG ', rgb)
+    await npg.display_string('MERG PI SIG', rgb)
     await asyncio.sleep_ms(1000)
-    await npg.display_string('FAMOUS TRAINS DERBY ', rgb)
+    # await npg.display_string('FAMOUS TRAINS DERBY ', rgb)
+    # await asyncio.sleep_ms(1000)
+    await npg.display_string('0123456789 ', rgb)
     await asyncio.sleep_ms(1000)
 
     blank_strip(npg)
