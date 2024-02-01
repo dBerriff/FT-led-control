@@ -1,10 +1,11 @@
 # neo_pixel.py
-""" drive WS2812E/NeoPixel strip lighting """
+""" control WS2812E/NeoPixel lighting """
 
 import asyncio
 from micropython import const
 from machine import Pin
 from collections import namedtuple
+import led
 from neopixel import NeoPixel
 
 
@@ -16,20 +17,6 @@ class PixelStrip(NeoPixel):
         - n is the number of LEDs in the strip.
         - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
         - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
-
-        Additional methods extending class:
-        - get_rgb_gamma_tuple(gamma):
-            - return a tuple of gamma-corrected rgb levels for range(0, 256)
-            - used for speed of conversion
-        - get_rgb_level(rgb, level):
-            - colours are defined reference 255 peak intensity;
-                return rgb tuple adjusted to lower level
-        - get_rgb_g_corrected(rgb_):
-            - return gamma-corrected rgb tuple
-        - strip_fill_rgb(rgb, level):
-            - set all NeoPixels in a strip to a common rgb value
-        - dim(pixel, colour, level, period_ms=500):
-            - dim a NeoPixel from an initial rgb value to off over period_ms
 
         Adafruit documentation is acknowledged as the main reference for this work.
         See as an initial reference:
@@ -63,45 +50,24 @@ class PixelStrip(NeoPixel):
         'yellow': (255, 255, 0)
         }
 
-    def __init__(self, np_pin, n_pixels, gamma=2.6):
+    def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
-        self.n_pixels = n_pixels
-        self.gamma = gamma  # 2.6: Adafruit suggested value
-        self.rgb_gamma = tuple(
-            [round(pow(x / 255, gamma) * 255) for x in range(0, 256)])
+        self.n_pixels = n_pixels  # or use self.n
 
-    @staticmethod
-    def get_rgb_l(rgb_, level_):
-        """ return level-converted rgb value """
-        level_ = max(level_, 0)
-        level_ = min(level_, 255)
-        return (rgb_[0] * level_ // 255,
-                rgb_[1] * level_ // 255,
-                rgb_[2] * level_ // 255)
-
-    def get_rgb_g_c(self, rgb_):
-        """ return gamma-corrected rgb value """
-        return (self.rgb_gamma[rgb_[0]],
-                self.rgb_gamma[rgb_[1]],
-                self.rgb_gamma[rgb_[2]])
-
-    def get_rgb_l_g_c(self, rgb_, level_):
-        """ return level-converted, gamma-corrected rgb value
-            - level in range(0, 256)
-        """
-        level_ = max(level_, 0)
-        level_ = min(level_, 255)
-        return (self.rgb_gamma[rgb_[0] * level_ // 255],
-                self.rgb_gamma[rgb_[1] * level_ // 255],
-                self.rgb_gamma[rgb_[2] * level_ // 255])
+    def fill_range(self, index_, count_, rgb_):
+        """ fill count_ pixels with rgb_  """
+        for _ in range(count_):
+            index_ %= self.n_pixels
+            self[index_] = rgb_
+            index_ += 1
 
     def fill_strip(self, rgb_):
         """ fill all pixels with rgb colour
             - blocking
         """
-        for pixel in range(self.n_pixels):
-            self[pixel] = rgb_
+        for index in range(self.n_pixels):
+            self[index] = rgb_
 
     async def as_fill_strip(self, rgb_):
         """ fill all pixels with rgb colour as coro()
@@ -110,18 +76,6 @@ class PixelStrip(NeoPixel):
         for pixel in range(self.n_pixels):
             self[pixel] = rgb_
             await asyncio.sleep_ms(0)
-
-    async def dim_g_c(self, pixel, colour_, level_, period_ms=500):
-        """ dim pixel, applying gamma correction """
-        pause = period_ms // level_
-        while level_ > 0:
-            rgb = self.get_rgb_l_g_c(colour_, level_)
-            self[pixel] = rgb
-            self.write()
-            await asyncio.sleep_ms(pause)
-            if rgb == (0, 0, 0):
-                break
-            level_ -= 1
 
 
 class PixelGrid(PixelStrip):
@@ -133,7 +87,7 @@ class PixelGrid(PixelStrip):
 
     def __init__(self, np_pin, n_cols, n_rows, gamma=2.6):
         self.n_pixels = n_cols * n_rows
-        super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels, gamma)
+        super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
         self.n_cols = n_cols
         self.n_rows = n_rows
         self.max_col = n_cols - 1
@@ -190,14 +144,14 @@ class PixelGrid(PixelStrip):
 
     def fill_diagonal(self, rgb, reverse=False):
         """ fill diagonal with rgb value
-            - assumes square grid!
+            - assumes cols >= rows
         """
         if reverse:
-            for col in range(self.n_cols):
+            for col in range(self.n_rows):
                 r_col = self.max_col - col
                 self[self.coord_index[r_col, col]] = rgb
         else:
-            for col in range(self.n_cols):
+            for col in range(self.n_rows):
                 self[self.coord_index[col, col]] = rgb
 
     def display_char(self, char_, rgb_):
@@ -214,8 +168,3 @@ class PixelGrid(PixelStrip):
             self.fill_grid(self.OFF)
         self.write()
 
-    async def display_string(self, str_, rgb_, pause=500):
-        """ cycle through the letters in a string """
-        for char_ in str_:
-            self.display_char(char_, rgb_)
-            await asyncio.sleep_ms(pause)

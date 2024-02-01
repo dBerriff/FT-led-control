@@ -5,8 +5,10 @@
 import asyncio
 from neo_pixel import PixelGrid
 from char_set import charset_2_8x8 as charset
-from neopixel import NeoPixel
+# from neopixel import NeoPixel
 
+
+# helper functions
 
 def blank_strip(strip):
     """ fill grid with (0, 0, 0) and pause """
@@ -27,25 +29,30 @@ async def cycle_colours(strip, rgb_set, pause=100):
 
 async def cycle_grid_colours(grid, rgb_set, pause=20):
     """ step through grid in col, row order; cycling colour """
-    cs_mod = len(rgb_set)
-    cr = grid.Coord(0, 0)
+    clrs_mod = len(rgb_set)
+    c_r_index = grid.Coord(0, 0)
     for index in range(grid.n_pixels):
-        rgb = rgb_set[index % cs_mod]
-        grid[grid.coord_index[cr]] = rgb
+        rgb = rgb_set[index % clrs_mod]
+        grid[grid.coord_index[c_r_index]] = rgb
         grid.write()
         await asyncio.sleep_ms(pause)
-        cr = grid.coord_inc(cr)
+        c_r_index = grid.coord_inc(c_r_index)
 
 
 async def main():
     """ set NeoPixel values on grid """
-    
+
+    async def display_string(npg_, str_, rgb_, pause=500):
+        """ cycle through the letters in a string """
+        for char_ in str_:
+            npg_.display_char(char_, rgb_)
+            await asyncio.sleep_ms(pause)
+
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
     print(npg, npg.n)
     colours = npg.Colours
-    # level: intensity in range 0 to 255
-    level = 63
+    level = 63  # range 0 to 255
     rgb = npg.get_rgb_l_g_c(colours['orange'], level)
     off = npg.OFF
     npg.charset = charset  # for later module attribute
@@ -70,6 +77,7 @@ async def main():
     await asyncio.sleep_ms(1000)
 
     pause = 2000
+    # demo fill_diagonal
     for _ in range(8):
         npg.fill_diagonal(rgb)
         npg.write()
@@ -86,11 +94,11 @@ async def main():
     await asyncio.sleep_ms(1000)
 
     rgb = npg.get_rgb_l_g_c(colours['blue'], level)
-    await npg.display_string('MERG PI SIG', rgb)
+    await display_string(npg, 'MERG PI SIG', rgb)
     await asyncio.sleep_ms(1000)
-    # await npg.display_string('FAMOUS TRAINS DERBY ', rgb)
-    # await asyncio.sleep_ms(1000)
-    await npg.display_string('0123456789 ', rgb)
+    await display_string(npg, 'FAMOUS TRAINS DERBY ', rgb)
+    await asyncio.sleep_ms(1000)
+    await display_string(npg, '0123456789 ', rgb)
     await asyncio.sleep_ms(1000)
 
     blank_strip(npg)
