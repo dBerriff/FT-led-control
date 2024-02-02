@@ -6,6 +6,8 @@ from machine import Pin
 from collections import namedtuple
 from neopixel import NeoPixel
 
+Coord = namedtuple('Coord', ['c', 'r'])
+
 colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -51,7 +53,6 @@ class PixelStrip(NeoPixel):
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels  # or use self.n
         self.colours = colours
-        self.OFF = const((0, 0, 0))
 
     def fill_range(self, index_, count_, rgb_):
         """ fill count_ pixels with rgb_  """
@@ -67,10 +68,10 @@ class PixelStrip(NeoPixel):
         c_index = 0
         for _ in range(count_):
             index_ %= self.n_pixels
+            c_index %= n_rgb
             self[index_] = rgb_list[c_index]
             index_ += 1
             c_index += 1
-            c_index %= n_rgb
 
     def fill_strip(self, rgb_):
         """ fill all pixels with rgb colour """
@@ -83,8 +84,6 @@ class PixelGrid(NeoPixel):
         - grid is wired 'snake' style; coord_index dict corrects
     """
 
-    Coord = namedtuple('Coord', ['c', 'r'])
-
     def __init__(self, np_pin, n_cols, n_rows):
         self.n_pixels = n_cols * n_rows
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
@@ -92,16 +91,14 @@ class PixelGrid(NeoPixel):
         self.n_rows = n_rows
         self.max_col = n_cols - 1
         self.max_row = n_rows - 1
-        self.c_r_dim = self.Coord(self.n_cols, self.n_rows)
+        self.c_r_dim = Coord(self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
         self.colours = colours
         self.charset = None
-        self.OFF = const((0, 0, 0))
 
     def get_coord_index_dict(self):
-        """ correct grid addressing scheme
+        """ correct the grid 'snake' addressing scheme
             - columns left to right, rows top to bottom
-            - odd rows fill upwards
         """
         coord_index_dict = {}
         max_row = self.max_row  # avoid repeated dict access
@@ -115,24 +112,24 @@ class PixelGrid(NeoPixel):
         return coord_index_dict
 
     def coord_inc(self, coord):
-        """ increment cell coordinate """
+        """ increment cell col, row coordinate """
         c = coord.c + 1
         r = coord.r
         if c == self.n_cols:
             c = 0
             r += 1
             r %= self.n_rows
-        return self.Coord(c, r)
+        return Coord(c, r)
 
     def coord_dec(self, coord):
-        """ decrement cell coordinate """
+        """ decrement cell col, row coordinate """
         c = coord.c - 1
         r = coord.r
         if c == -1:
             c = self.max_col
             r -= 1
             r %= self.n_rows
-        return self.Coord(c, r)
+        return Coord(c, r)
 
     def fill_grid(self, rgb_):
         """ fill all pixels with rgb colour """
@@ -151,7 +148,7 @@ class PixelGrid(NeoPixel):
 
     def fill_diagonal(self, rgb, reverse=False):
         """ fill diagonal with rgb value
-            - assumes cols >= rows
+            - assumes n_cols >= n_rows
         """
         if reverse:
             for col in range(self.n_rows):
@@ -162,7 +159,7 @@ class PixelGrid(NeoPixel):
                 self[self.coord_index[col, col]] = rgb
 
     def display_char(self, char_, rgb_):
-        """ display char_ in colour rgb_ """
+        """ display a single character in rgb_ """
         if char_ in self.charset:
             char_grid = self.charset[char_]
             for row in range(self.n_rows):
@@ -170,7 +167,7 @@ class PixelGrid(NeoPixel):
                     if char_grid[row][col]:
                         self[self.coord_index[col, row]] = rgb_
                     else:
-                        self[self.coord_index[col, row]] = self.OFF
+                        self[self.coord_index[col, row]] = (0, 0, 0)
         else:
-            self.fill_grid(self.OFF)
+            self.fill_grid((0, 0, 0))
         self.write()
