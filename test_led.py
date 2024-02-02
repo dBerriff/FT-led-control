@@ -3,13 +3,13 @@
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
-from pwm_led import Led
 from neo_pixel import PixelStrip
 import led
 
 import time
 
 # helper functions
+
 
 async def cycle_pixel(nps_, index_, colours_, level_):
     """ cycle pixel through colour set """
@@ -55,10 +55,10 @@ async def main():
     pin_number = 27
     n_pixels = 30
     nps = PixelStrip(pin_number, n_pixels)
-    colours = nps.Colours
+    colours = nps.colours
     
     gamma = 2.6  # Adafruit suggestion
-    rgb_gamma = led.get_rgb_gamma(2.6)  # conversion tuple
+    rgb_gamma = led.get_rgb_gamma(gamma)  # conversion tuple
     level = 127  # 0 - 255
     c_rgb = colours['orange']
     rgb = led.get_rgb_l_g_c(c_rgb, level, rgb_gamma)
@@ -77,7 +77,7 @@ async def main():
     await asyncio.sleep_ms(200)
     
     rgb = led.get_rgb_l_g_c(c_rgb, level, rgb_gamma)
-    for i in range(240):
+    for i in range(120):
         nps.fill_range(i, 5, rgb)
         nps.write()
         await asyncio.sleep_ms(20)
@@ -85,6 +85,18 @@ async def main():
         nps.write()
         await asyncio.sleep_ms(2)
 
+    rgb_list = tuple([
+        led.get_rgb_l_g_c(colours['red'], level, rgb_gamma),
+        led.get_rgb_l_g_c(colours['green'], level, rgb_gamma),
+        led.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
+        ])
+    for i in range(240):
+        nps.fill_range_list(i, 3, rgb_list)
+        nps.write()
+        await asyncio.sleep_ms(20)
+        nps.fill_range(i, 3, nps.OFF)
+        nps.write()
+        await asyncio.sleep_ms(2)
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
     rgb_set = [colours[c] for c in cycle_set]
     rgb_set = tuple([led.get_rgb_l_g_c(c, level, rgb_gamma) for c in rgb_set])
