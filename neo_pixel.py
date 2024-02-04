@@ -1,13 +1,15 @@
 # neo_pixel.py
 """ control WS2812E/NeoPixel lighting """
 
-from micropython import const
 from machine import Pin
 from collections import namedtuple
 from neopixel import NeoPixel
 
 Coord = namedtuple('Coord', ['c', 'r'])
 
+# selection of colours as rgb values (full intensity)
+# see: https://docs.circuitpython.org/projects/led-animation/en/latest/
+#      api.html#adafruit-led-animation-color
 colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -19,7 +21,8 @@ colours = {
         'jade': (0, 255, 40),
         'magenta': (255, 0, 255),
         'old_lace': (253, 245, 230),
-        'orange': (255, 140, 0),  # dark orange g=140; g=165 for full
+        'orange': (255, 165, 0),
+        'dark_orange': (255, 140, 0),
         'pink': (242, 90, 255),
         'purple': (180, 0, 255),
         'red': (255, 0, 0),
@@ -33,10 +36,10 @@ class PixelStrip(NeoPixel):
     """ extend NeoPixel class. From micropython.org:
         class neopixel.NeoPixel(pin, n, *, bpp=3, timing=1)
         Construct a NeoPixel object. The parameters are:
-        - pin is a machine.Pin instance.
-        - n is the number of LEDs in the strip.
-        - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs.
-        - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz).
+        - pin is a machine.Pin instance
+        - n is the number of LEDs in the strip
+        - bpp is 3 for RGB LEDs, and 4 for RGBW LEDs
+        - timing is 0 for 400kHz, and 1 for 800kHz LEDs (most are 800kHz)
 
         Adafruit documentation is acknowledged as the main reference for this work.
         See as an initial reference:
@@ -44,15 +47,16 @@ class PixelStrip(NeoPixel):
 
     """
 
-    # selection of colours as rgb values (full intensity)
-    # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
-    #      api.html#adafruit-led-animation-color
-
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels  # or use self.n
         self.colours = colours
+
+    def fill_strip(self, rgb_):
+        """ fill all pixels with rgb colour """
+        for index in range(self.n_pixels):
+            self[index] = rgb_
 
     def fill_range(self, index_, count_, rgb_):
         """ fill count_ pixels with rgb_  """
@@ -72,11 +76,6 @@ class PixelStrip(NeoPixel):
             self[index_] = rgb_list[c_index]
             index_ += 1
             c_index += 1
-
-    def fill_strip(self, rgb_):
-        """ fill all pixels with rgb colour """
-        for index in range(self.n_pixels):
-            self[index] = rgb_
 
 
 class PixelGrid(NeoPixel):
