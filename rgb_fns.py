@@ -1,4 +1,4 @@
-# led.py
+# rgb_fns.py
 """ (r, g, b) functions """
 
 

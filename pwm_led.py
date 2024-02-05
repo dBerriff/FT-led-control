@@ -24,7 +24,7 @@ class PwmChannel(PWM):
         super().__init__(Pin(pwm_pin))
         self.freq(frequency)
         self.duty_u16(0)
-        self.pin = pwm_pin
+        self.pin = pwm_pin  # for debug
         self._dc_u16 = 0
 
     @staticmethod
@@ -39,15 +39,28 @@ class PwmChannel(PWM):
         """ reset PWM frequency """
         self.freq(frequency)
 
-    def preset_dc_u16(self, dc_u16):
-        """ set duty cycle by 16-bit unsigned integer """
-        self._dc_u16 = dc_u16
+    @property
+    def dc_u16(self):
+        return self._dc_u16
 
-    def set_on(self):
-        """ set channel on """
+    @dc_u16.setter
+    def dc_u16(self, value):
+        self._dc_u16 = value
+
+    def set_dc_u16(self, dc_u16_):
+        """ set LED duty cycle and turn on """
+        self.duty_u16(dc_u16_)
+        self.dc_u16 = dc_u16_
+
+    def set_dc_pc(self, dc_pc_):
+        """ set LED duty cycle and turn on """
+        self.set_dc_u16(self.pc_u16(dc_pc_))
+
+    def turn_on(self):
+        """ turn channel on at set duty cycle """
         self.duty_u16(self._dc_u16)
 
-    def set_off(self):
+    def turn_off(self):
         """ set channel off """
         self.duty_u16(0)
  
@@ -57,24 +70,33 @@ class Led(PwmChannel):
 
     def __init__(self, pwm_pin, frequency=800):
         super().__init__(Pin(pwm_pin), frequency)
-        self.name = str(pwm_pin)
-        # self.blink_lock = asyncio.Lock()
 
-    def set_dc_u16(self, dc_u16_):
-        """ set LED duty cycle """
-        self.duty_u16(dc_u16_)
-        self._dc_u16 = dc_u16_
-
-    def set_dc_pc(self, dc_pc_):
-        """ set LED duty cycle """
-        self.duty_u16(self.pc_u16(dc_pc_))
-        self._dc_u16 = dc_pc_
 
     async def blink(self, dc_pc_, n):
         """ coro: blink the LED n times at set dc """
-        level = self.pc_u16(dc_pc_)
+        dc_u16 = self.pc_u16(dc_pc_)
         for _ in range(n):
-            self.set_dc_u16(level)
+            self.set_dc_u16(dc_u16)
             await asyncio.sleep_ms(100)
             self.set_dc_u16(0x0000)
             await asyncio.sleep_ms(900)
+
+    async def fade_in(self, dc_pc_):
+        """ fade-in to set dc% """
+        dc = 0
+        target_dc = self.pc_u16(dc_pc_)
+        while dc < target_dc:
+            self.set_dc_u16(dc)
+            dc += 100
+            await asyncio.sleep_ms(20)
+        self.set_dc_u16(target_dc)
+
+    async def fade_out(self):
+        """ fade-out to set dc% """
+        dc = self._dc_u16
+        target_dc = 0
+        while dc > target_dc:
+            self.set_dc_u16(dc)
+            dc -= 100
+            await asyncio.sleep_ms(20)
+        self.set_dc_u16(target_dc)

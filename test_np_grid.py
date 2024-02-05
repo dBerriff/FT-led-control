@@ -5,7 +5,7 @@
 import asyncio
 from neo_pixel import PixelGrid, Coord
 from char_set import charset_1_8x8 as charset
-import led
+import rgb_fns
 
 
 # helper functions
@@ -57,8 +57,8 @@ async def main():
     colours = npg.colours
     level = 63  # range 0 to 255
     gamma = 2.6
-    rgb_gamma = led.get_rgb_gamma(gamma)  # conversion tuple
-    rgb = led.get_rgb_l_g_c(colours['orange'], level, rgb_gamma)
+    rgb_gamma = rgb.get_rgb_gamma(gamma)  # conversion tuple
+    rgb = rgb.get_rgb_l_g_c(colours['orange'], level, rgb_gamma)
     off = (0, 0, 0)
     npg.charset = charset  # load charset into object
     
@@ -72,7 +72,7 @@ async def main():
 
     # list of rgb colours for demo
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    rgb_set = tuple([led.get_rgb_l_g_c(
+    rgb_set = tuple([rgb.get_rgb_l_g_c(
         npg.colours[c], level, rgb_gamma) for c in cycle_set])
     rgb_n = len(rgb_set)
 
@@ -109,7 +109,7 @@ async def main():
 
     pause = 2000
     # demo fill_diagonal
-    rgb = led.get_rgb_l_g_c(colours['aqua'], level, rgb_gamma)
+    rgb = rgb.get_rgb_l_g_c(colours['aqua'], level, rgb_gamma)
     for _ in range(8):
         npg.fill_diagonal(rgb)
         npg.write()
@@ -126,7 +126,7 @@ async def main():
     npg.write()
     await asyncio.sleep_ms(2000)
 
-    rgb = led.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
+    rgb = rgb.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
     await display_string(npg, 'MERG PI SIG', rgb)
     npg.fill_grid(off)
     npg.write()
