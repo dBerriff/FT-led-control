@@ -8,6 +8,7 @@
 
 import asyncio
 from machine import Pin, PWM
+from rgb_fns import get_rgb_gamma
 from random import randrange
 
 
@@ -27,14 +28,6 @@ class PwmChannel(PWM):
         self.pin = pwm_pin  # for debug
         self._dc_u16 = 0
 
-    @staticmethod
-    def pc_u16(percentage):
-        """ convert percentage to 16-bit equivalent """
-        if 0 < percentage <= 100:
-            return 0xffff * percentage // 100
-        else:
-            return 0
-
     def reset_freq(self, frequency):
         """ reset PWM frequency """
         self.freq(frequency)
@@ -44,17 +37,13 @@ class PwmChannel(PWM):
         return self._dc_u16
 
     @dc_u16.setter
-    def dc_u16(self, value):
-        self._dc_u16 = value
+    def dc_u16(self, dc_):
+        self._dc_u16 = dc_
 
     def set_dc_u16(self, dc_u16_):
-        """ set LED duty cycle and turn on """
+        """ set PWM duty cycle """
         self.duty_u16(dc_u16_)
         self.dc_u16 = dc_u16_
-
-    def set_dc_pc(self, dc_pc_):
-        """ set LED duty cycle and turn on """
-        self.set_dc_u16(self.pc_u16(dc_pc_))
 
     def turn_on(self):
         """ turn channel on at set duty cycle """
@@ -66,37 +55,54 @@ class PwmChannel(PWM):
  
  
 class Led(PwmChannel):
-    """ pin-driven LED """
+    """ pin-driven LED
+        - intensity levels are 0 to 255, 8-bit register
+    """
 
     def __init__(self, pwm_pin, frequency=800):
         super().__init__(Pin(pwm_pin), frequency)
+        self.dc_u8 = 0
+        self.dc_gamma = get_rgb_gamma()
 
+    @staticmethod
+    def u8_u16(dc_u8_):
+        """ convert 8-bit to proportional 16-bit level for PWM """
+        dc_u8_ = max(dc_u8_, 0)
+        dc_u8_ = min(dc_u8_, 255)
+        return (dc_u8_ << 8) + dc_u8_
 
-    async def blink(self, dc_pc_, n):
+    def set_dc_u8(self, dc_u8_):
+        """ set LED u16 duty cycle from u8 """
+        self.dc_u8 = dc_u8_
+        dc_gc = self.dc_gamma[dc_u8_]
+        self.set_dc_u16(self.u8_u16(dc_gc))
+
+    async def blink(self, dc_u8, n):
         """ coro: blink the LED n times at set dc """
-        dc_u16 = self.pc_u16(dc_pc_)
+        self.dc_u8 = dc_u8
+        dc_u16 = self.u8_u16(self.dc_gamma[dc_u8])
         for _ in range(n):
             self.set_dc_u16(dc_u16)
             await asyncio.sleep_ms(100)
             self.set_dc_u16(0x0000)
             await asyncio.sleep_ms(900)
 
-    async def fade_in(self, dc_pc_):
-        """ fade-in to set dc% """
+    async def fade_in(self, dc_u8, period=1000):
+        """ fade-in to set dc """
+        step_pause = period // dc_u8
         dc = 0
-        target_dc = self.pc_u16(dc_pc_)
-        while dc < target_dc:
-            self.set_dc_u16(dc)
-            dc += 100
-            await asyncio.sleep_ms(20)
-        self.set_dc_u16(target_dc)
+        while dc < dc_u8:
+            self.set_dc_u8(dc)
+            dc += 1
+            await asyncio.sleep_ms(step_pause)
+        self.set_dc_u8(dc_u8)
 
-    async def fade_out(self):
+    async def fade_out(self, period= 1000):
         """ fade-out to set dc% """
-        dc = self._dc_u16
-        target_dc = 0
-        while dc > target_dc:
-            self.set_dc_u16(dc)
-            dc -= 100
-            await asyncio.sleep_ms(20)
-        self.set_dc_u16(target_dc)
+        step_pause = period // self.dc_u8
+        dc = self.dc_u8
+        while dc > 0:
+            self.set_dc_u8(dc)
+            dc -= 1
+            await asyncio.sleep_ms(step_pause)
+        self.set_dc_u8(0)
