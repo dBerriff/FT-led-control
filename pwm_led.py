@@ -97,7 +97,7 @@ class Led(PwmChannel):
             await asyncio.sleep_ms(step_pause)
         self.set_dc_u8(dc_u8)
 
-    async def fade_out(self, period= 1000):
+    async def fade_out(self, period=1000):
         """ fade-out to set dc% """
         step_pause = period // self.dc_u8
         dc = self.dc_u8

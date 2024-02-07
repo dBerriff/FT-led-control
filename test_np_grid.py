@@ -4,8 +4,8 @@
 
 import asyncio
 from neo_pixel import PixelGrid, Coord
-from char_set import charset_1_8x8 as charset
 import rgb_fns
+from char_set import charset_1_8x8 as charset
 
 
 # helper functions
@@ -53,12 +53,11 @@ async def main():
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
-    print(npg, npg.n)
     colours = npg.colours
     level = 63  # range 0 to 255
     gamma = 2.6
-    rgb_gamma = rgb.get_rgb_gamma(gamma)  # conversion tuple
-    rgb = rgb.get_rgb_l_g_c(colours['orange'], level, rgb_gamma)
+    rgb_gamma = rgb_fns.get_rgb_gamma(gamma)  # conversion tuple
+    rgb = rgb_fns.get_rgb_l_g_c(colours['orange'], level, rgb_gamma)
     off = (0, 0, 0)
     npg.charset = charset  # load charset into object
     
@@ -72,7 +71,7 @@ async def main():
 
     # list of rgb colours for demo
     cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    rgb_set = tuple([rgb.get_rgb_l_g_c(
+    rgb_set = tuple([rgb_fns.get_rgb_l_g_c(
         npg.colours[c], level, rgb_gamma) for c in cycle_set])
     rgb_n = len(rgb_set)
 
@@ -109,24 +108,24 @@ async def main():
 
     pause = 2000
     # demo fill_diagonal
-    rgb = rgb.get_rgb_l_g_c(colours['aqua'], level, rgb_gamma)
+    rgb = rgb_fns.get_rgb_l_g_c(colours['aqua'], level, rgb_gamma)
     for _ in range(8):
         npg.fill_diagonal(rgb)
         npg.write()
         await asyncio.sleep_ms(pause)
         npg.fill_diagonal(off)
         npg.write()
-        npg.fill_diagonal(rgb, reverse=True)
+        npg.fill_diagonal(rgb, mirror=True)
         npg.write()
         await asyncio.sleep_ms(pause)
-        npg.fill_diagonal(off, reverse=True)
+        npg.fill_diagonal(off, mirror=True)
         npg.write()
         pause = pause // 2
     npg.fill_grid(off)
     npg.write()
     await asyncio.sleep_ms(2000)
 
-    rgb = rgb.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
+    rgb = rgb_fns.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
     await display_string(npg, 'MERG PI SIG', rgb)
     npg.fill_grid(off)
     npg.write()
