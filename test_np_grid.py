@@ -49,6 +49,7 @@ async def display_string(npg_, str_, rgb_, pause_ms=500):
     """ cycle through the letters in a string """
     for char_ in str_:
         npg_.display_char(char_, rgb_)
+        npg_.write()
         await asyncio.sleep_ms(pause_ms)
 
 
@@ -67,8 +68,7 @@ async def main():
     npg.fill_grid(rgb)
     npg.write()
     await asyncio.sleep_ms(500)
-    npg.fill_grid(off)
-    npg.write()
+    npg.clear()
     await asyncio.sleep_ms(500)
 
     print('fill pixels as strip')
@@ -102,7 +102,7 @@ async def main():
     print('fill diagonals')
     colour = Colour(colours['aqua'])
     rgb = colour.get_rgb(68)
-    pause = 2000
+    pause = 1000
     for _ in range(12):
         npg.fill_diagonal(rgb)
         npg.write()
@@ -115,23 +115,19 @@ async def main():
         npg.fill_diagonal(off, mirror=True)
         npg.write()
         pause = pause // 2
-    npg.fill_grid(off)
-    npg.write()
+    npg.clear()
     await asyncio.sleep_ms(2000)
 
     colour = Colour(colours['blue'])
     rgb = colour.get_rgb(68)
     await display_string(npg, 'MERG PI SIG', rgb)
-    npg.fill_grid(off)
-    npg.write()
+    npg.clear()
     await asyncio.sleep_ms(1000)
     await display_string(npg, 'FAMOUS TRAINS DERBY', rgb)
-    npg.fill_grid(off)
-    npg.write()
+    npg.clear()
     await asyncio.sleep_ms(1000)
     await display_string(npg, '0123456789', rgb)
-    npg.fill_grid(off)
-    npg.write()
+    npg.clear()
     await asyncio.sleep_ms(1000)
 
 

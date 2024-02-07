@@ -37,24 +37,6 @@ from neopixel import NeoPixel
 # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
 #      api.html#adafruit-led-animation-color
 
-class NeoPixelAbs(NeoPixel):
-    """ abstract class for extending NeoPixel """
-
-    def __init__(self, np_pin, n_pixels):
-        super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
-        self.np_pin = np_pin  # for logging/debug
-        self.n_pixels = n_pixels  # or use self.n
-
-    def fill_pixel(self, index, rgb_):
-        """ fill pixel with rgb colour """
-        self[index] = self.rgb_gamma[rgb_]
-
-    def fill_all(self, rgb_):
-        """ fill all pixels with rgb colour """
-        rgb = self.rgb_gamma[rgb_]
-        for index in range(self.n_pixels):
-            self[index] = rgb
-
 
 class PixelStrip(NeoPixel):
     """
@@ -66,11 +48,10 @@ class PixelStrip(NeoPixel):
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels  # or use self.n
 
-    def fill_all(self, rgb_):
+    def fill_strip(self, rgb_):
         """ fill all pixels with rgb colour """
-        rgb = self.rgb_gamma[rgb_]
         for index in range(self.n_pixels):
-            self[index] = rgb
+            self[index] = rgb_
 
     def fill_range(self, index_, count_, rgb_):
         """ fill count_ pixels with rgb_  """
@@ -92,6 +73,11 @@ class PixelStrip(NeoPixel):
             self[index_] = rgb_list[c_index]
             index_ += 1
             c_index += 1
+
+    def clear(self):
+        """ set all pixels off """
+        self.fill_strip((0, 0, 0))
+        self.write()
 
 
 class PixelGrid(NeoPixel):
@@ -183,4 +169,8 @@ class PixelGrid(NeoPixel):
                         rgb_ if char_grid[row][col] else (0, 0, 0)
         else:
             self.fill_grid((0, 0, 0))
+
+    def clear(self):
+        """ set all pixels off """
+        self.fill_grid((0, 0, 0))
         self.write()
