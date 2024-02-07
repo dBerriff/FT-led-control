@@ -8,7 +8,7 @@
 
 import asyncio
 from machine import Pin, PWM
-from rgb_fns import get_rgb_gamma
+from colour import get_rgb_gamma
 from random import randrange
 
 

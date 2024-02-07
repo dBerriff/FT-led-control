@@ -4,7 +4,7 @@
 
 import asyncio
 from pwm_led import Led
-from rgb_fns import get_rgb_gamma
+from colour import get_rgb_gamma
 
 async def twin_flash(led_1, led_2, level_, period_ms):
     """ flash alternating leds every period """

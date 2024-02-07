@@ -3,49 +3,53 @@
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
-from neo_pixel import PixelGrid, Coord
-import rgb_fns
+from neo_pixel import PixelGrid
+from colour import colours, Colour
 from char_set import charset_1_8x8 as charset
 
 
 # helper functions
 
-async def cycle_colours(strip, rgb_set, pause=100):
+async def traverse_strip(grid, rgb, pause_ms=20):
     """ step through grid as a strip; cycling colour """
-    cs_mod = len(rgb_set)
-    for index in range(strip.n_pixels):
-        rgb = rgb_set[index % cs_mod]
-        strip[index] = rgb
-        strip.write()
-        await asyncio.sleep_ms(pause)
-        # strip[index] = strip.OFF
+    for index in range(grid.n_pixels):
+        grid[index] = rgb
+        grid.write()
+        await asyncio.sleep_ms(pause_ms)
 
-async def traverse_grid(grid, rgb_, pause=20):
+
+async def traverse_grid(grid, rgb, pause_ms=20):
     """ fill each pixel in grid cooord order """
     for row in range(grid.n_rows):
         for col in range(grid.n_cols):
-            grid[grid.coord_index[(col, row)]] = rgb_
+            grid[grid.coord_index[(col, row)]] = rgb
             grid.write()
-            await asyncio.sleep_ms(pause)
-            
+            await asyncio.sleep_ms(pause_ms)
 
-async def cycle_cr_colours(grid, rgb_set, pause=20):
-    """ step through grid in col, row order; cycling colour """
-    clrs_mod = len(rgb_set)
-    c_r_index = Coord(0, 0)
-    for index in range(grid.n_pixels):
-        rgb = rgb_set[index % clrs_mod]
-        grid[grid.coord_index[c_r_index]] = rgb
+
+async def fill_cols(grid, rgb_set, pause_ms=20):
+    """ step through cols """
+    n_colours = len(rgb_set)
+    for c in range(grid.n_cols):
+        grid.fill_col(c, rgb_set[c % n_colours])
         grid.write()
-        await asyncio.sleep_ms(pause)
-        c_r_index = grid.coord_inc(c_r_index)
+        await asyncio.sleep_ms(pause_ms)
 
 
-async def display_string(npg_, str_, rgb_, pause_=500):
+async def fill_rows(grid, rgb_set, pause_ms=20):
+    """ step through rows """
+    n_colours = len(rgb_set)
+    for r in range(grid.n_rows):
+        grid.fill_row(r, rgb_set[r % n_colours])
+        grid.write()
+        await asyncio.sleep_ms(pause_ms)
+
+
+async def display_string(npg_, str_, rgb_, pause_ms=500):
     """ cycle through the letters in a string """
     for char_ in str_:
         npg_.display_char(char_, rgb_)
-        await asyncio.sleep_ms(pause_)
+        await asyncio.sleep_ms(pause_ms)
 
 
 async def main():
@@ -53,63 +57,53 @@ async def main():
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
-    colours = npg.colours
-    level = 63  # range 0 to 255
-    gamma = 2.6
-    rgb_gamma = rgb_fns.get_rgb_gamma(gamma)  # conversion tuple
-    rgb = rgb_fns.get_rgb_l_g_c(colours['orange'], level, rgb_gamma)
-    off = (0, 0, 0)
     npg.charset = charset  # load charset into object
-    
+    off = (0, 0, 0)
+
+    colour = Colour(colours['dark_orange'])
+    rgb = colour.get_rgb(68)
+
     # fill grid with single colour
     npg.fill_grid(rgb)
     npg.write()
     await asyncio.sleep_ms(500)
     npg.fill_grid(off)
     npg.write()
+    await asyncio.sleep_ms(500)
+
+    print('fill pixels as strip')
+    await traverse_strip(npg, rgb, 20)
+    await asyncio.sleep_ms(1000)
+    await traverse_strip(npg, off, 20) 
     await asyncio.sleep_ms(1000)
 
-    # list of rgb colours for demo
-    cycle_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    rgb_set = tuple([rgb_fns.get_rgb_l_g_c(
-        npg.colours[c], level, rgb_gamma) for c in cycle_set])
-    rgb_n = len(rgb_set)
+    print('fill pixels in col, row order')
+    await traverse_grid(npg, rgb, 20)
+    await asyncio.sleep_ms(1000)
+    await traverse_grid(npg, off, 20) 
+    await asyncio.sleep_ms(1000)
+     
+    # build list of rgb values
+    colour_tuple = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
+    rgb_set = [Colour(colours[c]).get_rgb(63) for c in colour_tuple]
 
-    # cycle through grid as a strip
-    await cycle_colours(npg, rgb_set, 20)
+    print('fill cols in sequence')
+    await fill_cols(npg, rgb_set)
     await asyncio.sleep_ms(1000)
-    await cycle_colours(npg, (off,), 20) 
+    await fill_cols(npg, (off,))
     await asyncio.sleep_ms(1000)
 
-    # cycle through grid in column, row order
-    await cycle_cr_colours(npg, rgb_set)
+    print('fill rows in sequence')
+    await fill_rows(npg, rgb_set)
     await asyncio.sleep_ms(1000)
-    await traverse_grid(npg, off)
+    await fill_rows(npg, (off,))
     await asyncio.sleep_ms(1000)
-    
-    # fill columns in sequence
-    for c in range(npg.n_cols):
-        npg.fill_col(c, rgb_set[c % rgb_n])
-        npg.write()
-        await asyncio.sleep_ms(200)
-    await asyncio.sleep_ms(1000)
-    npg.fill_grid(off)
-    npg.write()
- 
-    # fill rows in sequence
-    for r in range(npg.n_rows):
-        npg.fill_row(r, rgb_set[r % rgb_n])
-        npg.write()
-        await asyncio.sleep_ms(200)
-    await asyncio.sleep_ms(2000)
-    npg.fill_grid(off)
-    npg.write()
 
-
+    print('fill diagonals')
+    colour = Colour(colours['aqua'])
+    rgb = colour.get_rgb(68)
     pause = 2000
-    # demo fill_diagonal
-    rgb = rgb_fns.get_rgb_l_g_c(colours['aqua'], level, rgb_gamma)
-    for _ in range(8):
+    for _ in range(12):
         npg.fill_diagonal(rgb)
         npg.write()
         await asyncio.sleep_ms(pause)
@@ -125,7 +119,8 @@ async def main():
     npg.write()
     await asyncio.sleep_ms(2000)
 
-    rgb = rgb_fns.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
+    colour = Colour(colours['blue'])
+    rgb = colour.get_rgb(68)
     await display_string(npg, 'MERG PI SIG', rgb)
     npg.fill_grid(off)
     npg.write()

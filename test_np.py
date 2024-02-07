@@ -4,7 +4,7 @@
 
 import asyncio
 from neo_pixel import PixelStrip
-from rgb_fns import get_rgb_gamma, get_rgb_l_g_c
+from colour import get_rgb_gamma, get_rgb_l_g_c
 import time
 from random import randrange
 
@@ -22,7 +22,7 @@ async def time_fill_strip(nps_, rgb_):
     """ test and time fill-strip method """
     print('Fill strip')
     c_time = time.ticks_us()
-    nps_.fill_strip(rgb_)
+    nps_.fill_all(rgb_)
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps_.write()

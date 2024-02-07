@@ -30,34 +30,30 @@
 """
 
 from machine import Pin
-from collections import namedtuple
 from neopixel import NeoPixel
 
-Coord = namedtuple('Coord', ['c', 'r'])
 
 # selection of colours as rgb values
 # see: https://docs.circuitpython.org/projects/led-animation/en/latest/
 #      api.html#adafruit-led-animation-color
-colours = {
-        'amber': (255, 100, 0),
-        'aqua': (50, 255, 255),
-        'black': (0, 0, 0),
-        'blue': (0, 0, 255),
-        'cyan': (0, 255, 255),
-        'gold': (255, 255, 30),
-        'green': (0, 255, 0),
-        'jade': (0, 255, 40),
-        'magenta': (255, 0, 255),
-        'old_lace': (253, 245, 230),
-        'orange': (255, 165, 0),
-        'dark_orange': (255, 140, 0),
-        'pink': (242, 90, 255),
-        'purple': (180, 0, 255),
-        'red': (255, 0, 0),
-        'teal': (0, 255, 120),
-        'white': (255, 255, 255),
-        'yellow': (255, 255, 0)
-        }
+
+class NeoPixelAbs(NeoPixel):
+    """ abstract class for extending NeoPixel """
+
+    def __init__(self, np_pin, n_pixels):
+        super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
+        self.np_pin = np_pin  # for logging/debug
+        self.n_pixels = n_pixels  # or use self.n
+
+    def fill_pixel(self, index, rgb_):
+        """ fill pixel with rgb colour """
+        self[index] = self.rgb_gamma[rgb_]
+
+    def fill_all(self, rgb_):
+        """ fill all pixels with rgb colour """
+        rgb = self.rgb_gamma[rgb_]
+        for index in range(self.n_pixels):
+            self[index] = rgb
 
 
 class PixelStrip(NeoPixel):
@@ -69,24 +65,26 @@ class PixelStrip(NeoPixel):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
         self.n_pixels = n_pixels  # or use self.n
-        self.colours = colours
 
-    def fill_strip(self, rgb_):
+    def fill_all(self, rgb_):
         """ fill all pixels with rgb colour """
+        rgb = self.rgb_gamma[rgb_]
         for index in range(self.n_pixels):
-            self[index] = rgb_
+            self[index] = rgb
 
     def fill_range(self, index_, count_, rgb_):
         """ fill count_ pixels with rgb_  """
+        rgb = self.rgb_gamma[rgb_]
         for _ in range(count_):
             index_ %= self.n_pixels
-            self[index_] = rgb_
+            self[index_] = rgb
             index_ += 1
 
     def fill_range_c_list(self, index_, count_, rgb_list):
         """ fill count_ pixels with list of rgb values
             - n_rgb does not have to equal count_ """
         n_rgb = len(rgb_list)
+        rgb_list = [self.rgb_gamma[rgb] for rgb in rgb_list]
         c_index = 0
         for _ in range(count_):
             index_ %= self.n_pixels
@@ -101,17 +99,17 @@ class PixelGrid(NeoPixel):
         - grid is wired 'snake' style; coord_index dict corrects
     """
 
-    def __init__(self, np_pin, n_cols, n_rows):
-        self.n_pixels = n_cols * n_rows
+    def __init__(self, np_pin, n_cols_, n_rows_):
+        self.n_pixels = n_cols_ * n_rows_
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
-        self.n_cols = n_cols
-        self.n_rows = n_rows
-        self.max_col = n_cols - 1
-        self.max_row = n_rows - 1
-        self.c_r_dim = Coord(self.n_cols, self.n_rows)
+        self.np_pin = np_pin  # for logging/debug
+        self.n_cols = n_cols_
+        self.n_rows = n_rows_
+        self.max_col = n_cols_ - 1
+        self.max_row = n_rows_ - 1
+        self.c_r_dim = (self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
-        self.colours = colours
-        self.charset = None
+        self.charset = None  # assigned externally from char_set
 
     def get_coord_index_dict(self):
         """ correct the grid 'snake' addressing scheme
@@ -137,7 +135,7 @@ class PixelGrid(NeoPixel):
             c = 0
             r += 1
             r %= self.n_rows
-        return Coord(c, r)
+        return c, r
 
     def coord_dec(self, coord):
         """ decrement cell col, row coordinate """
@@ -147,7 +145,7 @@ class PixelGrid(NeoPixel):
             c = self.max_col
             r -= 1
             r %= self.n_rows
-        return Coord(c, r)
+        return c, r
 
     def fill_grid(self, rgb_):
         """ fill grid with rgb_ colour """
