@@ -4,11 +4,18 @@
 
 import asyncio
 from neo_pixel import PixelGrid
-from colour import colours, Colour
+from colour_space import ColourSpace
 from char_set import charset_1_8x8 as charset
 
 
 # helper functions
+
+async def fill_grid(grid, rgb):
+    """ fill grid and display """
+    grid.fill_grid(rgb)
+    grid.write()
+    await asyncio.sleep_ms(1000)
+
 
 async def traverse_strip(grid, rgb, pause_ms=20):
     """ step through grid as a strip; cycling colour """
@@ -60,16 +67,14 @@ async def main():
     npg = PixelGrid(pin_number, 8, 8)
     npg.charset = charset  # load charset into object
     off = (0, 0, 0)
+    cs = ColourSpace()    
+    level = 63
 
-    colour = Colour(colours['dark_orange'])
-    rgb = colour.get_rgb(68)
+    rgb = cs.get_rgb('dark_orange', level)
 
     # fill grid with single colour
-    npg.fill_grid(rgb)
-    npg.write()
-    await asyncio.sleep_ms(500)
-    npg.clear()
-    await asyncio.sleep_ms(500)
+    await fill_grid(npg, rgb)
+    await fill_grid(npg, off)
 
     print('fill pixels as strip')
     await traverse_strip(npg, rgb, 20)
@@ -84,8 +89,8 @@ async def main():
     await asyncio.sleep_ms(1000)
      
     # build list of rgb values
-    colour_tuple = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
-    rgb_set = [Colour(colours[c]).get_rgb(63) for c in colour_tuple]
+    rgb_set = cs.get_rgb_list(
+        ('red', 'orange', 'yellow', 'green', 'blue', 'purple'), level)
 
     print('fill cols in sequence')
     await fill_cols(npg, rgb_set)
@@ -100,8 +105,7 @@ async def main():
     await asyncio.sleep_ms(1000)
 
     print('fill diagonals')
-    colour = Colour(colours['aqua'])
-    rgb = colour.get_rgb(68)
+    rgb = cs.get_rgb('aqua', level)
     pause = 1000
     for _ in range(12):
         npg.fill_diagonal(rgb)
@@ -118,8 +122,7 @@ async def main():
     npg.clear()
     await asyncio.sleep_ms(2000)
 
-    colour = Colour(colours['blue'])
-    rgb = colour.get_rgb(68)
+    rgb = cs.get_rgb((255, 0, 255), level)
     await display_string(npg, 'MERG PI SIG', rgb)
     npg.clear()
     await asyncio.sleep_ms(1000)
@@ -129,7 +132,7 @@ async def main():
     await display_string(npg, '0123456789', rgb)
     npg.clear()
     await asyncio.sleep_ms(1000)
-
+    
 
 if __name__ == '__main__':
     try:

@@ -4,7 +4,7 @@
 
 import asyncio
 from neo_pixel import PixelStrip
-from colour import colours, Colour
+from colour_space import colours, ColourSpace
 import time
 from random import randrange
 
@@ -51,8 +51,8 @@ async def cycle_colours(nps_, c_set_, reverse=False):
 
 async def np_arc_weld(nps_, pixel_):
     """ simulate arc-weld flash and decay """
-    arc_colour = Colour(colours['white'])
-    glow_colour = Colour(colours['red'])
+    arc_colour = ColourSpace(colours['white'])
+    glow_colour = ColourSpace(colours['red'])
     for _ in range(2):
         for _ in range(randrange(100, 200)):
             level = randrange(127, 256)
@@ -97,7 +97,7 @@ async def main():
     n_pixels = 64
     nps = PixelStrip(pin_number, n_pixels)
     level = 63  # 0 - 255
-    colour = Colour(colours['orange'])
+    colour = ColourSpace(colours['orange'])
     rgb = colour.get_rgb(level)
 
     await np_arc_weld(nps, 5)
@@ -143,7 +143,7 @@ async def main():
     """
 
     c_names = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
-    cycle_set = [Colour(colours[name]) for name in c_names]
+    cycle_set = [ColourSpace(colours[name]) for name in c_names]
     await cycle_colours(nps, cycle_set, True)
     await cycle_colours(nps, cycle_set, False)
 
