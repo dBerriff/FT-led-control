@@ -5,10 +5,10 @@
     - for Famous Trains Derby by David Jones
     - shared with MERG by David Jones member 9042
 """
-
+# !!! fix to match changes in colour_space !!!
+# !!! combine classes for single level of inheritance !!!
 import asyncio
 from machine import Pin, PWM
-from colour_space import get_rgb_gamma
 from random import randrange
 
 
