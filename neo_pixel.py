@@ -14,8 +14,6 @@
     https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     Classes:
-    Only core methods are included: see rgb_fns for
-    application-specific functions.
 
     PixelStrip(NeoPixel)
     The MicroPython class NeoPixel is inherited and
