@@ -16,7 +16,7 @@
     Classes:
     
     Use class ColourSpace to set RGB values for these strip and grid classes.
-    Only a single level of class inheritence is applied because of MicroPython limitations.
+    A single level of class inheritance is applied because of MicroPython limitations.
 
     PixelStrip(NeoPixel)
     Set pixel output for a strip.
@@ -70,7 +70,7 @@ class PixelStrip(NeoPixel):
         self.write()
 
 
-class PixelGrid(NeoPixel):
+class PixelGrid(PixelStrip):
     """ extend NeoPixel to support BTF-Lighting grid
         - grid is wired 'snake' style; coord_index dict corrects
     """
@@ -78,14 +78,13 @@ class PixelGrid(NeoPixel):
     def __init__(self, np_pin, n_cols_, n_rows_):
         self.n_pixels = n_cols_ * n_rows_
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
-        self.np_pin = np_pin  # for logging/debug
         self.n_cols = n_cols_
         self.n_rows = n_rows_
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
-        self.c_r_dim = (self.n_cols, self.n_rows)
         self.coord_index = self.get_coord_index_dict()
-        self.charset = None  # assigned externally from char_set
+        self.charset = None  # char_set assigned externally
+        self.fill_grid = self.fill_strip  # alias
 
     def get_coord_index_dict(self):
         """ correct the grid 'snake' addressing scheme
@@ -123,11 +122,6 @@ class PixelGrid(NeoPixel):
             r %= self.n_rows
         return c, r
 
-    def fill_grid(self, rgb_):
-        """ fill grid with rgb_ colour """
-        for index in range(self.n_pixels):
-            self[index] = rgb_
-
     def fill_col(self, col, rgb_):
         """ fill col with rgb_ colour """
         for row in range(self.n_rows):
@@ -159,8 +153,3 @@ class PixelGrid(NeoPixel):
                         rgb_ if char_grid[row][col] else (0, 0, 0)
         else:
             self.fill_grid((0, 0, 0))
-
-    def clear(self):
-        """ set all pixels off """
-        self.fill_grid((0, 0, 0))
-        self.write()

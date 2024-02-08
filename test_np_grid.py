@@ -6,19 +6,20 @@ import asyncio
 from neo_pixel import PixelGrid
 from colour_space import ColourSpace
 from char_set import charset_1_8x8 as charset
+import gc
 
 
 # helper functions
 
 async def fill_grid(grid, rgb):
-    """ fill grid and display """
+    """ coro: fill grid and display """
     grid.fill_grid(rgb)
     grid.write()
     await asyncio.sleep_ms(1000)
 
 
 async def traverse_strip(grid, rgb, pause_ms=20):
-    """ fill each pixel in strip order """
+    """ coro: fill each pixel in strip order """
     for index in range(grid.n):
         grid[index] = rgb
         grid.write()
@@ -26,7 +27,7 @@ async def traverse_strip(grid, rgb, pause_ms=20):
 
 
 async def traverse_grid(grid, rgb, pause_ms=20):
-    """ fill each pixel in grid cooord order """
+    """ coro: fill each pixel in grid cooord order """
     for row in range(grid.n_rows):
         for col in range(grid.n_cols):
             grid[grid.coord_index[(col, row)]] = rgb
@@ -35,7 +36,7 @@ async def traverse_grid(grid, rgb, pause_ms=20):
 
 
 async def fill_cols(grid, rgb_set, pause_ms=20):
-    """ fill cols in order, cycling colours """
+    """ coro: fill cols in order, cycling colours """
     n_colours = len(rgb_set)
     for c in range(grid.n_cols):
         grid.fill_col(c, rgb_set[c % n_colours])
@@ -44,7 +45,7 @@ async def fill_cols(grid, rgb_set, pause_ms=20):
 
 
 async def fill_rows(grid, rgb_set, pause_ms=20):
-    """ fill rows in order, cycling colours """
+    """ coro: fill rows in order, cycling colours """
     n_colours = len(rgb_set)
     for r in range(grid.n_rows):
         grid.fill_row(r, rgb_set[r % n_colours])
@@ -53,7 +54,7 @@ async def fill_rows(grid, rgb_set, pause_ms=20):
 
 
 async def display_string(npg_, str_, rgb_, pause_ms=500):
-    """ dislay the letters in a string """
+    """ coro: display the letters in a string """
     for char_ in str_:
         npg_.display_char(char_, rgb_)
         npg_.write()
@@ -61,7 +62,7 @@ async def display_string(npg_, str_, rgb_, pause_ms=500):
 
 
 async def main():
-    """ test setting NeoPixel values on grid """
+    """ coro: test NeoPixel grid helper functions """
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
@@ -69,9 +70,9 @@ async def main():
     off = (0, 0, 0)
     cs = ColourSpace()    
     level = 63
-
+    gc.collect()
     rgb = cs.get_rgb('dark_orange', level)
-
+    
     # fill grid with single colour
     await fill_grid(npg, rgb)
     await fill_grid(npg, off)
@@ -125,14 +126,17 @@ async def main():
     rgb = cs.get_rgb((255, 0, 255), level)
     await display_string(npg, 'MERG PI SIG', rgb)
     npg.clear()
+    gc.collect()
     await asyncio.sleep_ms(1000)
     await display_string(npg, 'FAMOUS TRAINS DERBY', rgb)
     npg.clear()
+    gc.collect()
     await asyncio.sleep_ms(1000)
     await display_string(npg, '0123456789', rgb)
     npg.clear()
+    gc.collect()
     await asyncio.sleep_ms(200)
-    
+
 
 if __name__ == '__main__':
     try:

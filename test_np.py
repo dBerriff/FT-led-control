@@ -12,7 +12,7 @@ from random import randrange
 # helper functions
 
 async def cycle_pixel(nps_, index_, colours_, level_):
-    """ cycle pixel through colour set """
+    """ coro: cycle pixel through colour set """
     for colour in colours_:
         nps_[index_] = colour.get_rgb(level_)
         nps_.write()
@@ -20,7 +20,7 @@ async def cycle_pixel(nps_, index_, colours_, level_):
 
 
 async def time_fill_strip(nps_, rgb_):
-    """ test and time fill-strip method """
+    """ coro: test and time fill-strip method """
     print('Fill strip')
     c_time = time.ticks_us()
     nps_.fill_strip(rgb_)
@@ -32,7 +32,7 @@ async def time_fill_strip(nps_, rgb_):
 
 
 async def cycle_colours(nps_, rgb_set_, reverse=False):
-    """ step through strip, cycling colour """
+    """ coro: step through strip, cycling colour """
     level = 63
     c_mod = len(rgb_set_)
     c_0_index = 0
@@ -50,7 +50,7 @@ async def cycle_colours(nps_, rgb_set_, reverse=False):
 
 
 async def np_arc_weld(nps_, cs_, arc_rgb_, glow_rgb_, pixel_):
-    """ simulate arc-weld flash and decay """
+    """ coro: simulate arc-weld flash and decay """
     for _ in range(2):
         for _ in range(randrange(100, 200)):
             level = randrange(127, 256)
@@ -65,7 +65,7 @@ async def np_arc_weld(nps_, cs_, arc_rgb_, glow_rgb_, pixel_):
 
 
 async def np_twinkler(nps_, pixel_):
-    """ simulate gas-lamp twinkle """
+    """ coro: simulate gas-lamp twinkle """
     lamp_rgb = (0xff, 0xcf, 0x9f)
     steady_level = 127
     dim_level = 95
@@ -89,7 +89,7 @@ async def np_twinkler(nps_, pixel_):
 
 
 async def main():
-    """  """
+    """ coro: test NeoPixel strip helper functions """
 
     pin_number = 28
     n_pixels = 300
