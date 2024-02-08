@@ -11,7 +11,7 @@ import asyncio
 from machine import Pin, PWM
 from random import randrange
 
-
+# !!! rename
 class PwmChannel(PWM):
     """
     Control PWM output
@@ -21,12 +21,13 @@ class PwmChannel(PWM):
         - call set_on() for output
     """
 
-    def __init__(self, pwm_pin, frequency):
+    def __init__(self, pwm_pin, frequency=800d):
         super().__init__(Pin(pwm_pin))
         self.freq(frequency)
         self.duty_u16(0)
         self.pin = pwm_pin  # for debug
         self._dc_u16 = 0
+        self._dc_u8 = 0
 
     def reset_freq(self, frequency):
         """ reset PWM frequency """
@@ -53,17 +54,6 @@ class PwmChannel(PWM):
         """ set channel off """
         self.duty_u16(0)
  
- 
-class Led(PwmChannel):
-    """ pin-driven LED
-        - intensity levels are 0 to 255, 8-bit register
-    """
-
-    def __init__(self, pwm_pin, frequency=800):
-        super().__init__(Pin(pwm_pin), frequency)
-        self.dc_u8 = 0
-        self.dc_gamma = get_rgb_gamma()
-
     @staticmethod
     def u8_u16(dc_u8_):
         """ convert 8-bit to proportional 16-bit level for PWM """
