@@ -30,14 +30,8 @@ from machine import Pin
 from neopixel import NeoPixel
 
 
-# selection of colours as rgb values
-# see: https://docs.circuitpython.org/projects/led-animation/en/latest/
-#      api.html#adafruit-led-animation-color
-
-
 class PixelStrip(NeoPixel):
-    """
-        extend NeoPixel class with strip-related methods
+    """ extend NeoPixel class with pixel-strip-related methods
     """
 
     def __init__(self, np_pin, n_pixels):
