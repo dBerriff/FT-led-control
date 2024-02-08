@@ -4,7 +4,7 @@
 
 import asyncio
 from neo_pixel import PixelStrip
-from colour_space import colours, ColourSpace
+from colour_space import ColourSpace
 import time
 from random import randrange
 
@@ -31,36 +31,34 @@ async def time_fill_strip(nps_, rgb_):
     await asyncio.sleep_ms(2_000)
 
 
-async def cycle_colours(nps_, c_set_, reverse=False):
+async def cycle_colours(nps_, rgb_set_, reverse=False):
     """ step through strip, cycling colour """
     level = 63
-    c_mod = len(c_set_)
+    c_mod = len(rgb_set_)
     c_0_index = 0
     for _ in range(100):
         c_index = c_0_index
-        for np_index in range(nps_.n_pixels):
-            nps_[np_index] = c_set_[c_index].get_rgb(level)
+        for np_index in range(nps_.n):
+            nps_[np_index] = rgb_set_[c_index]
             c_index = (c_index + 1) % c_mod
         nps_.write()
         if reverse:
             c_0_index = (c_0_index + 1) % c_mod
         else:
             c_0_index = (c_0_index - 1) % c_mod
-        await asyncio.sleep_ms(20)
+        await asyncio.sleep_ms(200)
 
 
-async def np_arc_weld(nps_, pixel_):
+async def np_arc_weld(nps_, cs_, arc_rgb_, glow_rgb_, pixel_):
     """ simulate arc-weld flash and decay """
-    arc_colour = ColourSpace(colours['white'])
-    glow_colour = ColourSpace(colours['red'])
     for _ in range(2):
         for _ in range(randrange(100, 200)):
             level = randrange(127, 256)
-            nps_[pixel_] = arc_colour.get_rgb(level)
+            nps_[pixel_] = cs_.get_rgb(arc_rgb_, level)
             nps_.write()
             await asyncio.sleep_ms(20)
         for level in range(160, -1, -1):
-            nps_[pixel_] = glow_colour.get_rgb(level)
+            nps_[pixel_] = cs_.get_rgb(glow_rgb_, level)
             nps_.write()
             await asyncio.sleep_ms(10)
         await asyncio.sleep_ms(randrange(1_000, 5_000))
@@ -93,19 +91,22 @@ async def np_twinkler(nps_, pixel_):
 async def main():
     """  """
 
-    pin_number = 27
-    n_pixels = 64
+    pin_number = 28
+    n_pixels = 300
     nps = PixelStrip(pin_number, n_pixels)
-    level = 63  # 0 - 255
-    colour = ColourSpace(colours['orange'])
-    rgb = colour.get_rgb(level)
+    cs = ColourSpace()
 
-    await np_arc_weld(nps, 5)
+    level = 63  # 0 - 255
+    rgb = cs.get_rgb('orange', level)
+    arc_rgb = cs.colours['white']
+    glow_rgb = cs.colours['red']
+
+    await np_arc_weld(nps, cs, arc_rgb, glow_rgb, 0)
 
     await time_fill_strip(nps, rgb)
     await asyncio.sleep_ms(200)
     nps.clear()
-    await asyncio.sleep_ms(20)
+    await asyncio.sleep_ms(200)
 
     """
     for dim in range(level, 0, -1):
@@ -143,9 +144,8 @@ async def main():
     """
 
     c_names = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
-    cycle_set = [ColourSpace(colours[name]) for name in c_names]
+    cycle_set = [cs.get_rgb(name, level) for name in c_names]
     await cycle_colours(nps, cycle_set, True)
-    await cycle_colours(nps, cycle_set, False)
 
     nps.clear()
     await asyncio.sleep_ms(20)

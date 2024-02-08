@@ -19,7 +19,7 @@ async def fill_grid(grid, rgb):
 
 async def traverse_strip(grid, rgb, pause_ms=20):
     """ fill each pixel in strip order """
-    for index in range(grid.n_pixels):
+    for index in range(grid.n):
         grid[index] = rgb
         grid.write()
         await asyncio.sleep_ms(pause_ms)

@@ -63,5 +63,4 @@ class LedChannel(PWM):
 
     def set_dc_u8(self, dc_u8_):
         """ set LED u16 duty cycle from u8 """
-        self.dc_u16 = self.u8_u16(dc_u8_)
-        self.duty_u16(self.duty_u16)
+        self.set_dc_u16(self.u8_u16(dc_u8_))

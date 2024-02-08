@@ -37,18 +37,17 @@ class PixelStrip(NeoPixel):
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
-        self.n_pixels = n_pixels  # or use self.n
 
     def fill_strip(self, rgb_):
         """ fill all pixels with rgb colour """
-        for index in range(self.n_pixels):
+        for index in range(self.n):
             self[index] = rgb_
 
     def fill_range(self, index_, count_, rgb_):
         """ fill count_ pixels with rgb_  """
         rgb = self.rgb_gamma[rgb_]
         for _ in range(count_):
-            index_ %= self.n_pixels
+            index_ %= self.n
             self[index_] = rgb
             index_ += 1
 
@@ -59,7 +58,7 @@ class PixelStrip(NeoPixel):
         rgb_list = [self.rgb_gamma[rgb] for rgb in rgb_list]
         c_index = 0
         for _ in range(count_):
-            index_ %= self.n_pixels
+            index_ %= self.n
             c_index %= n_rgb
             self[index_] = rgb_list[c_index]
             index_ += 1

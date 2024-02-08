@@ -28,7 +28,7 @@ async def fade_in(led_, dc_gamma_, lin_level_, period=1000):
     step_pause = period // lin_level_
     fade_dc = 0
     while fade_dc < lin_level_:
-        led_.duty_u16(led_.u8_u16(dc_gamma_[fade_dc]))
+        led_.set_dc_u8(dc_gamma_[fade_dc])
         fade_dc += 1
         await asyncio.sleep_ms(step_pause)
     led_.dc_u16 = led_.u8_u16(dc_gamma_[lin_level_])
@@ -44,7 +44,7 @@ async def fade_out(led_, dc_gamma_, lin_level_, period=1000):
     step_pause = period // lin_level_
     fade_dc = lin_level_
     while fade_dc > 0:
-        led_.duty_u16(led_.u8_u16(dc_gamma_[fade_dc]))
+        led_.set_dc_u8(dc_gamma_[fade_dc])
         fade_dc -= 1
         await asyncio.sleep_ms(step_pause)
     led_.dc_u16 = 0
