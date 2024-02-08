@@ -14,16 +14,15 @@
     https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     Classes:
+    
+    Use class ColourSpace to set RGB values for these strip and grid classes.
+    Only a single level of class inheritence is applied because of MicroPython limitations.
 
     PixelStrip(NeoPixel)
-    The MicroPython class NeoPixel is inherited and
-    extended so that colours can be set with gamma correction.
-    LED intensity is represented on an 8-bit scale, 0 t0 255.
-    This allows the use of web colour charts and the numerous
-    colour tables and colour wheels available online.
+    Set pixel output for a strip.
 
     PixelGrid(NeoPixel)
-    independent classes to avoid multiple levels of inheritance.
+    Set pixel output for a rectangular grid.
 
 """
 
