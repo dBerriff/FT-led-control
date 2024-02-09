@@ -5,8 +5,10 @@ from micropython import const
 
 
 class ColourSpace:
-    """ Colour class applies (fixed) gamma correction
-        - get_rgb must be called explicitly
+    """ 
+        8-bit RGB colours
+        get_rgb() applies brightness level and
+        (fixed) gamma correction
     """
     colours = {
         'amber': (255, 100, 0),
