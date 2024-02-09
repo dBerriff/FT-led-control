@@ -30,8 +30,10 @@ class ColourSpace:
     }
 
     GAMMA = const(2.6)
-    RGB_GAMMA = tuple(
-        [round(pow(x / 255, GAMMA) * 255) for x in range(0, 256)])
+    RGB_GAMMA = []
+    for x in range(0, 256):
+        RGB_GAMMA.append(round(pow(x / 255, GAMMA) * 255))
+    RGB_GAMMA = tuple(RGB_GAMMA)
 
     @classmethod
     def get_rgb(cls, c_template, level_):

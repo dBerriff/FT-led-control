@@ -19,33 +19,24 @@ async def cycle_pixel(nps_, index_, colours_, level_):
         await asyncio.sleep_ms(500)
 
 
-async def time_fill_strip(nps_, rgb_):
+async def time_set_strip(nps_, rgb_, level_):
     """ coro: test and time fill-strip method """
-    print('Fill strip')
     c_time = time.ticks_us()
-    nps_.fill_strip(rgb_)
+    nps_.set_strip(rgb_, level_)
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps_.write()
     print(f'Time to write: {time.ticks_diff(time.ticks_us(), c_time):,}us')
-    await asyncio.sleep_ms(2_000)
 
 
-async def cycle_colours(nps_, rgb_set_, reverse=False):
+async def cycle_colours(nps_, c_set_, level_):
     """ coro: step through strip, cycling colour """
-    level = 63
-    c_mod = len(rgb_set_)
-    c_0_index = 0
-    for _ in range(100):
-        c_index = c_0_index
-        for np_index in range(nps_.n):
-            nps_[np_index] = rgb_set_[c_index]
-            c_index = (c_index + 1) % c_mod
+    c_mod = len(c_set_)
+    c_index = 0
+    for i in range(nps_.n):
+        nps_.set_pixel(i, c_set_[c_index], level_) 
+        c_index = (c_index + 1) % c_mod
         nps_.write()
-        if reverse:
-            c_0_index = (c_0_index + 1) % c_mod
-        else:
-            c_0_index = (c_0_index - 1) % c_mod
         await asyncio.sleep_ms(200)
 
 
@@ -91,61 +82,42 @@ async def np_twinkler(nps_, pixel_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    pin_number = 28
-    n_pixels = 300
+    pin_number = 27
+    n_pixels = 64
     nps = PixelStrip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    level = 63  # 0 - 255
-    rgb = cs.get_rgb('orange', level)
-    arc_rgb = cs.colours['white']
-    glow_rgb = cs.colours['red']
-
-    await np_arc_weld(nps, cs, arc_rgb, glow_rgb, 0)
-
-    await time_fill_strip(nps, rgb)
-    await asyncio.sleep_ms(200)
-    nps.clear()
-    await asyncio.sleep_ms(200)
-
-    """
-    for dim in range(level, 0, -1):
-        rgb = rgb_fns.get_rgb_l_g_c(c_rgb, dim, rgb_gamma)
-        nps.fill_strip(rgb)
-        nps.write()
-        if rgb == (0, 0, 0):
-            break
-        await asyncio.sleep_ms(2)
-    nps.fill_strip(off)
-    nps.write()
-    await asyncio.sleep_ms(200)
+    level = 64  # 0 - 255
     
-    rgb = rgb_fns.get_rgb_l_g_c(c_rgb, level, rgb_gamma)
-    for i in range(120):
-        nps.fill_range(i, 5, rgb)
-        nps.write()
-        await asyncio.sleep_ms(20)
-        nps.fill_range(i, 5, off)
-        nps.write()
-        await asyncio.sleep_ms(2)
+    rgb = 'orange'
 
-    rgb_list = tuple([
-        rgb_fns.get_rgb_l_g_c(colours['red'], level, rgb_gamma),
-        rgb_fns.get_rgb_l_g_c(colours['green'], level, rgb_gamma),
-        rgb_fns.get_rgb_l_g_c(colours['blue'], level, rgb_gamma)
-        ])
-    for i in range(240):
-        nps.fill_range_list(i, 3, rgb_list)
-        nps.write()
-        await asyncio.sleep_ms(20)
-        nps.fill_range(i, 3, off)
-        nps.write()
-        await asyncio.sleep_ms(2)
-    """
+    print('set_pixel')
+    nps.set_pixel(5, rgb, level)
+    nps.write()
+    await asyncio.sleep_ms(2000)
+    nps.clear()
 
-    c_names = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
-    cycle_set = [cs.get_rgb(name, level) for name in c_names]
-    await cycle_colours(nps, cycle_set, True)
+    print('set_strip')
+    nps.set_strip(rgb, level)
+    nps.write()
+    await asyncio.sleep_ms(2000)
+    nps.clear()
+
+    print('set_range')
+    nps.set_range(32, 16, rgb, level)
+    nps.write()
+    await asyncio.sleep_ms(2000)
+    nps.clear()
+    
+    print('set_range_c_list')
+    c_list = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
+    nps.set_range_c_list(32, 16, c_list, level)
+    nps.write()
+    await asyncio.sleep_ms(2000)
+    
+    print('time set_strip')
+    await time_set_strip(nps, 'orange', level)
+    await asyncio.sleep_ms(2000)    
 
     nps.clear()
     await asyncio.sleep_ms(20)
