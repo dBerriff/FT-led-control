@@ -16,16 +16,19 @@ class ColourSpace:
         'black': (0, 0, 0),
         'blue': (0, 0, 255),
         'cyan': (0, 255, 255),
+        'ghost_white': (248, 248, 255),
         'gold': (255, 255, 30),
         'green': (0, 255, 0),
         'jade': (0, 255, 40),
         'magenta': (255, 0, 255),
+        'mint_cream': (245, 255, 250),
         'old_lace': (253, 245, 230),
         'orange': (255, 165, 0),
         'dark_orange': (255, 140, 0),
         'pink': (242, 90, 255),
         'purple': (180, 0, 255),
         'red': (255, 0, 0),
+        'snow': (255, 250, 250),
         'teal': (0, 255, 120),
         'white': (255, 255, 255),
         'yellow': (255, 255, 0)
@@ -40,8 +43,8 @@ class ColourSpace:
     @classmethod
     def get_rgb(cls, c_template, level_):
         """
-            set level-converted, gamma-corrected rgb value
-            - pass in c_template as colours dict key or (r, g, b)
+            get level-converted, gamma-corrected rgb value
+            - c_template is colours dict key: str, or (r, g, b)
         """
         if isinstance(c_template, str):
             if c_template in cls.colours:

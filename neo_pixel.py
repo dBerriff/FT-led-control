@@ -1,8 +1,8 @@
 # neo_pixel.py
 """
     Control WS2812E/NeoPixel lighting
-    This software takes a very basic approach to colour manipulation.
-    For a far more sophisticated approach see
+    This software takes a basic approach to colour manipulation.
+    For far more sophisticated approaches see:
     - Adafruit Circuit Python
     - FastLED project.
 
@@ -21,7 +21,7 @@
 
     Classes:
     
-    ColourSpace provides RGB values for these strip and grid classes.
+    ColourSpace provides RGB values for PixelStrip and PixelGrid classes.
     Some object parameters are set post-instantiation because of MicroPython restrictions.
     List comprehension is avoided for performance reasons
 
@@ -31,11 +31,14 @@
     PixelGrid(PixelStrip)
     Set pixel output for a rectangular grid.
 
+    Colours can be set by name (example: 'red') or RGB tuple (example: (255, 0, 0))
+    Level should be set from a minimum of 0 to a maximum of 255
+    Basic gamma correction is applied to all 3 RGB values by list lookup.
 """
 
 from machine import Pin
 from neopixel import NeoPixel
-from colour_space import ColourSpace as CS
+from colour_space import ColourSpace as Cs
 
 
 class PixelStrip(NeoPixel):
@@ -45,22 +48,22 @@ class PixelStrip(NeoPixel):
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
-        self.colours = CS.colours
-        self.get_g_rgb = CS.get_rgb
+        self.colours = Cs.colours
+        self.get_rgb = Cs.get_rgb
 
     def set_pixel(self, index_, rgb_, level_):
         """ fill a  pixels with rgb colour """
-        self[index_] = self.get_g_rgb(rgb_, level_)
+        self[index_] = self.get_rgb(rgb_, level_)
 
     def set_strip(self, rgb_, level_):
         """ fill all pixels with rgb colour """
-        g_rgb = self.get_g_rgb(rgb_, level_)
+        g_rgb = self.get_rgb(rgb_, level_)
         for index in range(self.n):
             self[index] = g_rgb
 
     def set_range(self, index_, count_, rgb_, level_):
         """ fill count_ pixels with rgb_  """
-        g_rgb = self.get_g_rgb(rgb_, level_)
+        g_rgb = self.get_rgb(rgb_, level_)
         for _ in range(count_):
             index_ %= self.n
             self[index_] = g_rgb
@@ -72,7 +75,7 @@ class PixelStrip(NeoPixel):
         n_colours = len(colour_list)
         rgb_list = []
         for rgb_ in colour_list:
-            rgb_list.append(self.get_g_rgb(rgb_, level_))
+            rgb_list.append(self.get_rgb(rgb_, level_))
         c_index = 0
         for _ in range(count_):
             index_ %= self.n
@@ -102,7 +105,7 @@ class PixelGrid(PixelStrip):
         self.max_row = n_rows_ - 1
         self.coord_index = self.get_coord_index_dict()
         self.charset = None  # char_set assigned externally
-        self.fill_grid = self.set_strip  # alias
+        self.set_grid = self.set_strip  # alias
 
     def get_coord_index_dict(self):
         """ correct the grid 'snake' addressing scheme
@@ -131,7 +134,7 @@ class PixelGrid(PixelStrip):
         return c, r
 
     def coord_dec(self, coord):
-        """ decrement cell col, row coordinate """
+        """ decrement (col, row) coordinate """
         c, r = coord
         c -= 1
         if c < 0:
@@ -142,35 +145,50 @@ class PixelGrid(PixelStrip):
 
     def fill_col(self, col, rgb_, level_):
         """ fill col with rgb_ colour """
+        rgb = self.get_rgb(rgb_, level_)
         for row in range(self.n_rows):
-            self[self.coord_index[col, row]] = self.get_g_rgb(rgb_, level_)
+            self[self.coord_index[col, row]] = rgb
 
     def fill_row(self, row, rgb_, level_):
         """ fill row with rgb_ colour """
+        rgb = self.get_rgb(rgb_, level_)
         for col in range(self.n_cols):
-            self[self.coord_index[col, row]] = self.get_g_rgb(rgb_, level_)
+            self[self.coord_index[col, row]] = rgb
 
     def fill_diagonal(self, rgb_, level_, mirror=False):
         """ fill diagonal with rgb_ colour
             - assumes n_cols >= n_rows
         """
+        rgb = self.get_rgb(rgb_, level_)
         if not mirror:
             for col in range(self.n_rows):
-                self[self.coord_index[col, col]] = \
-                    self.get_g_rgb(rgb_, level_)
+                self[self.coord_index[col, col]] = rgb
         else:
             for col in range(self.n_rows):
-                self[self.coord_index[self.max_col - col, col]] = \
-                    self.get_g_rgb(rgb_, level_)
+                self[self.coord_index[self.max_col - col, col]] = rgb
 
-    def display_char(self, char_, rgb_, level_):
-        """ display a single character in rgb_ """
-        rgb = self.get_g_rgb(rgb_, level_)
+    def set_pixel_list(self, coord_list_, rgb_, level_):
+        """ set a list of pixels
+            - helps with char overlay
+            - spaces are skipped; coord_list_ is None
+        """
+        if coord_list_:
+            rgb = self.get_rgb(rgb_, level_)
+            for c in coord_list_:
+                self[self.coord_index[c]] = rgb
+
+    def get_char_coords(self, char_):
+        """ return char coords
+            - does not belong in this class?
+        """
         if char_ in self.charset:
+            if char_ == ' ':
+                return None
             char_grid = self.charset[char_]
+            coord_list = []
+            # chars are stored as a list of rows
             for row in range(self.n_rows):
                 for col in range(self.n_cols):
-                    self[self.coord_index[col, row]] = \
-                        rgb if char_grid[row][col] else (0, 0, 0)
-        else:
-            self.fill_grid((0, 0, 0))
+                    if char_grid[row][col] == 1:
+                        coord_list.append((col, row))
+            return tuple(coord_list)
