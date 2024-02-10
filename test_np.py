@@ -60,17 +60,19 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(1000)
 
-    rgb = 'orange'
+    rgb = 'ghost_white'
     
     print('time set_strip')
     await time_set_strip(nps, rgb, level)
-    await asyncio.sleep_ms(200)    
+    await asyncio.sleep_ms(1000)    
 
     nps.clear()
     await asyncio.sleep_ms(20)
     
+    print('arc-weld effect')
     await np_arc_weld(nps, 0)
     
+    print('gas-lamp twinkle')
     await np_twinkler(nps, 2)
 
     nps.clear()

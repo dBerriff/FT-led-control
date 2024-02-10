@@ -24,17 +24,17 @@ async def np_arc_weld(nps_, pixel_):
 async def np_twinkler(nps_, pixel_):
     """ coro: simulate gas-lamp twinkle """
     lamp_rgb = (0xff, 0xcf, 0x9f)
-    base_level = 127
+    base_level = 64
     dim_level = 95
-    n_smooth = 5
+    n_smooth = 3
     # levels list: take mean value
     levels = [0] * n_smooth
-    s_index = 0
+    l_index = 0
     for _ in range(100):
-        twinkle = randrange(0, 65, 8)
+        twinkle = randrange(64, 128, 8)
         # randrange > 0; no 'pop'
-        if randrange(0, 100) > 0:  # most likely
-            levels[s_index] = base_level + twinkle
+        if randrange(0, 50) > 0:  # most likely
+            levels[l_index] = base_level + twinkle
             level = sum(levels) // n_smooth
         # randrange == 0; 'pop'
         else:
@@ -42,8 +42,9 @@ async def np_twinkler(nps_, pixel_):
             for i in range(n_smooth):
                 levels[i] = dim_level
             level = dim_level
+        print(level)
         nps_[pixel_] = nps_.get_rgb(lamp_rgb, level)
         nps_.write()
-        await asyncio.sleep_ms(randrange(20, 200))
-        s_index += 1
-        s_index %= 5
+        await asyncio.sleep_ms(randrange(20, 200, 20))
+        l_index += 1
+        l_index %= n_smooth

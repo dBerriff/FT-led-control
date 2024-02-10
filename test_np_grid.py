@@ -5,7 +5,6 @@
 import asyncio
 from neo_pixel import PixelGrid
 from colour_space import ColourSpace
-from char_set import charset_1_8x8 as charset
 import gc
 from np_grid_helper import fill_grid, traverse_strip, \
      traverse_grid, fill_cols, fill_rows, display_string
@@ -16,9 +15,8 @@ async def main():
 
     pin_number = 27
     npg = PixelGrid(pin_number, 8, 8)
-    npg.charset = charset  # load charset into npg; required
     off = (0, 0, 0)
-    level = 63
+    level = 64
     gc.collect()
     rgb = 'dark_orange'
     
@@ -28,7 +26,7 @@ async def main():
     npg.clear()
     npg.write()
     await asyncio.sleep_ms(500)
-    """
+
     print('fill pixels as strip')
     await traverse_strip(npg, rgb, level)
     await asyncio.sleep_ms(1000)
@@ -73,7 +71,7 @@ async def main():
         pause_ms //= 2
     npg.clear()
     await asyncio.sleep_ms(2000)
-    """
+
     await display_string(npg, 'MERG PI SIG', rgb, level)
     npg.clear()
     gc.collect()

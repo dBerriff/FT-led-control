@@ -38,6 +38,7 @@
 
 from machine import Pin
 from neopixel import NeoPixel
+import json
 from colour_space import ColourSpace as Cs
 
 
@@ -57,17 +58,28 @@ class PixelStrip(NeoPixel):
 
     def set_strip(self, rgb_, level_):
         """ fill all pixels with rgb colour """
-        g_rgb = self.get_rgb(rgb_, level_)
+        rgb = self.get_rgb(rgb_, level_)
         for index in range(self.n):
-            self[index] = g_rgb
+            self[index] = rgb
 
     def set_range(self, index_, count_, rgb_, level_):
         """ fill count_ pixels with rgb_  """
-        g_rgb = self.get_rgb(rgb_, level_)
+        rgb = self.get_rgb(rgb_, level_)
         for _ in range(count_):
             index_ %= self.n
-            self[index_] = g_rgb
+            self[index_] = rgb
             index_ += 1
+
+    def set_list(self, index_list_, rgb_, level_):
+        """ fill index_list pixels with rgb_, level_  """
+        rgb = self.get_rgb(rgb_, level_)
+        for index in index_list_:
+            self[index] = rgb
+
+    def set_list_rgb(self, index_list_, rgb_g):
+        """ fill index_list pixels with rgb_g  """
+        for index in index_list_:
+            self[index] = rgb_g
 
     def set_range_c_list(self, index_, count_, colour_list, level_):
         """ fill count_ pixels with list of rgb values
@@ -104,7 +116,7 @@ class PixelGrid(PixelStrip):
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
         self.coord_index = self.get_coord_index_dict()
-        self.charset = None  # char_set assigned externally
+        self.charset = self.get_char_indices('charset.json')
         self.set_grid = self.set_strip  # alias
 
     def get_coord_index_dict(self):
@@ -167,28 +179,24 @@ class PixelGrid(PixelStrip):
             for col in range(self.n_rows):
                 self[self.coord_index[self.max_col - col, col]] = rgb
 
-    def set_pixel_list(self, coord_list_, rgb_, level_):
-        """ set a list of pixels
-            - helps with char overlay
-            - spaces are skipped; coord_list_ is None
-        """
+    def set_coord_list(self, coord_list_, rgb_, level_):
+        """ set a list of pixels by coords """
         if coord_list_:
             rgb = self.get_rgb(rgb_, level_)
             for c in coord_list_:
                 self[self.coord_index[c]] = rgb
 
-    def get_char_coords(self, char_):
-        """ return char coords
-            - does not belong in this class?
-        """
-        if char_ in self.charset:
-            if char_ == ' ':
-                return None
-            char_grid = self.charset[char_]
-            coord_list = []
-            # chars are stored as a list of rows
-            for row in range(self.n_rows):
-                for col in range(self.n_cols):
-                    if char_grid[row][col] == 1:
-                        coord_list.append((col, row))
-            return tuple(coord_list)
+    def set_char_rgb(self, index_list_, rgb_g):
+        """ fill char pixels with rgb_g  """
+        for index in index_list_:
+            self[index] = rgb_g
+
+    @staticmethod
+    def get_char_indices(file_name):
+        """ return char pixel indices """
+        with open(file_name, 'r') as f:
+            retrieved = json.load(f)
+        for ch in retrieved:
+            retrieved[ch] = tuple(retrieved[ch])
+        retrieved[' '] = None
+        return retrieved

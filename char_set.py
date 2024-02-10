@@ -1,4 +1,13 @@
 # char_set.py
+""" Stand-alone script:
+    build an 8x8 charset and save as a JSON file
+    - char pixels saved as list indices,
+        compenstated for grid
+    - run as CPython and upload charset.json,
+        or run as MicroPython file
+"""
+
+import json
 
 charset_1_8x8 = {
         'A': (
@@ -653,3 +662,43 @@ charset_2_8x8 = {
             (0, 0, 0, 1, 1, 1, 0, 0),
             (0, 0, 0, 0, 0, 0, 0, 0))
         }
+
+
+def main():
+
+    def get_8x8_char_indices(char_grid):
+        """ return char coords """
+        i_list = []
+        for row in range(8):
+            for col in range(8):
+                if char_grid[row][col] == 1:
+                    if col % 2 == 1:  # odd row
+                        r_i = 7 - row
+                    else:
+                        r_i = row
+                    strip_index = col * 8 + r_i
+                    i_list.append(strip_index)
+        return tuple(i_list)
+
+    # !!! select required character set
+    charset = charset_1_8x8
+    # !!!
+    char_indices = {}
+    for ch in charset_1_8x8:
+        char_indices[ch] = get_8x8_char_indices(charset[ch])
+
+    with open('charset.json', 'w') as f:
+        json.dump(char_indices, f)
+
+    # confirm succesful write (and read)
+    with open('charset.json', 'r') as f:
+        retrieved = json.load(f)
+    for ch in retrieved:
+        print(ch, retrieved[ch])
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    finally:
+        print('execution complete')

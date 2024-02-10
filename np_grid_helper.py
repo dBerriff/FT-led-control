@@ -4,10 +4,10 @@
 import asyncio
 
 
-async def fill_grid(grid, rgb_, level_, pause_ms=20):
+async def fill_grid(npg, rgb_, level_, pause_ms=20):
     """ coro: fill grid and display """
-    grid.set_grid(rgb_, level_)
-    grid.write()
+    npg.set_grid(rgb_, level_)
+    npg.write()
     await asyncio.sleep_ms(pause_ms)
 
 
@@ -48,17 +48,19 @@ async def fill_rows(grid, rgb_set, level_, pause_ms=20):
         await asyncio.sleep_ms(pause_ms)
 
 
-async def display_string(npg_, str_, rgb_, level_, pause_ms=500):
-    """ coro: display the letters in a string
+async def display_string(npg, str_, rgb_, level_, pause_ms=500):
+    """ coro: display the letters in a string from index list
         - set_char() overlays background
-        - clear() grid first in this function
     """
-    bkgrnd = 'black'
-    npg_.clear()
+    # rgb is set for the whole string
+    rgb = npg.get_rgb(rgb_, level_)
+    npg.clear()
     for char in str_:
-        coords = npg_.get_char_coords(char)
-        npg_.set_pixel_list(coords, rgb_, level_)
-        npg_.write()
-        await asyncio.sleep_ms(pause_ms)
-        npg_.set_pixel_list(coords, bkgrnd, level_)
-        npg_.write()
+        if char != ' ':
+            npg.set_char_rgb(npg.charset[char], rgb)
+            npg.write()
+            await asyncio.sleep_ms(pause_ms)
+            npg.set_char_rgb(npg.charset[char], (0, 0, 0))
+            npg.write()
+        else:
+            await asyncio.sleep_ms(pause_ms)
