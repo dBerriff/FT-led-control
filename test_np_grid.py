@@ -4,7 +4,6 @@
 
 import asyncio
 from neo_pixel import PixelGrid
-from colour_space import ColourSpace
 import gc
 from np_grid_helper import fill_grid, traverse_strip, \
      traverse_grid, fill_cols, fill_rows, display_string

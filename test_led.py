@@ -8,6 +8,7 @@ from colour_space import ColourSpace
 
 # helper coroutines
 
+
 async def fade_in(led_, dc_gamma_, lin_level_, period=1000):
     """ coro: fade-in from 0 to lin_level
         - lin_level is linear u8 level so that gamma
@@ -22,6 +23,7 @@ async def fade_in(led_, dc_gamma_, lin_level_, period=1000):
         fade_dc += 1
         await asyncio.sleep_ms(step_pause)
     led_.set_dc_u8(dc_gamma_[lin_level_])
+
 
 async def fade_out(led_, dc_gamma_, lin_level_, period=1000):
     """ coro: fade-out from lin_level to 0
@@ -38,6 +40,7 @@ async def fade_out(led_, dc_gamma_, lin_level_, period=1000):
         await asyncio.sleep_ms(step_pause)
     led_.set_dc_u8(0)
 
+
 async def blink(led_, dc_u8, n):
     """ coro: blink the LED n times at dc_u8 """
     dc_u16 = led_.u8_u16(dc_u8)
@@ -46,6 +49,7 @@ async def blink(led_, dc_u8, n):
         await asyncio.sleep_ms(100)
         led_.duty_u16(0)
         await asyncio.sleep_ms(900)
+
 
 async def twin_flash(led_0, led_1, dc_u8, period_ms=500):
     """ coro: flash alternating leds every period at dc_u8 """

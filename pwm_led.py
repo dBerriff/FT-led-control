@@ -7,9 +7,7 @@
 """
 # !!! fix to match changes in colour_space !!!
 # !!! combine classes for single level of inheritance !!!
-import asyncio
 from machine import Pin, PWM
-from random import randrange
 
 
 # !!! rename
