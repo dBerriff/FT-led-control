@@ -28,35 +28,35 @@ async def main():
 
     print('fill pixels as strip')
     await traverse_strip(npg, rgb, level)
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
     await traverse_strip(npg, off, level) 
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
 
     print('fill pixels in col, row order')
     await traverse_grid(npg, rgb, level)
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
     await traverse_grid(npg, off, level) 
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
      
     # build list of rgb values at same level
     rgb_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
 
     print('fill cols in sequence')
     await fill_cols(npg, rgb_set, level)
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
     await fill_cols(npg, (off,), level)  # list/tuple required
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
 
     print('fill rows in sequence')
     await fill_rows(npg, rgb_set, level)
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
     await fill_rows(npg, (off,), level)  # list/tuple required
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
 
     print('fill diagonals')
     rgb = 'aqua'
     pause_ms = 1000
-    for _ in range(2):
+    for _ in range(12):
         npg.fill_diagonal(rgb, level)
         npg.write()
         await asyncio.sleep_ms(pause_ms)
@@ -75,7 +75,7 @@ async def main():
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(1000)
-    await display_string(npg, 'FAMOUS TRAINS DERBY', rgb, level)
+    await display_string(npg, 'Famous Trains Derby', rgb, level)
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(1000)

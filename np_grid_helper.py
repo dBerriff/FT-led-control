@@ -48,7 +48,7 @@ async def fill_rows(grid, rgb_set, level_, pause_ms=20):
         await asyncio.sleep_ms(pause_ms)
 
 
-async def display_string(npg, str_, rgb_, level_, pause_ms=500):
+async def display_string(npg, str_, rgb_, level_, pause_ms=1000):
     """ coro: display the letters in a string from index list
         - set_char() overlays background
     """
