@@ -13,6 +13,7 @@
 """
 
 import json
+import array  # for explicit element type (I: unsigned int)
 
 
 def get_font_bitmaps(filename):
@@ -22,12 +23,14 @@ def get_font_bitmaps(filename):
         - restricted to range of ASCII values
     """
 
-    def get_tokens(line_):
+    def get_tokens(f_):
         """ """
+        line_ = f_.readline()
         line_.strip()
         return line_.split()
 
-    char_dict = {}
+    font_dict = {}
+    char_set = {' '}
     with open(filename) as f:
         parse_preamble = True
         while parse_preamble:
@@ -38,9 +41,9 @@ def get_font_bitmaps(filename):
                 tokens = line.split()
                 font_width = int(tokens[1])
                 font_height = int(tokens[2])
+                font_dict['width'] = font_width
+                font_dict['height'] = font_height
                 parse_preamble = False
-        pad_width = (8 - font_width + 1) // 2
-        pad_height = 8 - font_height
 
         parse_fonts = True
         while parse_fonts:
@@ -48,77 +51,77 @@ def get_font_bitmaps(filename):
             line.strip()
             if line.startswith('STARTCHAR'):
                 for _ in range(5):  # 5 x parameter lines
-                    line = f.readline()
-                    tokens = get_tokens(line)
+                    tokens = get_tokens(f)
                     if tokens[0] == 'ENCODING':
                         code = int(tokens[1])
                         if code == 0:
                             break  # exclude code 0
                     elif tokens[0] == 'BITMAP':
-                        if pad_height:
-                            bitmap = [0] * pad_height  # pad for 8 rows on grid
-                        else:
-                            bitmap = []
+                        bit_map = array.array('I')
                         for _ in range(font_height):
-                            line = f.readline()
-                            tokens = get_tokens(line)
+                            tokens = get_tokens(f)
                             row = int(tokens[0], 16)
-                            row = row >> pad_width  # pad to right
-                            bitmap.append(row)
-                        char_dict[chr(code)] = bitmap
+                            bit_map.append(row)
+                        font_dict[chr(code)] = bit_map
+                        char_set.add(chr(code))
                     if code >= 126:
                         parse_fonts = False
-    return char_dict
+    font_dict['chars'] = char_set
+    return font_dict
+
+
+def get_8x8_char_indices(char_grid):
+    """
+        convert char (col, row) coords to strip indices
+        - bdf fonts store byte arrays by row
+        - grid is wired in snake order
+        - explicit value comparisons for clarity
+    """
+    i_list = []
+    for row in range(8):
+        # process next byte array
+        ba = char_grid[row]
+        for col in range(8):
+            # ls bit is left-most col
+            # select bit and test result
+            if ba & (1 << (7 - col)) != 0:
+                if col % 2 == 1:  # odd row
+                    r_index = 7 - row
+                else:
+                    r_index = row
+                i_list.append(col * 8 + r_index)
+    return i_list
 
 
 def main():
 
-    def get_8x8_char_indices(char_grid):
-        """
-            convert char (col, row) coords to strip indices
-            - bdf fonts store byte arrays by row
-            - grid is wired in snake order
-            - explicit value comparisons for clarity
-        """
-        i_list = []
-        for row in range(8):
-            # process next byte array
-            ba = char_grid[row]
-            for col in range(8):
-                # ls bit is left-most col
-                # select bit and test result
-                if ba & (1 << (7 - col)) != 0:
-                    if col % 2 == 1:  # odd row
-                        r_index = 7 - row
-                    else:
-                        r_index = row
-                    i_list.append(col * 8 + r_index)
-        return i_list
-
     # !!! select required character set
-    charset_file = '5x7.bdf'
+    charset = '5x7'
     # !!!
-    print(charset_file)
 
-    bitmaps = get_font_bitmaps(charset_file)
-    print(bitmaps)
+    bitmaps = get_font_bitmaps(charset + '.bdf')
+
+    char_set = bitmaps['chars']
+    # TODO: fix padding
+    for ch in char_set:
+        # pad out to 8 rows
+        bitmaps[ch].append(0)
 
     char_indices = {}
-    for ch in bitmaps:
+    for ch in char_set:
         char_indices[ch] = get_8x8_char_indices(bitmaps[ch])
+    # del bitmaps
 
-    for ch in char_indices:
-        print(ch, char_indices[ch])
-
-    with open('charset.json', 'w') as f:
+    # write indices file
+    with open(charset + '.json', 'w') as f:
         json.dump(char_indices, f)
 
-    # confirm successful write (and read)
-    with open('charset.json', 'r') as f:
+    # confirm successful write of indices file
+    with open(charset + '.json', 'r') as f:
         retrieved = json.load(f)
-    for ch in retrieved:
-        print(ch, retrieved[ch])
-
+    print()
+    for key in retrieved:
+        print(f'"{key}": {retrieved[key]}')
 
 if __name__ == '__main__':
     try:
