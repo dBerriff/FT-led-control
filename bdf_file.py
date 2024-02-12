@@ -1,15 +1,13 @@
 # bdf_file.py
 """
     parse DBF file and build font pixel lists for 8x8 grid
-    - assumes grid is wired in snake (strip) order
     - can be run as CPython or MicroPython script
     - if run as CPython:
         file charset.json must be transferred to the Pico
-    - padding might need adjusting for specific fonts
     - sample fonts taken from:
         https://github.com/arduino-libraries/ArduinoGraphics/tree/master/extras
 
-    N.B. no error checking in this version; appropriate font file structure is assumed
+    N.B. minimal error checking in this version; appropriate font file structure is assumed
 """
 
 import json
@@ -29,8 +27,8 @@ def get_font_bitmaps(filename):
         line_.strip()
         return line_.split()
 
+    preamble_dict = {'filename': filename}
     font_dict = {}
-    char_set = {' '}
     with open(filename) as f:
         parse_preamble = True
         while parse_preamble:
@@ -41,8 +39,8 @@ def get_font_bitmaps(filename):
                 tokens = line.split()
                 font_width = int(tokens[1])
                 font_height = int(tokens[2])
-                font_dict['width'] = font_width
-                font_dict['height'] = font_height
+                preamble_dict['width'] = font_width
+                preamble_dict['height'] = font_height
                 parse_preamble = False
 
         parse_fonts = True
@@ -54,23 +52,19 @@ def get_font_bitmaps(filename):
                     tokens = get_tokens(f)
                     if tokens[0] == 'ENCODING':
                         code = int(tokens[1])
-                        if code == 0:
-                            break  # exclude code 0
                     elif tokens[0] == 'BITMAP':
                         bit_map = array.array('I')
                         for _ in range(font_height):
                             tokens = get_tokens(f)
                             row = int(tokens[0], 16)
                             bit_map.append(row)
-                        font_dict[chr(code)] = bit_map
-                        char_set.add(chr(code))
+                        font_dict[code] = bit_map
                     if code >= 126:
                         parse_fonts = False
-    font_dict['chars'] = char_set
-    return font_dict
+    return preamble_dict, font_dict
 
 
-def get_8x8_char_indices(char_grid):
+def get_8x8_char_indices(char_grid, col_offset, row_offset):
     """
         convert char (col, row) coords to strip indices
         - bdf fonts store byte arrays by row
@@ -85,11 +79,13 @@ def get_8x8_char_indices(char_grid):
             # ls bit is left-most col
             # select bit and test result
             if ba & (1 << (7 - col)) != 0:
-                if col % 2 == 1:  # odd row
-                    r_index = 7 - row
+                c = col + col_offset
+                r = row + row_offset
+                if c % 2 == 1:  # odd row
+                    r_index = 7 - r
                 else:
-                    r_index = row
-                i_list.append(col * 8 + r_index)
+                    r_index = r
+                i_list.append(c * 8 + r_index)
     return i_list
 
 
@@ -99,17 +95,23 @@ def main():
     charset = '5x7'
     # !!!
 
-    bitmaps = get_font_bitmaps(charset + '.bdf')
-
-    char_set = bitmaps['chars']
+    font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
+    print(font_parameters['filename'])
+    w = font_parameters['width']
+    h = font_parameters['height']
+    # remove null character
+    if 0 in bitmaps:
+        bitmaps.pop(0)
     # TODO: fix padding
-    for ch in char_set:
+    top_rows = 1
+    for code in bitmaps:
         # pad out to 8 rows
-        bitmaps[ch].append(0)
+        for _ in range(top_rows):
+            bitmaps[code].insert(0, 0)
 
     char_indices = {}
-    for ch in char_set:
-        char_indices[ch] = get_8x8_char_indices(bitmaps[ch])
+    for code in bitmaps:
+        char_indices[chr(code)] = get_8x8_char_indices(bitmaps[code], 2, 0)
     # del bitmaps
 
     # write indices file
@@ -122,6 +124,7 @@ def main():
     print()
     for key in retrieved:
         print(f'"{key}": {retrieved[key]}')
+
 
 if __name__ == '__main__':
     try:

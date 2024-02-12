@@ -116,7 +116,9 @@ class PixelGrid(PixelStrip):
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
         self.coord_index = self.get_coord_index_dict()
-        self.charset = self.get_char_indices('charset.json')
+        self.charset = self.get_char_indices('5x7.json')
+        for ch in self.charset:
+            print(f'{ch}: {self.charset[ch]}')
         self.set_grid = self.set_strip  # alias
 
     def get_coord_index_dict(self):

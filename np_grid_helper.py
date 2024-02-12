@@ -54,7 +54,6 @@ async def display_string(npg, str_, rgb_, level_, pause_ms=1000):
     """
     # rgb is set for the whole string
     rgb = npg.get_rgb(rgb_, level_)
-    npg.clear()
     for char in str_:
         if char != ' ':
             npg.set_char_rgb(npg.charset[char], rgb)

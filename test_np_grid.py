@@ -25,7 +25,7 @@ async def main():
     npg.clear()
     npg.write()
     await asyncio.sleep_ms(500)
-
+    """
     print('fill pixels as strip')
     await traverse_strip(npg, rgb, level)
     await asyncio.sleep_ms(500)
@@ -70,7 +70,7 @@ async def main():
         pause_ms //= 2
     npg.clear()
     await asyncio.sleep_ms(2000)
-
+    """
     await display_string(npg, 'MERG PI SIG', rgb, level)
     npg.clear()
     gc.collect()
