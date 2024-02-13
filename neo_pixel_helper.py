@@ -7,6 +7,8 @@
 
 import asyncio
 from random import randrange
+from neo_pixel import PixelStrip
+
 
 
 async def np_arc_weld(nps_, pixel_):
@@ -103,6 +105,14 @@ class FourAspect:
         'clear': 3
         }
 
+    # (r, y, g, y)
+    settings = {
+        0: (1, 0, 0, 0),
+        1: (0, 1, 0, 0),
+        2: (0, 1, 0, 1),
+        3: (0, 0, 1, 0)
+        }
+
     def __init__(self, nps_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
@@ -126,24 +136,8 @@ class FourAspect:
         """
         if isinstance(aspect, str):
             aspect = self.aspect_codes[aspect]
-
-        if aspect == 0:
-            self.nps[self.i_red] = self.c_red
-            self.nps[self.i_yw1] = self.c_off
-            self.nps[self.i_grn] = self.c_off
-            self.nps[self.i_yw2] = self.c_off
-        elif aspect == 1:
-            self.nps[self.i_red] = self.c_off
-            self.nps[self.i_yw1] = self.c_yellow
-            self.nps[self.i_grn] = self.c_off
-            self.nps[self.i_yw2] = self.c_off
-        elif aspect == 2:
-            self.nps[self.i_red] = self.c_off
-            self.nps[self.i_yw1] = self.c_yellow
-            self.nps[self.i_grn] = self.c_off
-            self.nps[self.i_yw2] = self.c_yellow
-        elif aspect == 3:
-            self.nps[self.i_red] = self.c_off
-            self.nps[self.i_yw1] = self.c_off
-            self.nps[self.i_grn] = self.c_green
-            self.nps[self.i_yw2] = self.c_off
+        setting = settings[aspect]
+        nps_[pixel_] = self.c_red if setting[0] else self.c_off
+        nps_[pixel_ + 1] = self.c_yellow if setting[1] else self.c_off
+        nps_[pixel_ + 2] = self.c_green if setting[2] else self.c_off
+        nps_[pixel_ + 3] = self.c_yellow if setting[0] else self.c_off

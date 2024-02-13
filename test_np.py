@@ -48,22 +48,23 @@ async def main():
     nps[1] = mono_set[2]
     nps[0] = nps[1]
     nps.write()
-    await asyncio.sleep_ms(1000)
-    await mono_chase(nps, mono_set, 20)
-    
-    nps.clear()
-    await asyncio.sleep_ms(20)
-    
-    colour_set = [cs.get_rgb('purple', 128),
-                  cs.get_rgb('blue', 128),
-                  cs.get_rgb('green', 128),
-                  cs.get_rgb('yellow', 128),
-                  cs.get_rgb('red', 128)
-                  ]
-    await colour_chase(nps, colour_set, 200)
-    
-    nps.clear()
-    await asyncio.sleep_ms(20)
+    while True:
+        await asyncio.sleep_ms(1000)
+        await mono_chase(nps, mono_set, 20)
+        
+        nps.clear()
+        await asyncio.sleep_ms(20)
+        
+        colour_set = [cs.get_rgb('purple', 128),
+                      cs.get_rgb('blue', 128),
+                      cs.get_rgb('green', 128),
+                      cs.get_rgb('yellow', 128),
+                      cs.get_rgb('red', 128)
+                      ]
+        await colour_chase(nps, colour_set, 200)
+        
+        nps.clear()
+        await asyncio.sleep_ms(20)
 
 if __name__ == '__main__':
     try:
