@@ -4,8 +4,11 @@
 
 import asyncio
 import time
+import random
 from neo_pixel import PixelStrip
-from neo_pixel_helper import np_arc_weld, np_twinkler
+from neo_pixel_helper import np_arc_weld, np_twinkler, \
+     mono_chase, colour_chase
+from colour_space import ColourSpace
 
 
 # helper functions
@@ -24,56 +27,38 @@ async def main():
     """ coro: test NeoPixel strip helper functions """
 
     pin_number = 27
-    n_pixels = 64
+    n_pixels = 30
     nps = PixelStrip(pin_number, n_pixels)
+    cs = ColourSpace()
 
-    rgb_list = ['red', (0, 255, 0), 'blue']
-    
-    for level in range(32, 192, 32):
-        print('set_pixel', level)
-        for rgb in rgb_list:
-            nps.set_pixel(5, rgb, level)
-            nps.write()
-            await asyncio.sleep_ms(1000)
-            nps.clear()
+    colour_list = ['amber', 'aqua', 'blue','cyan', 'ghost_white', 'gold',
+                   'green', 'jade', 'magenta', 'mint_cream', 'old_lace',
+                   'orange', 'dark_orange', 'pink', 'purple', 'red', 'snow',
+                   'teal', 'white', 'yellow'
+                   ]
 
-    level = 64
-    
-    print('set_strip')
-    for rgb in rgb_list:
-        nps.set_strip(rgb, level)
-        nps.write()
-        await asyncio.sleep_ms(1000)
-        nps.clear()
+    cl_len = len(colour_list)
 
-    print('set_range')
-    for rgb in rgb_list:
-        nps.set_range(32, 16, rgb, level)
-        nps.write()
-        await asyncio.sleep_ms(1000)
-        nps.clear()
-    
-    print('set_range_c_list')
-    c_list = ['red', 'orange', 'yellow', 'green', 'blue', 'purple']
-    nps.set_range_c_list(32, 16, c_list, level)
+    level = 128
+
+    mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 180)]
+    nps[1] = mono_set[2]
+    nps[0] = nps[1]
     nps.write()
     await asyncio.sleep_ms(1000)
-
-    rgb = 'ghost_white'
+    await mono_chase(nps, mono_set, 20)
     
-    print('time set_strip')
-    await time_set_strip(nps, rgb, level)
-    await asyncio.sleep_ms(1000)    
-
     nps.clear()
     await asyncio.sleep_ms(20)
     
-    print('arc-weld effect')
-    await np_arc_weld(nps, 0)
+    colour_set = [cs.get_rgb('purple', 128),
+                  cs.get_rgb('blue', 128),
+                  cs.get_rgb('green', 128),
+                  cs.get_rgb('yellow', 128),
+                  cs.get_rgb('red', 128)
+                  ]
+    await colour_chase(nps, colour_set, 200)
     
-    print('gas-lamp twinkle')
-    await np_twinkler(nps, 2)
-
     nps.clear()
     await asyncio.sleep_ms(20)
 

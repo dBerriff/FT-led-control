@@ -42,9 +42,36 @@ async def np_twinkler(nps_, pixel_):
             for i in range(n_smooth):
                 levels[i] = dim_level
             level = dim_level
-        print(level)
         nps_[pixel_] = nps_.get_rgb(lamp_rgb, level)
         nps_.write()
         await asyncio.sleep_ms(randrange(20, 200, 20))
         l_index += 1
         l_index %= n_smooth
+
+async def mono_chase(nps_, rgb_list, pause=20):
+    """ fill count_ pixels with list of rgb values
+        - n_rgb does not have to equal count_ """
+    n_pixels = nps_.n
+    n_colours = len(rgb_list)
+    index = 0
+    for _ in range(1000):
+        for i in range(n_colours):
+            nps_[(index + i) % n_pixels] = rgb_list[i]
+        nps_.write()
+        await asyncio.sleep_ms(pause)
+        nps_[index] = (0, 0, 0)
+        index = (index + 1) % n_pixels
+
+async def colour_chase(nps_, rgb_list, pause=20):
+    """ fill count_ pixels with list of rgb values
+        - n_rgb does not have to equal count_ """
+    n_pixels = nps_.n
+    n_colours = len(rgb_list)
+    c_index = 0
+    for _ in range(1000):
+        for i in range(n_pixels):
+            nps_[i] = rgb_list[(i + c_index) % n_colours]
+        nps_.write()
+        await asyncio.sleep_ms(pause)
+        c_index = (c_index - 1) % n_colours
+
