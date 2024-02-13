@@ -1,11 +1,18 @@
 # neo_pixel_helper.py
-""" helper funcions for PixelStrip class """
+"""
+    helper funcions for PixelStrip class
+    - for development: move into class by alias when tested?
+    - assignments such as: nps_[i] = nps_[1 - 1] are supported
+"""
+
 import asyncio
 from random import randrange
 
 
 async def np_arc_weld(nps_, pixel_):
-    """ coro: simulate arc-weld flash and decay """
+    """ coro: single pixel:
+        simulate arc-weld flash and decay
+    """
     arc_rgb_ = 'white'
     glow_rgb_ = 'red'
     for _ in range(2):
@@ -22,7 +29,9 @@ async def np_arc_weld(nps_, pixel_):
 
 
 async def np_twinkler(nps_, pixel_):
-    """ coro: simulate gas-lamp twinkle """
+    """ coro: single pixel:
+        simulate gas-lamp twinkle
+    """
     lamp_rgb = (0xff, 0xcf, 0x9f)
     base_level = 64
     dim_level = 95
@@ -49,8 +58,10 @@ async def np_twinkler(nps_, pixel_):
         l_index %= n_smooth
 
 async def mono_chase(nps_, rgb_list, pause=20):
-    """ fill count_ pixels with list of rgb values
-        - n_rgb does not have to equal count_ """
+    """ np strip:
+        fill count_ pixels with list of rgb values
+        - n_rgb does not have to equal count_
+    """
     n_pixels = nps_.n
     n_colours = len(rgb_list)
     index = 0
@@ -63,8 +74,10 @@ async def mono_chase(nps_, rgb_list, pause=20):
         index = (index + 1) % n_pixels
 
 async def colour_chase(nps_, rgb_list, pause=20):
-    """ fill count_ pixels with list of rgb values
-        - n_rgb does not have to equal count_ """
+    """ np strip:
+        fill count_ pixels with list of rgb values
+        - n_rgb does not have to equal count_
+    """
     n_pixels = nps_.n
     n_colours = len(rgb_list)
     c_index = 0
@@ -75,3 +88,62 @@ async def colour_chase(nps_, rgb_list, pause=20):
         await asyncio.sleep_ms(pause)
         c_index = (c_index - 1) % n_colours
 
+class FourAspect:
+    """
+        model four-aspect railway colour signal
+        - colour order, bottom to top: red-yellow-green-yellow
+        - level_ is required
+    """
+
+    # change keys to match layout terminology
+    aspect_codes = {
+        'stop': 0,
+        'caution': 1,
+        'p_caution': 2,
+        'clear': 3
+        }
+
+    def __init__(self, nps_, pixel_, level_):
+        self.nps = nps_
+        self.pixel = pixel_
+        self.c_red = nps_.get_rgb('red', level_)
+        self.c_yellow = nps_.get_rgb('yellow', level_)
+        self.c_green = nps_.get_rgb('green', level_)
+        self.c_off = (0, 0, 0)
+        self.i_red = pixel_
+        self.i_yw1 = pixel_ + 1
+        self.i_grn = pixel_ + 2
+        self.i_yw2 = pixel_ + 3
+        self.set_aspect('stop')
+
+    def set_aspect(self, aspect, flash=False):
+        """
+            set signal aspect by number or code:
+            0 - red
+            1 - single yellow
+            2 - double yellow
+            3 - green
+        """
+        if isinstance(aspect, str):
+            aspect = self.aspect_codes[aspect]
+
+        if aspect == 0:
+            self.nps[self.i_red] = self.c_red
+            self.nps[self.i_yw1] = self.c_off
+            self.nps[self.i_grn] = self.c_off
+            self.nps[self.i_yw2] = self.c_off
+        elif aspect == 1:
+            self.nps[self.i_red] = self.c_off
+            self.nps[self.i_yw1] = self.c_yellow
+            self.nps[self.i_grn] = self.c_off
+            self.nps[self.i_yw2] = self.c_off
+        elif aspect == 2:
+            self.nps[self.i_red] = self.c_off
+            self.nps[self.i_yw1] = self.c_yellow
+            self.nps[self.i_grn] = self.c_off
+            self.nps[self.i_yw2] = self.c_yellow
+        elif aspect == 3:
+            self.nps[self.i_red] = self.c_off
+            self.nps[self.i_yw1] = self.c_off
+            self.nps[self.i_grn] = self.c_green
+            self.nps[self.i_yw2] = self.c_off

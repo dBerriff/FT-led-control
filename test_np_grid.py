@@ -14,7 +14,8 @@ async def main():
     """ coro: test NeoPixel grid helper functions """
 
     pin_number = 27
-    npg = PixelGrid(pin_number, 8, 8)
+    npg = PixelGrid(
+        pin_number, n_cols_=8, n_rows_=8, cs_file='5x7.json')
     off = (0, 0, 0)
     level = 64
     gc.collect()

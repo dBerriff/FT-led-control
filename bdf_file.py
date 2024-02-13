@@ -1,9 +1,9 @@
 # bdf_file.py
 """
-    parse DBF file and build font pixel lists for 8x8 grid
+    parse DBF file and build font pixel-lists for 8x8 grid
     - can be run as CPython or MicroPython script
     - if run as CPython:
-        file charset.json must be transferred to the Pico
+        file <charset-name>.json must be transferred to the Pico
     - sample fonts taken from:
         https://github.com/arduino-libraries/ArduinoGraphics/tree/master/extras
 

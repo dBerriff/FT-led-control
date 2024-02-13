@@ -23,7 +23,7 @@
     
     ColourSpace provides RGB values for PixelStrip and PixelGrid classes.
     Some object parameters are set post-instantiation because of MicroPython restrictions.
-    List comprehension is avoided for performance reasons
+    List comprehension is generally avoided for (reported) performance reasons
 
     PixelStrip(NeoPixel)
     Set pixel output for a strip.
@@ -52,42 +52,52 @@ class PixelStrip(NeoPixel):
         self.colours = Cs.colours
         self.get_rgb = Cs.get_rgb
 
-    def set_pixel(self, index_, rgb_, level_):
-        """ fill a  pixels with rgb colour """
-        self[index_] = self.get_rgb(rgb_, level_)
+    def set_pixel(self, index_, rgb_, level_=None):
+        """ fill a pixel with rgb colour """
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
+        self[index_] = rgb_
 
-    def set_strip(self, rgb_, level_):
+    def set_strip(self, rgb_, level_=None):
         """ fill all pixels with rgb colour """
-        rgb = self.get_rgb(rgb_, level_)
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
         for index in range(self.n):
-            self[index] = rgb
+            self[index] = rgb_
 
-    def set_range(self, index_, count_, rgb_, level_):
+    def set_range(self, index_, count_, rgb_, level_=None):
         """ fill count_ pixels with rgb_  """
-        rgb = self.get_rgb(rgb_, level_)
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
         for _ in range(count_):
             index_ %= self.n
-            self[index_] = rgb
+            self[index_] = rgb_
             index_ += 1
 
-    def set_list(self, index_list_, rgb_, level_):
-        """ fill index_list pixels with rgb_, level_  """
-        rgb = self.get_rgb(rgb_, level_)
+    def set_list(self, index_list_, rgb_, level_=None):
+        """ fill index_list pixels with rgb_ optionally at set level_ """
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
         for index in index_list_:
-            self[index] = rgb
+            self[index] = rgb_
 
     def set_list_rgb(self, index_list_, rgb_g):
-        """ fill index_list pixels with rgb_g  """
+        """ fill index_list pixels with rgb_g
+            - legacy: replace?
+        """
         for index in index_list_:
             self[index] = rgb_g
 
-    def set_range_c_list(self, index_, count_, colour_list, level_):
+    def set_range_c_list(self, index_, count_, colour_list, level_=None):
         """ fill count_ pixels with list of rgb values
             - n_rgb does not have to equal count_ """
         n_colours = len(colour_list)
-        rgb_list = []
-        for rgb_ in colour_list:
-            rgb_list.append(self.get_rgb(rgb_, level_))
+        if level_:
+            rgb_list = []
+            for rgb_ in colour_list:
+                rgb_list.append(self.get_rgb(rgb_, level_))
+        else:
+            rgb_list = colour_list
         c_index = 0
         for _ in range(count_):
             index_ %= self.n
@@ -105,10 +115,11 @@ class PixelStrip(NeoPixel):
 
 class PixelGrid(PixelStrip):
     """ extend NeoPixel to support BTF-Lighting grid
-        - grid is wired 'snake' style; coord_index dict corrects
+        - grid is wired 'snake' style;
+            coord_index dict corrects by lookup
     """
 
-    def __init__(self, np_pin, n_cols_, n_rows_):
+    def __init__(self, np_pin, n_cols_, n_rows_, cs_file):
         self.n_pixels = n_cols_ * n_rows_
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
         self.n_cols = n_cols_
@@ -116,7 +127,7 @@ class PixelGrid(PixelStrip):
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
         self.coord_index = self.get_coord_index_dict()
-        self.charset = self.get_char_indices('5x7.json')
+        self.charset = self.get_char_indices(cs_file)
         self.set_grid = self.set_strip  # alias
 
     def get_coord_index_dict(self):
@@ -155,17 +166,19 @@ class PixelGrid(PixelStrip):
             r %= self.n_rows
         return c, r
 
-    def fill_col(self, col, rgb_, level_):
+    def fill_col(self, col, rgb_, level_=None):
         """ fill col with rgb_ colour """
-        rgb = self.get_rgb(rgb_, level_)
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
         for row in range(self.n_rows):
-            self[self.coord_index[col, row]] = rgb
+            self[self.coord_index[col, row]] = rgb_
 
     def fill_row(self, row, rgb_, level_):
         """ fill row with rgb_ colour """
-        rgb = self.get_rgb(rgb_, level_)
+        if level_:
+            rgb_ = self.get_rgb(rgb_, level_)
         for col in range(self.n_cols):
-            self[self.coord_index[col, row]] = rgb
+            self[self.coord_index[col, row]] = rgb_
 
     def fill_diagonal(self, rgb_, level_, mirror=False):
         """ fill diagonal with rgb_ colour
@@ -198,5 +211,4 @@ class PixelGrid(PixelStrip):
             retrieved = json.load(f)
         for ch in retrieved:
             retrieved[ch] = tuple(retrieved[ch])
-        retrieved[' '] = None
         return retrieved

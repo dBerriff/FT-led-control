@@ -7,7 +7,7 @@ import time
 import random
 from neo_pixel import PixelStrip
 from neo_pixel_helper import np_arc_weld, np_twinkler, \
-     mono_chase, colour_chase
+     mono_chase, colour_chase, FourAspect
 from colour_space import ColourSpace
 
 
@@ -40,8 +40,11 @@ async def main():
     cl_len = len(colour_list)
 
     level = 128
+    
+    t_4 = FourAspect(nps, 0, 128)
+    print(t_4, t_4.aspect_codes)
 
-    mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 180)]
+    mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 192)]
     nps[1] = mono_set[2]
     nps[0] = nps[1]
     nps.write()
