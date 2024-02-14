@@ -8,6 +8,7 @@
         https://github.com/arduino-libraries/ArduinoGraphics/tree/master/extras
 
     N.B. minimal error checking in this version; appropriate font file structure is assumed
+    but certain keywords are checked for their presence.
 """
 
 import json
@@ -21,58 +22,48 @@ def get_font_bitmaps(filename):
         - restricted to range of ASCII values
     """
 
-    def get_tokens(f_):
-        """ split lines by space into tokens """
+    def get_line_as_tokens(f_):
+        """ fetch a line and split into tokens """
         line_ = f_.readline()
         line_.strip()
         return line_.split()
 
     def find_keyword(f_, keyword):
-        """ helps skip unused line
-            - consumes lines up to and including keyword line
+        """ consumes lines up to and including keyword line
+            - keyword line returned as tokens
         """
-        line_ = f_.readline()
-        line_.strip()
+        line_ = ''
         while not line_.startswith(keyword):
             line_ = f_.readline()
             line_.strip()
+        return line_.split()
 
     preamble_dict = {'filename': filename}
     font_dict = {}
     with open(filename) as f:
-        parse_preamble = True
-        while parse_preamble:
-            line = f.readline()
-            line.strip()
-            if line.startswith('FONTBOUNDINGBOX'):
-                tokens = line.split()
-                preamble_dict['width'] = int(tokens[1])
-                font_height = int(tokens[2])
-                preamble_dict['height'] = font_height
-                # consume remainder of preamble block
-                find_keyword(f, 'ENDPROPERTIES')
-                break
+        tokens = find_keyword(f, 'FONTBOUNDINGBOX')
+        preamble_dict['width'] = int(tokens[1])
+        font_height = int(tokens[2])
+        preamble_dict['height'] = font_height
+        # optional: consume remainder of preamble block
+        find_keyword(f, 'ENDPROPERTIES')
 
         parse_fonts = True
+        # check for end of file?
         while parse_fonts:
-            line = f.readline()
-            line.strip()
-            if line.startswith('STARTCHAR'):
-                for _ in range(5):  # 5 x parameter lines
-                    tokens = get_tokens(f)
-                    if tokens[0] == 'ENCODING':
-                        code = int(tokens[1])
-                        if code > 126:
-                            parse_fonts = False
-                            break
-                    elif tokens[0] == 'BITMAP':
-                        bit_map = array.array('I')
-                        for _ in range(font_height):
-                            tokens = get_tokens(f)
-                            row = int(tokens[0], 16)  # hexadecimal
-                            bit_map.append(row)
-                        font_dict[code] = bit_map
-            # consume remainder of character block
+            find_keyword(f, 'STARTCHAR')
+            tokens = find_keyword(f, 'ENCODING')
+            code = int(tokens[1])
+            if code > 126:  # end of ASCII codes
+                break  # end parsing
+            find_keyword(f, 'BITMAP')
+            bit_map = array.array('I')
+            for _ in range(font_height):
+                tokens = get_line_as_tokens(f)
+                row = int(tokens[0], 16)  # hexadecimal data
+                bit_map.append(row)
+            font_dict[code] = bit_map
+            # optional: consume remainder of character block
             find_keyword(f, 'ENDCHAR')
 
     return preamble_dict, font_dict
@@ -105,22 +96,23 @@ def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
 
 def main():
 
-    # !!! select required character set
+    # !!! select required character set (no file extension)
     charset = '5x7'
     # !!!
 
     font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
-    # for debug / logging; JSON converts int dict key to str
-    with open(charset + '_bmap.json', 'w') as f:
-        json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
+    # for debug / logging; note: JSON converts int dict key to str
+    # with open(charset + '_bmap.json', 'w') as f:
+        # json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
 
     # remove null character if in dict
-    bitmaps.pop(0, 0)
-    # pad out to 8 rows
-    top_rows = 8 - font_parameters['height']
-    if top_rows > 0:
+    bitmaps.pop(0, 0)  # default value prevents error if not in dict
+
+    # pad out bitmaps to 8 rows
+    pad_rows = 8 - font_parameters['height']
+    if pad_rows > 0:
         for key in bitmaps:
-            for _ in range(top_rows):
+            for _ in range(pad_rows):
                 # pad with empty row in position 0
                 bitmaps[key].insert(0, 0)
 
@@ -133,7 +125,7 @@ def main():
     with open(charset + '.json', 'w') as f:
         json.dump(char_indices, f)
 
-    # confirm successful write of indices file
+    # optional: confirm successful write of indices file
     with open(charset + '.json', 'r') as f:
         retrieved = json.load(f)
     print()
