@@ -100,9 +100,15 @@ class FourAspect:
     # change keys to match layout terminology
     aspect_codes = {
         'stop': 0,
+        'danger': 0,
+        'red': 0,
         'caution': 1,
-        'p_caution': 2,
-        'clear': 3
+        'yellow': 1,
+        'single yellow': 1,
+        'preliminary caution': 2,
+        'double yellow': 2,
+        'clear': 3,
+        'green': 3
         }
 
     # (r, y, g, y)
@@ -138,6 +144,6 @@ class FourAspect:
             aspect = self.aspect_codes[aspect]
         setting = settings[aspect]
         nps_[pixel_] = self.c_red if setting[0] else self.c_off
-        nps_[pixel_ + 1] = self.c_yellow if setting[1] else self.c_off
+        nps_[pixel_ + 1] = self.c_yellow if setting[1] or setting[3] else self.c_off
         nps_[pixel_ + 2] = self.c_green if setting[2] else self.c_off
-        nps_[pixel_ + 3] = self.c_yellow if setting[0] else self.c_off
+        nps_[pixel_ + 3] = self.c_yellow if setting[3] else self.c_off
