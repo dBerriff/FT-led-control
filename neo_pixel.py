@@ -52,32 +52,28 @@ class PixelStrip(NeoPixel):
         self.colours = Cs.colours
         self.get_rgb = Cs.get_rgb
 
-    def set_pixel(self, index_, rgb_, level_=None):
+    def set_pixel(self, index_, rgb_, level_):
         """ fill a pixel with rgb colour """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         self[index_] = rgb_
 
-    def set_strip(self, rgb_, level_=None):
+    def set_strip(self, rgb_, level_):
         """ fill all pixels with rgb colour """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         for index in range(self.n):
             self[index] = rgb_
 
-    def set_range(self, index_, count_, rgb_, level_=None):
+    def set_range(self, index_, count_, rgb_, level_):
         """ fill count_ pixels with rgb_  """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         for _ in range(count_):
             index_ %= self.n
             self[index_] = rgb_
             index_ += 1
 
-    def set_list(self, index_list_, rgb_, level_=None):
+    def set_list(self, index_list_, rgb_, level_):
         """ fill index_list pixels with rgb_ optionally at set level_ """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         for index in index_list_:
             self[index] = rgb_
 
@@ -88,16 +84,13 @@ class PixelStrip(NeoPixel):
         for index in index_list_:
             self[index] = rgb_g
 
-    def set_range_c_list(self, index_, count_, colour_list, level_=None):
+    def set_range_c_list(self, index_, count_, colour_list, level_):
         """ fill count_ pixels with list of rgb values
             - n_rgb does not have to equal count_ """
         n_colours = len(colour_list)
-        if level_:
-            rgb_list = []
-            for rgb_ in colour_list:
-                rgb_list.append(self.get_rgb(rgb_, level_))
-        else:
-            rgb_list = colour_list
+        rgb_list = []
+        for rgb_ in colour_list:
+            rgb_list.append(self.get_rgb(rgb_, level_))
         c_index = 0
         for _ in range(count_):
             index_ %= self.n
@@ -166,17 +159,15 @@ class PixelGrid(PixelStrip):
             r %= self.n_rows
         return c, r
 
-    def fill_col(self, col, rgb_, level_=None):
+    def fill_col(self, col, rgb_, level_):
         """ fill col with rgb_ colour """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         for row in range(self.n_rows):
             self[self.coord_index[col, row]] = rgb_
 
     def fill_row(self, row, rgb_, level_):
         """ fill row with rgb_ colour """
-        if level_:
-            rgb_ = self.get_rgb(rgb_, level_)
+        rgb_ = self.get_rgb(rgb_, level_)
         for col in range(self.n_cols):
             self[self.coord_index[col, row]] = rgb_
 
