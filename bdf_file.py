@@ -1,6 +1,6 @@
 # bdf_file.py
 """
-    parse DBF file and build font pixel-lists for 8x8 grid
+    parse BDF font file and build pixel-lists for 8x8 grid
     - can be run as CPython or MicroPython script
     - if run as CPython:
         file <charset-name>.json must be transferred to the Pico
@@ -22,26 +22,36 @@ def get_font_bitmaps(filename):
     """
 
     def get_tokens(f_):
-        """ """
+        """ split lines by space into tokens """
         line_ = f_.readline()
         line_.strip()
         return line_.split()
+
+    def find_keyword(f_, keyword):
+        """ helps skip unused line
+            - consumes lines up to and including keyword line
+        """
+        line_ = f_.readline()
+        line_.strip()
+        while not line_.startswith(keyword):
+            line_ = f_.readline()
+            line_.strip()
 
     preamble_dict = {'filename': filename}
     font_dict = {}
     with open(filename) as f:
         parse_preamble = True
         while parse_preamble:
-            # TODO: count line reads to help spot malformed file
             line = f.readline()
             line.strip()
             if line.startswith('FONTBOUNDINGBOX'):
                 tokens = line.split()
-                font_width = int(tokens[1])
+                preamble_dict['width'] = int(tokens[1])
                 font_height = int(tokens[2])
-                preamble_dict['width'] = font_width
                 preamble_dict['height'] = font_height
-                parse_preamble = False
+                # consume remainder of preamble block
+                find_keyword(f, 'ENDPROPERTIES')
+                break
 
         parse_fonts = True
         while parse_fonts:
@@ -52,19 +62,23 @@ def get_font_bitmaps(filename):
                     tokens = get_tokens(f)
                     if tokens[0] == 'ENCODING':
                         code = int(tokens[1])
+                        if code > 126:
+                            parse_fonts = False
+                            break
                     elif tokens[0] == 'BITMAP':
                         bit_map = array.array('I')
                         for _ in range(font_height):
                             tokens = get_tokens(f)
-                            row = int(tokens[0], 16)
+                            row = int(tokens[0], 16)  # hexadecimal
                             bit_map.append(row)
                         font_dict[code] = bit_map
-                    if code >= 126:
-                        parse_fonts = False
+            # consume remainder of character block
+            find_keyword(f, 'ENDCHAR')
+
     return preamble_dict, font_dict
 
 
-def get_8x8_char_indices(char_grid, col_offset, row_offset):
+def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
     """
         convert char (col, row) coords to strip indices
         - bdf fonts store byte arrays by row
@@ -77,8 +91,8 @@ def get_8x8_char_indices(char_grid, col_offset, row_offset):
         ba = char_grid[row]
         for col in range(8):
             # ls bit is left-most col
-            # select bit and test result
-            if ba & (1 << (7 - col)) != 0:
+            # select bit and test
+            if ba & (1 << (7 - col)) > 0:
                 c = col + col_offset
                 r = row + row_offset
                 if c % 2 == 1:  # odd row
@@ -96,22 +110,23 @@ def main():
     # !!!
 
     font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
-    print(font_parameters['filename'])
-    w = font_parameters['width']
-    h = font_parameters['height']
-    # remove null character
-    if 0 in bitmaps:
-        bitmaps.pop(0)
-    # TODO: fix padding
-    top_rows = 1
-    for code in bitmaps:
-        # pad out to 8 rows
-        for _ in range(top_rows):
-            bitmaps[code].insert(0, 0)
+    # for debug / logging; JSON converts int dict key to str
+    with open(charset + '_bmap.json', 'w') as f:
+        json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
+
+    # remove null character if in dict
+    bitmaps.pop(0, 0)
+    # pad out to 8 rows
+    top_rows = 8 - font_parameters['height']
+    if top_rows > 0:
+        for key in bitmaps:
+            for _ in range(top_rows):
+                # pad with empty row in position 0
+                bitmaps[key].insert(0, 0)
 
     char_indices = {}
-    for code in bitmaps:
-        char_indices[chr(code)] = get_8x8_char_indices(bitmaps[code], 2, 0)
+    for key in bitmaps:
+        char_indices[chr(key)] = get_8x8_char_indices(bitmaps[key], 2, 0)
     # del bitmaps
 
     # write indices file

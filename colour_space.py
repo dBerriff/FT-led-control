@@ -9,6 +9,7 @@ class ColourSpace:
         8-bit RGB colours
         get_rgb() applies brightness level and
         (fixed) gamma correction
+        class-method only
     """
     colours = {
         'amber': (255, 100, 0),
@@ -34,6 +35,7 @@ class ColourSpace:
         'yellow': (255, 255, 0)
     }
 
+    # gamma-correction lookup list
     GAMMA = const(2.6)
     RGB_GAMMA = []
     for x in range(0, 256):
@@ -60,4 +62,7 @@ class ColourSpace:
     @classmethod
     def get_rgb_list(cls, template_list, level_):
         """ set level-converted, gamma-corrected rgb tuple values """
-        return tuple([cls.get_rgb(t, level_) for t in template_list])
+        values = []
+        for t in template_list:
+            values.append(cls.get_rgb(t, level_))
+        return tuple(values)

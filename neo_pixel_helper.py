@@ -7,8 +7,6 @@
 
 import asyncio
 from random import randrange
-from neo_pixel import PixelStrip
-
 
 
 async def np_arc_weld(nps_, pixel_):
@@ -59,6 +57,7 @@ async def np_twinkler(nps_, pixel_):
         l_index += 1
         l_index %= n_smooth
 
+
 async def mono_chase(nps_, rgb_list, pause=20):
     """ np strip:
         fill count_ pixels with list of rgb values
@@ -67,13 +66,14 @@ async def mono_chase(nps_, rgb_list, pause=20):
     n_pixels = nps_.n
     n_colours = len(rgb_list)
     index = 0
-    for _ in range(1000):
+    for _ in range(100):
         for i in range(n_colours):
             nps_[(index + i) % n_pixels] = rgb_list[i]
         nps_.write()
         await asyncio.sleep_ms(pause)
         nps_[index] = (0, 0, 0)
         index = (index + 1) % n_pixels
+
 
 async def colour_chase(nps_, rgb_list, pause=20):
     """ np strip:
@@ -83,21 +83,34 @@ async def colour_chase(nps_, rgb_list, pause=20):
     n_pixels = nps_.n
     n_colours = len(rgb_list)
     c_index = 0
-    for _ in range(1000):
+    for _ in range(100):
         for i in range(n_pixels):
             nps_[i] = rgb_list[(i + c_index) % n_colours]
         nps_.write()
         await asyncio.sleep_ms(pause)
         c_index = (c_index - 1) % n_colours
 
-class FourAspect:
+
+class ColourSignal:
     """
-        model four-aspect railway colour signal
+        model railway colour signals
         - colour order, bottom to top: red-yellow-green-yellow
         - level_ is required
     """
 
     # change keys to match layout terminology
+
+    def __init__(self, nps_, pixel_, level_):
+        self.nps = nps_
+        self.pixel = pixel_
+        self.c_red = nps_.get_rgb('red', level_)
+        self.c_yellow = nps_.get_rgb('yellow', level_)
+        self.c_green = nps_.get_rgb('green', level_)
+        self.c_off = (0, 0, 0)
+
+
+class FourAspect(ColourSignal):
+    """ model UK 4-aspect colour signal"""
     aspect_codes = {
         'stop': 0,
         'danger': 0,
@@ -109,7 +122,7 @@ class FourAspect:
         'double yellow': 2,
         'clear': 3,
         'green': 3
-        }
+    }
 
     # (r, y, g, y)
     settings = {
@@ -117,22 +130,17 @@ class FourAspect:
         1: (0, 1, 0, 0),
         2: (0, 1, 0, 1),
         3: (0, 0, 1, 0)
-        }
+    }
 
     def __init__(self, nps_, pixel_, level_):
-        self.nps = nps_
-        self.pixel = pixel_
-        self.c_red = nps_.get_rgb('red', level_)
-        self.c_yellow = nps_.get_rgb('yellow', level_)
-        self.c_green = nps_.get_rgb('green', level_)
-        self.c_off = (0, 0, 0)
+        super().__init__(nps_, pixel_, level_)
         self.i_red = pixel_
         self.i_yw1 = pixel_ + 1
         self.i_grn = pixel_ + 2
         self.i_yw2 = pixel_ + 3
-        self.set_aspect('stop')
+        self.set_aspect('red')
 
-    def set_aspect(self, aspect, flash=False):
+    def set_aspect(self, aspect):
         """
             set signal aspect by number or code:
             0 - red
@@ -141,9 +149,18 @@ class FourAspect:
             3 - green
         """
         if isinstance(aspect, str):
-            aspect = self.aspect_codes[aspect]
-        setting = settings[aspect]
-        nps_[pixel_] = self.c_red if setting[0] else self.c_off
-        nps_[pixel_ + 1] = self.c_yellow if setting[1] or setting[3] else self.c_off
-        nps_[pixel_ + 2] = self.c_green if setting[2] else self.c_off
-        nps_[pixel_ + 3] = self.c_yellow if setting[3] else self.c_off
+            try:
+                aspect = self.aspect_codes[aspect]
+            except:
+                aspect = self.aspect_codes['red']
+        setting = self.settings[aspect]
+        self.nps[self.i_red] = self.c_red if setting[0] == 1 else self.c_off
+        self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1 or setting[3] else self.c_off
+        self.nps[self.i_grn] = self.c_green if setting[2] == 1 else self.c_off
+        self.nps[self.i_yw2] = self.c_yellow if setting[3] == 1 else self.c_off
+        self.nps.write()
+
+    def set_by_blocks_clear(self, clr_blocks):
+        """ set aspect by clear blocks """
+        clr_blocks = min(clr_blocks, 3)  # > 3 clear is still 'green'
+        self.set_aspect(clr_blocks)

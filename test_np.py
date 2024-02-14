@@ -31,7 +31,7 @@ async def main():
     nps = PixelStrip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    colour_list = ['amber', 'aqua', 'blue','cyan', 'ghost_white', 'gold',
+    colour_list = ['amber', 'aqua', 'blue', 'cyan', 'ghost_white', 'gold',
                    'green', 'jade', 'magenta', 'mint_cream', 'old_lace',
                    'orange', 'dark_orange', 'pink', 'purple', 'red', 'snow',
                    'teal', 'white', 'yellow'
@@ -39,32 +39,44 @@ async def main():
 
     cl_len = len(colour_list)
 
-    level = 128
+    level = 64
     
-    t_4 = FourAspect(nps, 0, 128)
+    t_4 = FourAspect(nps, 0, level)
     print(t_4, t_4.aspect_codes)
+    sequence = ['red', 'yellow', 'double yellow', 'green']
+    states = len(sequence)
+    for aspect in sequence:
+        print(aspect)
+        t_4.set_aspect(aspect)
+        await asyncio.sleep_ms(2_000)
+    await asyncio.sleep_ms(2_000)
 
+    for n in [0, 1, 2, 3, 3, 2, 1, 0]:
+        print('clear blocks:', n)
+        t_4.set_by_blocks_clear(n)
+        await asyncio.sleep_ms(2_000)
+
+    """
     mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 192)]
     nps[1] = mono_set[2]
     nps[0] = nps[1]
     nps.write()
-    while True:
-        await asyncio.sleep_ms(1000)
-        await mono_chase(nps, mono_set, 20)
-        
-        nps.clear()
-        await asyncio.sleep_ms(20)
-        
-        colour_set = [cs.get_rgb('purple', 128),
-                      cs.get_rgb('blue', 128),
-                      cs.get_rgb('green', 128),
-                      cs.get_rgb('yellow', 128),
-                      cs.get_rgb('red', 128)
-                      ]
-        await colour_chase(nps, colour_set, 200)
-        
-        nps.clear()
-        await asyncio.sleep_ms(20)
+    await asyncio.sleep_ms(1000)
+    await mono_chase(nps, mono_set, 20)
+    
+    nps.clear()
+    await asyncio.sleep_ms(20)
+    
+    colour_set = [cs.get_rgb('purple', 64),
+                  cs.get_rgb('blue', 64),
+                  cs.get_rgb('green', 64),
+                  cs.get_rgb('yellow', 64),
+                  cs.get_rgb('red', 64)
+                  ]
+    await colour_chase(nps, colour_set, 200)
+    """    
+    nps.clear()
+    await asyncio.sleep_ms(20)
 
 if __name__ == '__main__':
     try:
