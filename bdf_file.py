@@ -81,7 +81,7 @@ def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
         # process next byte array
         ba = char_grid[row]
         for col in range(8):
-            # ls bit is left-most col
+            # ms bit is left-most col
             # select bit and test
             if ba & (1 << (7 - col)) > 0:
                 c = col + col_offset
