@@ -94,7 +94,6 @@ async def colour_chase(nps_, rgb_list, pause=20):
 class ColourSignal:
     """
         model railway colour signals
-        - colour order, bottom to top: red-yellow-green-yellow
         - level_ is required
     """
 
@@ -110,7 +109,9 @@ class ColourSignal:
 
 
 class FourAspect(ColourSignal):
-    """ model UK 4-aspect colour signal"""
+    """ model UK 4-aspect colour signal
+        - bottom to top: red-yellow-green-yellow
+    """
     aspect_codes = {
         'stop': 0,
         'danger': 0,
