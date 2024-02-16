@@ -31,9 +31,10 @@
     PixelGrid(PixelStrip)
     Set pixel output for a rectangular grid.
 
-    Colours can be set by name (example: 'red') or RGB tuple (example: (255, 0, 0))
-    Level should be set from a minimum of 0 to a maximum of 255
-    Basic gamma correction is applied to all 3 RGB values by list lookup.
+    - Colours can be set by name (example: 'red') or RGB tuple (example: (255, 0, 0))
+    - Level should be set from a minimum of 0 to a maximum of 255
+    - Basic gamma correction is applied to all 3 RGB values by list lookup
+    - 'set_' functions do not write() pixels - allows for overlays
 """
 
 from machine import Pin
@@ -57,9 +58,18 @@ class PixelStrip(NeoPixel):
         rgb_ = self.get_rgb(rgb_, level_)
         self[index_] = rgb_
 
+    def set_pixel_rgb(self, index_, rgb_):
+        """ fill a pixel with rgb colour """
+        self[index_] = rgb_
+
     def set_strip(self, rgb_, level_):
         """ fill all pixels with rgb colour """
         rgb_ = self.get_rgb(rgb_, level_)
+        for index in range(self.n):
+            self[index] = rgb_
+
+    def set_strip_rgb(self, rgb_):
+        """ fill all pixels with rgb colour """
         for index in range(self.n):
             self[index] = rgb_
 
@@ -71,18 +81,23 @@ class PixelStrip(NeoPixel):
             self[index_] = rgb_
             index_ += 1
 
+    def set_range_rgb(self, index_, count_, rgb_):
+        """ fill count_ pixels with rgb_  """
+        for _ in range(count_):
+            index_ %= self.n
+            self[index_] = rgb_
+            index_ += 1
+
     def set_list(self, index_list_, rgb_, level_):
-        """ fill index_list pixels with rgb_ optionally at set level_ """
+        """ fill index_list pixels with rgb_ at set level_ """
         rgb_ = self.get_rgb(rgb_, level_)
         for index in index_list_:
             self[index] = rgb_
 
-    def set_list_rgb(self, index_list_, rgb_g):
-        """ fill index_list pixels with rgb_g
-            - legacy: replace?
-        """
+    def set_list_rgb(self, index_list_, rgb_):
+        """ fill index_list pixels with rgb_ """
         for index in index_list_:
-            self[index] = rgb_g
+            self[index] = rgb_
 
     def set_range_c_list(self, index_, count_, colour_list, level_):
         """ fill count_ pixels with list of rgb values
@@ -99,8 +114,20 @@ class PixelStrip(NeoPixel):
             index_ += 1
             c_index += 1
 
+    def set_range_c_list_rgb(self, index_, count_, colour_list):
+        """ fill count_ pixels with list of rgb values
+            - n_rgb does not have to equal count_ """
+        n_colours = len(colour_list)
+        c_index = 0
+        for _ in range(count_):
+            index_ %= self.n
+            c_index %= n_colours
+            self[index_] = colour_list[c_index]
+            index_ += 1
+            c_index += 1
+
     def clear(self):
-        """ write all pixels to off """
+        """ set and write all pixels to off """
         for index in range(self.n):
             self[index] = (0, 0, 0)
         self.write()
@@ -111,14 +138,20 @@ class PixelGrid(PixelStrip):
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
     """
+    
+    BLOCK_SIZE = 8
 
     def __init__(self, np_pin, n_cols_, n_rows_, cs_file):
         self.n_pixels = n_cols_ * n_rows_
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
         self.n_cols = n_cols_
         self.n_rows = n_rows_
+        self.block_cols = self.BLOCK_SIZE
+        self.block_rows = self.BLOCK_SIZE
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
+        self.max_block_col = self.block_cols - 1
+        self.max_block_row = self.block_rows - 1
         self.coord_index = self.get_coord_index_dict()
         self.charset = self.get_char_indices(cs_file)
         self.set_grid = self.set_strip  # alias
@@ -159,29 +192,29 @@ class PixelGrid(PixelStrip):
             r %= self.n_rows
         return c, r
 
-    def fill_col(self, col, rgb_, level_):
+    def set_col(self, col, rgb_, level_):
         """ fill col with rgb_ colour """
         rgb_ = self.get_rgb(rgb_, level_)
         for row in range(self.n_rows):
             self[self.coord_index[col, row]] = rgb_
 
-    def fill_row(self, row, rgb_, level_):
+    def set_row(self, row, rgb_, level_):
         """ fill row with rgb_ colour """
         rgb_ = self.get_rgb(rgb_, level_)
         for col in range(self.n_cols):
             self[self.coord_index[col, row]] = rgb_
 
-    def fill_diagonal(self, rgb_, level_, mirror=False):
+    def set_diagonal(self, rgb_, level_, mirror=False):
         """ fill diagonal with rgb_ colour
             - assumes n_cols >= n_rows
         """
         rgb = self.get_rgb(rgb_, level_)
         if not mirror:
-            for col in range(self.n_rows):
+            for col in range(self.block_cols):
                 self[self.coord_index[col, col]] = rgb
         else:
-            for col in range(self.n_rows):
-                self[self.coord_index[self.max_col - col, col]] = rgb
+            for col in range(self.block_cols):
+                self[self.coord_index[self.max_block_col - col, col]] = rgb
 
     def set_coord_list(self, coord_list_, rgb_, level_):
         """ set a list of pixels by coords """
@@ -189,11 +222,6 @@ class PixelGrid(PixelStrip):
             rgb = self.get_rgb(rgb_, level_)
             for c in coord_list_:
                 self[self.coord_index[c]] = rgb
-
-    def set_char_rgb(self, index_list_, rgb_g):
-        """ fill char pixels with rgb_g  """
-        for index in index_list_:
-            self[index] = rgb_g
 
     @staticmethod
     def get_char_indices(file_name):

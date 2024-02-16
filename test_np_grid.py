@@ -7,7 +7,7 @@ from neo_pixel import PixelGrid
 import gc
 import random
 from np_grid_helper import fill_grid, traverse_strip, \
-     traverse_grid, fill_cols, fill_rows, display_string
+     traverse_grid, fill_cols, fill_rows, display_string, scan_string
 
 
 async def main():
@@ -32,8 +32,7 @@ async def main():
         await fill_grid(npg, rgb, level)
         await asyncio.sleep_ms(1000)
         npg.clear()
-        npg.write()
-        await asyncio.sleep_ms(500)
+        await asyncio.sleep_ms(1000)
 
         print('fill pixels as strip')
         await traverse_strip(npg, rgb, level)
@@ -68,26 +67,22 @@ async def main():
         print('fill diagonals')
         pause_ms = 1000
         for _ in range(12):
-            npg.fill_diagonal(rgb, level)
+            npg.set_diagonal(rgb, level)
             npg.write()
             await asyncio.sleep_ms(pause_ms)
-            npg.fill_diagonal(off, level)
+            npg.set_diagonal(off, level)
             npg.write()
-            npg.fill_diagonal(rgb, level, mirror=True)
+            npg.set_diagonal(rgb, level, mirror=True)
             npg.write()
             await asyncio.sleep_ms(pause_ms)
-            npg.fill_diagonal(off, level, mirror=True)
+            npg.set_diagonal(off, level, mirror=True)
             npg.write()
             pause_ms //= 2
         npg.clear()
         await asyncio.sleep_ms(2000)
-        
+
         print('display strings')
         await display_string(npg, 'MERG', rgb, level)
-        npg.clear()
-        gc.collect()
-        await asyncio.sleep_ms(1000)
-        await display_string(npg, 'Raspberry Pi SIG', rgb, level)
         npg.clear()
         gc.collect()
         await asyncio.sleep_ms(1000)

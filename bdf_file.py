@@ -101,9 +101,12 @@ def main():
     # !!!
 
     font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
+
+    """ 
     # for debug / logging; note: JSON converts int dict key to str
-    # with open(charset + '_bmap.json', 'w') as f:
-        # json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
+    with open(charset + '_bmap.json', 'w') as f:
+        json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
+    """
 
     # remove null character if in dict
     bitmaps.pop(0, 0)  # default value prevents error if not in dict
