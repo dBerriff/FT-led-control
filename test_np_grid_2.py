@@ -1,10 +1,14 @@
 # test_np_grid.py
 
-""" test LED- and NeoPixel-related classes """
+""" test LED- and NeoPixel-related classes
+    - 'block' is an 8x8 square in the grid
+    - 'grid' is the whole grid including any virtual blocks
+"""
 
 import asyncio
-from neo_pixel import PixelGrid
+from np_grid import PixelGrid
 
+snake_diff = (15, 13, 11, 9, 7, 5, 3, 1)
 
 def set_block_rgb(npg, block, index_list_, rgb_):
     """ fill 8x8 block pixels with rgb_ """
@@ -18,41 +22,37 @@ def set_char_rgb(npg, block, char, rgb_):
     set_block_rgb(npg, block, npg.charset[char], rgb_)
 
 
-async def shift_grid_left(npg, shift_index_list_, shift_pause_ms=20):
-    """ coro: shift the columns of a grid to the left
-            and write() each shift
-        - diff is for a snake-order strip
+async def shift_grid_left(npg, shift_pause_ms=0):
+    """ coro: shift a grid, 1 column/iteration, to the left
+              and write() each shift
         - final column in the grid is not filled
         - final grid is (usually) virtual so a char can be shifted in
     """
-    # block_columns = 8
-    for _ in range(8):
-        for index in shift_index_list_:
-            diff = 15
-            while diff > 0:
-                npg[index] = npg[index + diff]
-                index += 1
-                diff -= 2
+
+    for _ in range(8):  # 8 shifts
+        for c_i in range(0, 120, 8):  # shift all columns except last
+            for r in range(8):
+                index = c_i + r
+                npg[index] = npg[index + snake_diff[r]]
         npg.write()
         await asyncio.sleep_ms(shift_pause_ms)
 
-async def fast_shift_grid_left(npg, shift_pause_ms=20):
-    """ coro: shift the columns of a grid to the left 2 columns
-            and write() each shift
-        - double-step avoids strip-order index computation
+async def fast_shift_grid_left(npg, shift_pause_ms=0):
+    """ coro: shift a grid, 2 columns/iteration, to the left 
+              and write() each shift
+        - 2 col shift avoids strip-order index computation
         - final column in the grid is not filled
         - final grid is (usually) virtual so a char can be shifted in
     """
-    # block_columns = 8
-    for _ in range(0, 8, 2):
-        for col in range(0, 14, 2):
-            index = col * 8
-            for i in range(index, index + 16):
-                npg[i] = npg[i + 16]
+    for _ in range(4):  # block cols // 2
+        for c_i in range(0, 112, 16):
+            for r in range(16):
+                index = c_i + r
+                npg[index] = npg[index + 16]
         npg.write()
         await asyncio.sleep_ms(shift_pause_ms)
 
-async def display_string(npg, string_, rgb_, shift_index_list_, pause_ms=1000):
+async def display_string(npg, string_, rgb_, pause_ms=1000):
     """ coro: display the letters in a string
         - set_char() overlays background
     """
@@ -62,7 +62,20 @@ async def display_string(npg, string_, rgb_, shift_index_list_, pause_ms=1000):
         set_char_rgb(npg, 1, string_[i + 1], rgb_)
         npg.write()
         await asyncio.sleep_ms(1000)
-        await shift_grid_left(npg, shift_index_list_)
+        await shift_grid_left(npg)
+    await asyncio.sleep_ms(1000)
+
+async def fast_display_string(npg, string_, rgb_, pause_ms=1000):
+    """ coro: display the letters in a string
+        - set_char() overlays background
+    """
+    max_index = len(string_) - 1
+    for i in range(max_index):
+        set_char_rgb(npg, 0, string_[i], rgb_)
+        set_char_rgb(npg, 1, string_[i + 1], rgb_)
+        npg.write()
+        await asyncio.sleep_ms(1000)
+        await fast_shift_grid_left(npg)
     await asyncio.sleep_ms(1000)
 
 async def main():
@@ -79,14 +92,12 @@ async def main():
     n_columns = 8 * blocks
     n_rows = 8
     # avoid repeatedly recreating this list
-    shift_indices = []
-    # fill all except last column
-    for i in range(0, n_rows * (n_columns - 1), n_rows):
-        shift_indices.append(i)
 
-    await display_string(npg, ' This is a test.', rgb, shift_indices)
+    await display_string(npg, ' This is a test.', rgb)
     npg.clear()
-
+    await asyncio.sleep_ms(1000)
+    await fast_display_string(npg, ' This is a test.', rgb)
+    npg.clear()
 if __name__ == '__main__':
     try:
         asyncio.run(main())
