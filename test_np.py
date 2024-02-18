@@ -31,15 +31,11 @@ async def main():
     level = 64
 
     mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 192)]
-    nps[1] = mono_set[2]
-    nps[0] = nps[1]
-    nps.write()
-    await asyncio.sleep_ms(1000)
     await nps.mono_chase(mono_set, 20)
     
     nps.clear()
     await asyncio.sleep_ms(20)
-    
+    """    
     colour_set = [cs.get_rgb('purple', 64),
                   cs.get_rgb('blue', 64),
                   cs.get_rgb('green', 64),
@@ -47,8 +43,8 @@ async def main():
                   cs.get_rgb('red', 64)
                   ]
     await nps.colour_chase(colour_set, 200)
-    
-    t_4 = FourAspect(nps, 0, level)
+    """    
+    t_4 = FourAspect(nps, cs, 0, level)
     print(t_4, t_4.aspect_codes)
     sequence = ['red', 'yellow', 'double yellow', 'green']
     for aspect in sequence:

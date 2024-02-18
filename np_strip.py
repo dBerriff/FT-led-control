@@ -31,7 +31,8 @@
     PixelGrid(PixelStrip)
     Set pixel output for a rectangular grid.
 
-    - Colours can be set by name (example: 'red') or RGB tuple (example: (255, 0, 0))
+    - Colours can be set by name (example: 'red') or RGB tuple (example: (255, 0, 0)), except:
+        -- method names ending _rgb require an RGB tuple to reduce computation time
     - Level should be set from a minimum of 0 to a maximum of 255
     - Basic gamma correction is applied to all 3 RGB values by list lookup
     - 'set_' functions do not write() pixels - allows for overlays
@@ -41,7 +42,7 @@ from machine import Pin
 import asyncio
 from random import randrange
 from neopixel import NeoPixel
-from colour_space import ColourSpace as Cs
+from colour_space import ColourSpace
 
 
 class PixelStrip(NeoPixel):
@@ -51,35 +52,33 @@ class PixelStrip(NeoPixel):
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
-        self.colours = Cs.colours
-        self.get_rgb = Cs.get_rgb
+        self.cs = ColourSpace()
 
-    def set_pixel(self, index_, rgb_, level_):
+    def set_pixel(self, index_, clr_, level_):
         """ fill a pixel with rgb colour """
-        rgb_ = self.get_rgb(rgb_, level_)
-        self[index_] = rgb_
+        self[index_] = self.get_rgb(clr_, level_)
 
     def set_pixel_rgb(self, index_, rgb_):
         """ fill a pixel with rgb colour """
         self[index_] = rgb_
 
-    def set_strip(self, rgb_, level_):
+    def set_strip(self, clr_, level_):
         """ fill all pixels with rgb colour """
-        rgb_ = self.get_rgb(rgb_, level_)
+        rgb = self.cs.get_rgb(clr_, level_)
         for index in range(self.n):
-            self[index] = rgb_
+            self[index] = rgb
 
     def set_strip_rgb(self, rgb_):
         """ fill all pixels with rgb colour """
         for index in range(self.n):
             self[index] = rgb_
 
-    def set_range(self, index_, count_, rgb_, level_):
+    def set_range(self, index_, count_, clr_, level_):
         """ fill count_ pixels with rgb_  """
-        rgb_ = self.get_rgb(rgb_, level_)
+        rgb = self.cs.get_rgb(clr_, level_)
         for _ in range(count_):
             index_ %= self.n
-            self[index_] = rgb_
+            self[index_] = rgb
             index_ += 1
 
     def set_range_rgb(self, index_, count_, rgb_):
@@ -89,11 +88,11 @@ class PixelStrip(NeoPixel):
             self[index_] = rgb_
             index_ += 1
 
-    def set_list(self, index_list_, rgb_, level_):
+    def set_list(self, index_list_, clr_, level_):
         """ fill index_list pixels with rgb_ at set level_ """
-        rgb_ = self.get_rgb(rgb_, level_)
+        rgb = self.cs.get_rgb(clr_, level_)
         for index in index_list_:
-            self[index] = rgb_
+            self[index] = rgb
 
     def set_list_rgb(self, index_list_, rgb_):
         """ fill index_list pixels with rgb_ """
@@ -106,7 +105,7 @@ class PixelStrip(NeoPixel):
         n_colours = len(colour_list)
         rgb_list = []
         for rgb_ in colour_list:
-            rgb_list.append(self.get_rgb(rgb_, level_))
+            rgb_list.append(self.cs.get_rgb(rgb_, level_))
         c_index = 0
         for _ in range(count_):
             index_ %= self.n
@@ -115,15 +114,15 @@ class PixelStrip(NeoPixel):
             index_ += 1
             c_index += 1
 
-    def set_range_c_list_rgb(self, index_, count_, colour_list):
+    def set_range_rgb_list_rgb(self, index_, count_, rgb_list):
         """ fill count_ pixels with list of rgb values
             - n_rgb does not have to equal count_ """
-        n_colours = len(colour_list)
+        n_colours = len(rgb_list)
         c_index = 0
         for _ in range(count_):
             index_ %= self.n
             c_index %= n_colours
-            self[index_] = colour_list[c_index]
+            self[index_] = rgb_list[c_index]
             index_ += 1
             c_index += 1
 
@@ -222,12 +221,12 @@ class ColourSignal:
 
     # change keys to match layout terminology
 
-    def __init__(self, nps_, pixel_, level_):
+    def __init__(self, nps_, cs_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
-        self.c_red = nps_.get_rgb('red', level_)
-        self.c_yellow = nps_.get_rgb('yellow', level_)
-        self.c_green = nps_.get_rgb('green', level_)
+        self.c_red = cs_.get_rgb('red', level_)
+        self.c_yellow = cs_.get_rgb('yellow', level_)
+        self.c_green = cs_.get_rgb('green', level_)
         self.c_off = (0, 0, 0)
 
 
@@ -256,8 +255,8 @@ class FourAspect(ColourSignal):
         3: (0, 0, 1, 0)
     }
 
-    def __init__(self, nps_, pixel_, level_):
-        super().__init__(nps_, pixel_, level_)
+    def __init__(self, nps_, cs_, pixel_, level_):
+        super().__init__(nps_, cs_, pixel_, level_)
         self.i_red = pixel_
         self.i_yw1 = pixel_ + 1
         self.i_grn = pixel_ + 2
