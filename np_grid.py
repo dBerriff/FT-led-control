@@ -50,8 +50,9 @@ class PixelGrid(PixelStrip):
         c_i_dict = {}
         max_row = self.max_row  # avoid repeated dict access
         for col in range(self.n_cols):
+            is_odd = col % 2 == 1
             for row in range(self.n_rows):
-                if col % 2 == 1:  # odd row
+                if is_odd:  # odd row
                     i = max_row - row
                 else:
                     i = row
