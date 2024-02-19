@@ -4,8 +4,9 @@
 
 import asyncio
 import time
-from np_strip import PixelStrip, FourAspect
+from np_strip import PixelStrip
 from colour_space import ColourSpace
+from railway import FourAspect
 
 
 # helper functions

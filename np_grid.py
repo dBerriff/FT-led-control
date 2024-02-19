@@ -11,6 +11,7 @@ class PixelGrid(PixelStrip):
     """ extend NeoPixel to support BTF-Lighting 8x8 grid
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
+        - a block is an 8x8 area, intended for character display
         - helper methods are examples or work-in-progress
     """
 
@@ -50,13 +51,12 @@ class PixelGrid(PixelStrip):
         c_i_dict = {}
         max_row = self.max_row  # avoid repeated dict access
         for col in range(self.n_cols):
-            is_odd = col % 2 == 1
-            for row in range(self.n_rows):
-                if is_odd:  # odd row
-                    i = max_row - row
-                else:
-                    i = row
-                c_i_dict[col, row] = col * self.n_rows + i
+            if col % 2 == 1:  # odd
+                for row in range(self.n_rows):
+                    c_i_dict[col, row] = col * self.n_rows + max_row - row
+            else:
+                for row in range(self.n_rows):
+                    c_i_dict[col, row] = col * self.n_rows + row
         return c_i_dict
 
     def coord_inc(self, coord):
