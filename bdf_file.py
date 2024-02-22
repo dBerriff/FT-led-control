@@ -40,6 +40,7 @@ def get_font_bitmaps(filename):
 
     preamble_dict = {'filename': filename}
     font_dict = {}
+    # no exception handling!
     with open(filename) as f:
         tokens = find_keyword(f, 'FONTBOUNDINGBOX')
         preamble_dict['width'] = int(tokens[1])

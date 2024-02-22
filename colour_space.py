@@ -49,9 +49,9 @@ class ColourSpace:
             - c_template is colours dict key: str, or (r, g, b)
         """
         if isinstance(c_template, str):
-            if c_template in cls.colours:
+            try:
                 c_template = cls.colours[c_template]
-            else:
+            except KeyError:
                 c_template = (0, 0, 0)
         level_ = max(level_, 0)
         level_ = min(level_, 255)
