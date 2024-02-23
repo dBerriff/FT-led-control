@@ -1,3 +1,43 @@
+"""
+    Control WS2812E/NeoPixel lighting
+    This software takes a basic approach to colour manipulation.
+    For far more sophisticated approaches see:
+    - Adafruit Circuit Python
+    - FastLED project.
+
+    Raspberry Pi documentation is the main source of information for the PIO
+    implementation, and thanks to MERG member Paul Redhead for addition inspiration.
+    Adafruit documentation is acknowledged as the main source of information on
+    NeoPixels, with additional content from the FasLED project.
+    See as an initial document:
+    https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
+
+    Classes:
+
+    PioWs2812
+    Set pixel output for a strip for a strip of WS2812 LEDs (aka NeoPixels: Adafruit).
+    An RP2040 PIO StateMachine is used to improve performance over NeoPixel class.
+
+    Ws2812Strip(PioWs2812)
+    This extends the PioWs2812 class by adding attributes and methods intended to
+    simplify user coding.
+    The interface largely matches the NeoPixel class interface.
+    An important difference for performance is that there is direct access to
+    the RGB array; this particularly helps with grid character shifts.
+
+    - 'set_' functions do not write() pixels - this allows for colour overlays
+    - implicit setting of output levels and gamma correction is not included
+        as this is more efficiently implemented before calling these methods
+        (see the ColourSpace class)
+    
+    See also:
+    PixelGrid(PixelStrip)
+    Set pixel output for a rectangular grid, viewed as 8x8 pixel blocks
+
+    ColourSpace
+    Define basic colours and adjust RGB values for level and gamma correction.
+
+"""
 # Example using PIO to drive a set of WS2812 LEDs.
 
 import rp2
@@ -13,8 +53,6 @@ class PioWs2812:
         See: https://docs.micropython.org/en/latest/library/
                      rp2.StateMachine.html#rp2.StateMachine
     """
-    
-    RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes
     
     @rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW,
                  out_shiftdir=rp2.PIO.SHIFT_LEFT,
@@ -41,16 +79,47 @@ class PioWs2812:
 
 
 class Ws2812Strip(PioWs2812):
-    """ extend PioWs2812 for NeoPixel strip """
+    """ extend PioWs2812 for NeoPixel strip
+        - MicroPython NeoPixel interface is matched as per documentation
+        - not all NeoPixel parameters are instantiated:
+            -- frequency fixed at 800kHz
+            -- RGBW (bpp) not currently implemented
+        - StateMachine pulls 32-bit words for Tx FIFO
+        - it is marginally quicker to shift 24-bit colour to MSB
+            as a block with sm.put(value, shift=8)
+        - WS2812 expects colour order: GRB
+            __setitem__, set_pixel(), set_strip() set order
+        - code is repeated to avoid additional method calls
+        - implicit conversion of colour-keys to RGB has been removed
+    """
 
-    def __init__(self, pin, n_pixels):
+    RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes
+
+    def __init__(self, pin, n_pixels, bpp=3, timing=1):
         super().__init__(pin)
         self.n_pixels = n_pixels
+        self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
+        self.timing = timing  # 1 is 800kHz, 0 is 400kHz; currently ignored
+        self.n = n_pixels  # NeoPixel undocumented
         self.set_active(True)
-        # for LED RGB values
-        self.arr = array.array("I", [0]*n_pixels)
+        # LED RGB values, typecode 'I' is 32-bit unsigned integer
+        self.arr = array.array('I', [0]*n_pixels)
 
-    def show(self, level):
+    def __len__(self):
+        """ NeoPixel interface """
+        return self.n_pixels
+
+    def __setitem__(self, index, colour):
+        """ NeoPixel interface """
+        # RGB -> GRB for WS2812 order; shift to MSB on put()
+        self.arr[index] = (colour[1] << 16) + (colour[0] << 8) + colour[2]
+
+    def __getitem__(self, index):
+        """ NeoPixel interface """
+        grb = self.arr[index]
+        return (grb >> 8) & 0xff, (grb >> 16) & 0xff, grb & 0xff,
+
+    def write_level(self, level):
         """ put pixel array into Tx FIFO, first setting level """
         arr = self.arr
         for i, c in enumerate(self.arr):
@@ -60,105 +129,28 @@ class Ws2812Strip(PioWs2812):
             arr[i] = (g << 16) + (r << 8) + b
         self.sm.put(arr, self.RGB_SHIFT)
 
-    def show_rgb(self):
-        """ put pixel array into StateMachine Tx FIFO """
+    def write(self):
+        """ 'put' pixel array into StateMachine Tx FIFO """
         self.sm.put(self.arr, self.RGB_SHIFT)
 
-    def set(self, i, colour):
-        """ set pixel array RGB values in WS2812 order """
-        self.arr[i] = (colour[1] << 16) + (colour[0] << 8) + colour[2]
+    def set_pixel(self, i, rgb_):
+        """ set pixel colour in WS2812 order
+            - duplicates __setitem__()
+        """
+        self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
-    def fill_all(self, colour):
-        """ fill all pixels with color RGB """
+    def set_strip(self, rgb_):
+        """ fill strip with RGB in WS2812 order """
         for i in range(self.n_pixels):
-            self.arr[i] = (colour[1] << 16) + (colour[0] << 8) + colour[2]
+            self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
+    def set_list_rgb(self, index_list_, rgb_):
+        """ fill index_list pixels with rgb_ """
+        for index in index_list_:
+            self[index] = rgb_
 
-def colour_chase(pnp, colour, level, wait):
-    for i in range(pnp.n_pixels):
-        pnp.set(i, colour)
-        time.sleep(wait)
-        pnp.show(level)
-    time.sleep(0.2)
- 
-
-def wheel(pos):
-    # Input a value 0 to 255 to get a color value.
-    # The colours are a transition r - g - b - back to r.
-    if pos < 0 or pos > 255:
-        return 0, 0, 0
-    if pos < 85:
-        return 255 - pos * 3, pos * 3, 0
-    if pos < 170:
-        pos -= 85
-        return 0, 255 - pos * 3, pos * 3
-    pos -= 170
-    return pos * 3, 0, 255 - pos * 3
- 
- 
-def rainbow_cycle(pnp, level, wait):
-    for j in range(255):
-        for i in range(pnp.n_pixels):
-            rc_index = (i * 256 // pnp.n_pixels) + j
-            pnp.set(i, wheel(rc_index & 255))
-        pnp.show(level)
-        time.sleep(wait)
-
-
-def time_set_strip(pnp_, rgb_):
-    """ coro: test and time fill-strip method """
-    c_time = time.ticks_us()
-    pnp_.fill_all(rgb_)
-    print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
-    c_time = time.ticks_us()
-    pnp_.show_rgb()
-    print(f'Time to write: {time.ticks_diff(time.ticks_us(), c_time):,}us')
-
-
-def main():
-    """ """
-    black = (0, 0, 0)
-    red = (255, 0, 0)
-    yellow = (255, 150, 0)
-    green = (0, 255, 0)
-    cyan = (0, 255, 255)
-    blue = (0, 0, 255)
-    purple = (180, 0, 255)
-    white = (255, 255, 255)
-    colors = (black, red, yellow, green, cyan, blue, purple, white)
-
-    # configure the WS2812 LEDs
-    num_leds = 64
-    pin_num = 27
-    level = 0.2
-
-    # instantiate the PIO-driven NeoPixels
-    p_np = Ws2812Strip(pin_num, num_leds)
-    
-    print('timed fill')
-    time_set_strip(p_np, red)
-    time.sleep(0.2)
-
-    print("fills")
-    for color in colors:
-        p_np.fill_all(color)
-        p_np.show(level)
-        time.sleep(0.2)
-
-    print("chases")
-    for color in colors:
-        colour_chase(p_np, color, level, 0.01)
-
-    print("rainbow")
-    rainbow_cycle(p_np, level, 0)
-
-    p_np.fill_all(black)
-    p_np.show(0)
-    time.sleep(0.2)
-
-
-if __name__ == '__main__':
-    try:
-        main()
-    finally:
-        print('execution complete')
+    def clear(self):
+        """ set and write all pixels to off """
+        for index in range(self.n_pixels):
+            self[index] = (0, 0, 0)
+        self.write()

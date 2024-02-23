@@ -70,7 +70,7 @@ class FourAspect(ColourSignal):
         self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1 or setting[3] else self.c_off
         self.nps[self.i_grn] = self.c_green if setting[2] == 1 else self.c_off
         self.nps[self.i_yw2] = self.c_yellow if setting[3] == 1 else self.c_off
-        self.nps.write()
+        self.nps.write_level()
 
     def set_by_blocks_clear(self, clr_blocks):
         """ set aspect by clear blocks """

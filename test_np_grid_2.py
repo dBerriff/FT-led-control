@@ -11,7 +11,7 @@ from colour_space import ColourSpace
 
 
 async def main():
-    """ coro: test NeoPixel grid helper functions """
+    """ coro: test np_grid methods  """
 
     pin_number = 27
     cs = ColourSpace()
@@ -20,9 +20,14 @@ async def main():
     level = 64
     rgb = cs.get_rgb('dark_orange', level)
 
+    print('display strings')
+    await npg.display_string('MERG', rgb)
+    npg.clear()
+
+    await asyncio.sleep_ms(1000)
     # test character shift-left
 
-    await npg.display_string_rgb_shift(' This is a test.', rgb)
+    await npg.display_string_shift(' This is a test.', rgb)
     npg.clear()
     await asyncio.sleep_ms(1000)
 

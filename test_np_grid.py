@@ -1,16 +1,18 @@
 # test_np_grid.py
 
-""" test LED- and NeoPixel-related classes """
+""" test WS1802-related classes
+    - test for 8x8 pixel grid
+"""
 
 import asyncio
 import gc
 import random
 from colour_space import ColourSpace
-from np_grid import PixelGrid
+from pio_ws2812 import Ws2812Strip as PixelStrip
 
 
 async def main():
-    """ coro: test NeoPixel grid helper functions """
+    """ coro: test WS1802 grid methods """
 
     pin_number = 27
     cs = ColourSpace()
@@ -26,7 +28,7 @@ async def main():
                    'teal', 'white', 'yellow']
     cl_len = len(colour_list)
 
-    rgb = 'dark_orange'
+    rgb = cs.get_rgb('dark_orange', level)
     # fill grid with single colour
     await npg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
@@ -46,7 +48,8 @@ async def main():
     await asyncio.sleep_ms(500)
  
     # build list of rgb values at same level
-    rgb_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
+    colour_set = ('red', 'orange', 'yellow', 'green', 'blue', 'purple')
+    rgb_set = [cs.get_rgb(c, level) for c in colour_set]
 
     print('fill cols in sequence')
     await npg.fill_cols(rgb_set, level)
@@ -60,35 +63,34 @@ async def main():
     await npg.fill_rows((off,), level)  # list/tuple required
     await asyncio.sleep_ms(500)
 
-    clr = colour_list[random.randrange(cl_len)]
-    print(clr)
-    
+    colour = colour_list[random.randrange(cl_len)]
+    print(colour)
+    rgb = cs.get_rgb(colour, level)
+
     print('fill diagonals')
     pause_ms = 1000
     for _ in range(12):
-        npg.set_diagonal(clr, level)
+        npg.set_diagonal(rgb, mirror=False)
         npg.write()
         await asyncio.sleep_ms(pause_ms)
-        npg.set_diagonal(off, level)
+        npg.set_diagonal(off, mirror=False)
         npg.write()
-        npg.set_diagonal(clr, level, mirror=True)
+        npg.set_diagonal(rgb, mirror=True)
         npg.write()
         await asyncio.sleep_ms(pause_ms)
-        npg.set_diagonal(off, level, mirror=True)
+        npg.set_diagonal(off, mirror=True)
         npg.write()
         pause_ms //= 2
     npg.clear()
     await asyncio.sleep_ms(2000)
 
-    rgb = cs.get_rgb(clr, level)
-
     print('display strings')
-    await npg.display_string_rgb('MERG', rgb)
+    await npg.display_string('MERG', rgb)
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(1000)
 
-    await npg.display_string_rgb('0123456789', rgb)
+    await npg.display_string('0123456789', rgb)
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(200)
