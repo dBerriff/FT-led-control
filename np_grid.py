@@ -30,20 +30,29 @@ class PixelGrid(PixelStrip):
         return retrieved
 
     def __init__(self, np_pin, n_cols_, n_rows_, charset_file):
-        self.n_pixels = n_cols_ * n_rows_
+        self.n_pixels = (n_cols_ + self.BLOCK_SIZE) * n_rows_  # add virtual block
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
+        self.grid_pixels = n_cols_ * n_rows_
         self.n_cols = n_cols_
         self.n_rows = n_rows_
-        self.block_cols = self.BLOCK_SIZE
-        self.block_rows = self.BLOCK_SIZE
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
-        self.max_block_col = self.block_cols - 1
-        self.max_block_row = self.block_rows - 1
+        # set up grid blocks for chars
+        self.block_cols = self.BLOCK_SIZE
+        self.block_rows = self.BLOCK_SIZE  # not used
+        self.max_block_col = self.BLOCK_SIZE - 1
+        self.max_block_row = self.BLOCK_SIZE - 1
+        self.n_blocks = n_cols_ // self.BLOCK_SIZE
+        self.v_blocks = self.n_blocks + 1  # virtual block for left-shift
+        self.max_v_col = self.v_blocks * self.BLOCK_SIZE - 1  # no shift into final col
+        # segments for block-shift algorithm - strip order
+        self.seg_len = self.n_rows
+        self.max_seg_index = self.max_v_col * self.seg_len
+        self.shift_offset = 2 * self.n_rows - 1
+        # dict for (col, row) to pixel-index conversion
         self.coord_index = self.get_coord_index_dict()
+        # character set as pixel-index lists
         self.charset = self.get_char_indices(charset_file)
-        self.set_grid = self.set_strip  # alias
-        self.set_grid_rgb = self.set_strip  # alias
 
     def get_coord_index_dict(self):
         """ correct the grid 'snake' addressing scheme
@@ -81,6 +90,11 @@ class PixelGrid(PixelStrip):
             r %= self.n_rows
         return c, r
 
+    def set_grid(self, rgb_):
+        """ fill all grid pixels with rgb colour """
+        for index in range(self.grid_pixels):
+            self[index] = rgb_
+
     def set_col(self, col, rgb_):
         """ fill col with rgb_ colour """
         for row in range(self.n_rows):
@@ -107,13 +121,13 @@ class PixelGrid(PixelStrip):
 
     async def fill_grid(self, rgb_, pause_ms=20):
         """ coro: fill grid and display """
-        self.set_grid_rgb(rgb_)
+        self.set_grid(rgb_)
         self.write()
         await asyncio.sleep_ms(pause_ms)
 
     async def traverse_strip(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in strip order """
-        for index in range(self.n):
+        for index in range(self.grid_pixels):
             self[index] = rgb_
             self.write()
             await asyncio.sleep_ms(pause_ms)
@@ -166,22 +180,21 @@ class PixelGrid(PixelStrip):
             self.set_list_rgb(self.charset[char], (0, 0, 0))
             self.write()
 
-    async def shift_grid_left(self, pause_ms=10):
+    async def shift_grid_left(self, pause_ms=20):
         """ coro: shift 1 col/iteration; write() each shift
             - not fully parameterised
             - indices for 8x8 blocks
             - offset for adjacent 8-element segments
         """
         for _ in range(self.block_cols):  # shift left into block
-            for index in range(0, 120, 8):
-                offset = 15
+            for index in range(0, self.max_seg_index, self.seg_len):
+                offset = self.shift_offset
                 while offset > 0:
                     self.arr[index] = self.arr[index + offset]
                     index += 1
                     offset -= 2
             self.write()
             await asyncio.sleep_ms(pause_ms)
-
 
     async def display_string_shift(self, string_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string
@@ -195,31 +208,3 @@ class PixelGrid(PixelStrip):
             await asyncio.sleep_ms(pause_ms)
             await self.shift_grid_left()
         await asyncio.sleep_ms(pause_ms)
-
-
-async def main():
-    """ coro: test NeoPixel grid helper functions """
-
-    pin_number = 27
-    cs = ColourSpace()
-    npg = PixelGrid(
-        pin_number, n_cols_=16, n_rows_=8, charset_file='5x7.json')
-    level = 64
-    rgb = cs.get_rgb('dark_orange', level)
-
-    print('display string')
-    await npg.display_string('MERG', rgb)
-    npg.clear()
-    await asyncio.sleep_ms(1000)
-
-    print('display string shift')
-    await npg.display_string_shift('This is a test.', rgb)
-    npg.clear()
-    await asyncio.sleep_ms(1000)
-
-if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    finally:
-        asyncio.new_event_loop()  # clear retained state
-        print('Execution complete')

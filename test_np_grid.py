@@ -8,7 +8,7 @@ import asyncio
 import gc
 import random
 from colour_space import ColourSpace
-from pio_ws2812 import Ws2812Strip as PixelStrip
+from np_grid import PixelGrid
 
 
 async def main():
@@ -33,7 +33,7 @@ async def main():
     await npg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
     npg.clear()
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
 
     print('fill pixels as strip')
     await npg.traverse_strip(rgb, level)
