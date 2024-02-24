@@ -36,18 +36,16 @@
 """
 
 from machine import Pin
-from pio_ws2812 import Ws2812Strip as PixelStrip
-from colour_space import ColourSpace
+from pio_ws2812 import Ws2812Strip
 
 
-class PixelStrip(PixelStrip):
+class PixelStrip(Ws2812Strip):
     """ extend NeoPixel class with pixel-strip-related methods
     """
 
     def __init__(self, np_pin, n_pixels):
         super().__init__(Pin(np_pin, Pin.OUT), n_pixels)
         self.np_pin = np_pin  # for logging/debug
-        self.cs = ColourSpace()
 
     def set_pixel_rgb(self, index_, rgb_):
         """ fill a pixel with rgb colour """

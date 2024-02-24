@@ -4,12 +4,10 @@
 import asyncio
 from machine import Pin
 import json
-from pio_ws2812 import Ws2812Strip as PixelStrip
-from colour_space import ColourSpace
-import time
+from pio_ws2812 import Ws2812Strip
 
 
-class PixelGrid(PixelStrip):
+class PixelGrid(Ws2812Strip):
     """ extend NeoPixel to support BTF-Lighting 8x8 grid
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
@@ -17,8 +15,6 @@ class PixelGrid(PixelStrip):
         - implicit conversion of colour-keys to RGB has been removed
         - helper methods are examples or work-in-progress
     """
-
-    BLOCK_SIZE = 8
 
     @staticmethod
     def get_char_indices(file_name):
@@ -30,29 +26,16 @@ class PixelGrid(PixelStrip):
         return retrieved
 
     def __init__(self, np_pin, n_cols_, n_rows_, charset_file):
-        self.n_pixels = (n_cols_ + self.BLOCK_SIZE) * n_rows_  # add virtual block
+        self.n_pixels = n_cols_ * n_rows_
         super().__init__(Pin(np_pin, Pin.OUT), self.n_pixels)
-        self.grid_pixels = n_cols_ * n_rows_
+        # character set as pixel-index lists
+        self.charset = self.get_char_indices(charset_file)
         self.n_cols = n_cols_
         self.n_rows = n_rows_
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
-        # set up grid blocks for chars
-        self.block_cols = self.BLOCK_SIZE
-        self.block_rows = self.BLOCK_SIZE  # not used
-        self.max_block_col = self.BLOCK_SIZE - 1
-        self.max_block_row = self.BLOCK_SIZE - 1
-        self.n_blocks = n_cols_ // self.BLOCK_SIZE
-        self.v_blocks = self.n_blocks + 1  # virtual block for left-shift
-        self.max_v_col = self.v_blocks * self.BLOCK_SIZE - 1  # no shift into final col
-        # segments for block-shift algorithm - strip order
-        self.seg_len = self.n_rows
-        self.max_seg_index = self.max_v_col * self.seg_len
-        self.shift_offset = 2 * self.n_rows - 1
         # dict for (col, row) to pixel-index conversion
         self.coord_index = self.get_coord_index_dict()
-        # character set as pixel-index lists
-        self.charset = self.get_char_indices(charset_file)
 
     def get_coord_index_dict(self):
         """ correct the grid 'snake' addressing scheme
@@ -92,7 +75,7 @@ class PixelGrid(PixelStrip):
 
     def set_grid(self, rgb_):
         """ fill all grid pixels with rgb colour """
-        for index in range(self.grid_pixels):
+        for index in range(self.n_pixels):
             self[index] = rgb_
 
     def set_col(self, col, rgb_):
@@ -111,12 +94,6 @@ class PixelGrid(PixelStrip):
             for c in coord_list_:
                 self[self.coord_index[c]] = rgb_
 
-    def set_block_list(self, block, index_list_, rgb_):
-        """ fill 8x8 block index_list with rgb_ """
-        offset = block * 64
-        for index in index_list_:
-            self[index + offset] = rgb_
-
 # helper methods
 
     async def fill_grid(self, rgb_, pause_ms=20):
@@ -127,7 +104,7 @@ class PixelGrid(PixelStrip):
 
     async def traverse_strip(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in strip order """
-        for index in range(self.grid_pixels):
+        for index in range(self.n_pixels):
             self[index] = rgb_
             self.write()
             await asyncio.sleep_ms(pause_ms)
@@ -162,11 +139,11 @@ class PixelGrid(PixelStrip):
             - assumes n_cols >= n_rows
         """
         if not mirror:
-            for col in range(self.block_cols):
+            for col in range(self.n_rows):
                 self[self.coord_index[col, col]] = rgb_
         else:
-            for col in range(self.block_cols):
-                self[self.coord_index[self.max_block_col - col, col]] = rgb_
+            for col in range(self.n_rows):
+                self[self.coord_index[self.max_col - col, col]] = rgb_
 
     async def display_string(self, str_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string
@@ -179,32 +156,3 @@ class PixelGrid(PixelStrip):
             await asyncio.sleep_ms(pause_ms)
             self.set_list_rgb(self.charset[char], (0, 0, 0))
             self.write()
-
-    async def shift_grid_left(self, pause_ms=20):
-        """ coro: shift 1 col/iteration; write() each shift
-            - not fully parameterised
-            - indices for 8x8 blocks
-            - offset for adjacent 8-element segments
-        """
-        for _ in range(self.block_cols):  # shift left into block
-            for index in range(0, self.max_seg_index, self.seg_len):
-                offset = self.shift_offset
-                while offset > 0:
-                    self.arr[index] = self.arr[index + offset]
-                    index += 1
-                    offset -= 2
-            self.write()
-            await asyncio.sleep_ms(pause_ms)
-
-    async def display_string_shift(self, string_, rgb_, pause_ms=1000):
-        """ coro: display the letters in a string
-            - set_char() overlays background
-        """
-        max_index = len(string_) - 1
-        for i in range(max_index):
-            self.set_block_list(0, self.charset[string_[i]], rgb_)
-            self.set_block_list(1, self.charset[string_[i + 1]], rgb_)
-            self.write()
-            await asyncio.sleep_ms(pause_ms)
-            await self.shift_grid_left()
-        await asyncio.sleep_ms(pause_ms)
