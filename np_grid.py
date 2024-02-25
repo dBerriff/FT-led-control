@@ -7,7 +7,7 @@ import json
 from pio_ws2812 import Ws2812Strip
 
 
-class PixelGrid(Ws2812Strip):
+class Ws2812Grid(Ws2812Strip):
     """ extend NeoPixel to support BTF-Lighting 8x8 grid
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
@@ -151,8 +151,8 @@ class PixelGrid(Ws2812Strip):
         """
         # rgb is set for the whole string
         for char in str_:
-            self.set_list_rgb(self.charset[char], rgb_)
+            self.set_list(self.charset[char], rgb_)
             self.write()
             await asyncio.sleep_ms(pause_ms)
-            self.set_list_rgb(self.charset[char], (0, 0, 0))
+            self.set_list(self.charset[char], (0, 0, 0))
             self.write()

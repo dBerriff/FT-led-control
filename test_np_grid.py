@@ -8,7 +8,7 @@ import asyncio
 import gc
 import random
 from colour_space import ColourSpace
-from np_grid import PixelGrid
+from np_grid import Ws2812Grid
 
 
 async def main():
@@ -16,7 +16,7 @@ async def main():
 
     pin_number = 27
     cs = ColourSpace()
-    npg = PixelGrid(
+    npg = Ws2812Grid(
         pin_number, n_cols_=8, n_rows_=8, charset_file='5x7.json')
     off = (0, 0, 0)
     level = 64
@@ -34,17 +34,19 @@ async def main():
     await asyncio.sleep_ms(1000)
     npg.clear()
     await asyncio.sleep_ms(500)
+    
+    pix_pause_ms = 20
 
     print('fill pixels as strip')
-    await npg.traverse_strip(rgb, level)
+    await npg.traverse_strip(rgb, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.traverse_strip(off, level) 
+    await npg.traverse_strip(off, pix_pause_ms) 
     await asyncio.sleep_ms(500)
 
     print('fill pixels in col, row order')
-    await npg.traverse_grid(rgb, level)
+    await npg.traverse_grid(rgb, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.traverse_grid(off, level) 
+    await npg.traverse_grid(off, pix_pause_ms) 
     await asyncio.sleep_ms(500)
  
     # build list of rgb values at same level
@@ -52,15 +54,15 @@ async def main():
     rgb_set = [cs.get_rgb(c, level) for c in colour_set]
 
     print('fill cols in sequence')
-    await npg.fill_cols(rgb_set, level)
+    await npg.fill_cols(rgb_set, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.fill_cols((off,), level)  # list/tuple required
+    await npg.fill_cols((off,), pix_pause_ms)  # list/tuple required
     await asyncio.sleep_ms(500)
 
     print('fill rows in sequence')
-    await npg.fill_rows(rgb_set, level)
+    await npg.fill_rows(rgb_set, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.fill_rows((off,), level)  # list/tuple required
+    await npg.fill_rows((off,), pix_pause_ms)  # list/tuple required
     await asyncio.sleep_ms(500)
 
     colour = colour_list[random.randrange(cl_len)]

@@ -135,7 +135,7 @@ class Ws2812Strip(PioWs2812):
         arr = self.arr
         for _ in range(count_):
             index_ %= self.n
-            self[index_] = rgb_
+            arr[index_] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
             index_ += 1
 
     def set_list(self, index_list_, rgb_):

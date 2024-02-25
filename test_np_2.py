@@ -6,8 +6,7 @@ import asyncio
 import time
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from np_strip_helper import mono_chase, np_arc_weld
-from railway import FourAspect
+from np_strip_helper import np_twinkler
 
 
 # helper functions
@@ -30,25 +29,12 @@ async def main():
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    mono_set = [cs.get_rgb('orange', 40),
-                cs.get_rgb('orange', 100),
-                cs.get_rgb('orange', 150)
-                ]
-
-    test_rgb = cs.get_rgb('orange', 100)
-    
-    time_set_strip(nps, test_rgb)
-    await asyncio.sleep_ms(1_000)
-    nps.clear()
-    nps.write()
-    await asyncio.sleep_ms(20)
-
     play_ev = asyncio.Event()
     play_ev.set()
 
-    task_0 = asyncio.create_task(np_arc_weld(nps, cs, 0, play_ev))
-    task_1 = asyncio.create_task(mono_chase(nps, mono_set, play_ev))
-    
+    # task_0 = asyncio.create_task(np_arc_weld(nps, cs, 0, play_ev))
+    for i in range(0, 64, 11):
+        asyncio.create_task(np_twinkler(nps, cs, i, play_ev))
     await asyncio.sleep_ms(20_000)
     play_ev.clear()
     print('Give tasks some time to end')

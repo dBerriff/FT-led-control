@@ -6,8 +6,6 @@ import asyncio
 import time
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from np_strip_helper import mono_chase, np_arc_weld
-from railway import FourAspect
 
 
 # helper functions
@@ -29,11 +27,6 @@ async def main():
     n_pixels = 64
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
-
-    mono_set = [cs.get_rgb('orange', 40),
-                cs.get_rgb('orange', 100),
-                cs.get_rgb('orange', 150)
-                ]
 
     test_rgb = cs.get_rgb('orange', 100)
     

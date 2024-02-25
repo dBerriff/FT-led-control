@@ -1,3 +1,4 @@
+# np_strip_helper.py
 # helper methods for Ws2812Strip
 
 import asyncio
@@ -23,7 +24,7 @@ async def np_arc_weld(nps, cs, px_index, play_ev):
         await asyncio.sleep_ms(randrange(1_000, 5_000))
 
 
-async def np_twinkler(nps, pixel_):
+async def np_twinkler(nps, cs, pixel_, play_ev):
     """ coro: single pixel:
         simulate gas-lamp twinkle
     """
@@ -34,7 +35,7 @@ async def np_twinkler(nps, pixel_):
     # levels list: take mean value
     levels = [0] * n_smooth
     l_index = 0
-    while True:
+    while play_ev.is_set():
         twinkle = randrange(64, 128, 8)
         # randrange > 0; no 'pop'
         if randrange(0, 50) > 0:  # most likely
@@ -46,7 +47,7 @@ async def np_twinkler(nps, pixel_):
             for i in range(n_smooth):
                 levels[i] = dim_level
             level = dim_level
-        nps[pixel_] = nps.get_rgb(lamp_rgb, level)
+        nps[pixel_] = cs.get_rgb(lamp_rgb, level)
         nps.write()
         await asyncio.sleep_ms(randrange(20, 200, 20))
         l_index += 1

@@ -6,7 +6,7 @@
 """
 
 import asyncio
-from np_grid import PixelGrid
+from np_grid_ws import BlockGrid
 from colour_space import ColourSpace
 
 
@@ -15,7 +15,7 @@ async def main():
 
     pin_number = 27
     cs = ColourSpace()
-    npg = PixelGrid(
+    npg = BlockGrid(
         pin_number, n_cols_=16, n_rows_=8, charset_file='5x7.json')
     level = 64
     rgb = cs.get_rgb('dark_orange', level)
@@ -28,8 +28,10 @@ async def main():
     # test character shift-left
 
     await npg.display_string_shift(' This is a test.', rgb)
-    npg.clear()
     await asyncio.sleep_ms(1000)
+    npg.clear()
+    npg.write()
+    await asyncio.sleep_ms(20)
 
 if __name__ == '__main__':
     try:
