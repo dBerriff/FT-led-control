@@ -1,4 +1,4 @@
-# ltest_np.py
+# test_np_2.py
 
 """ test LED- and NeoPixel-related classes """
 
@@ -43,34 +43,19 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(20)
 
-    nps.set_pixel(0, test_rgb)
-    nps.write()
-    await asyncio.sleep_ms(1_000)
+    play_ev = asyncio.Event()
+    play_ev.set()
+
+    task_0 = asyncio.create_task(np_arc_weld(nps, cs, 0, play_ev))
+    task_1 = asyncio.create_task(mono_chase(nps, mono_set, play_ev))
+    
+    await asyncio.sleep_ms(20_000)
+    play_ev.clear()
+    print('Give tasks some time to end')
+    await asyncio.sleep_ms(2_000)
     nps.clear()
     nps.write()
     await asyncio.sleep_ms(20)
-
-    nps.set_strip(test_rgb)
-    nps.write()
-    await asyncio.sleep_ms(1_000)
-    nps.clear()
-    nps.write()
-    await asyncio.sleep_ms(20)
-
-    nps.set_range(8, 8, test_rgb)
-    nps.write()
-    await asyncio.sleep_ms(1_000)
-    nps.clear()
-    nps.write()
-    await asyncio.sleep_ms(20)
-
-    nps.set_list((0, 2, 4, 6), test_rgb)
-    nps.write()
-    await asyncio.sleep_ms(1_000)
-    nps.clear()
-    nps.write()
-    await asyncio.sleep_ms(20)
-
 
 if __name__ == '__main__':
     try:

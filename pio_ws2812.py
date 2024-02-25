@@ -5,42 +5,34 @@
     - Adafruit Circuit Python
     - FastLED project.
 
-    Raspberry Pi documentation is the main source of information for the PIO
-    implementation, and thanks to MERG member Paul Redhead for addition inspiration.
-    Adafruit documentation is acknowledged as the main source of information on
-    NeoPixels, with additional content from the FasLED project.
+    Source of information for the PIO: Raspberry Pi documentation.
+    Thanks to MERG member Paul Redhead for addition information and inspiration.
+    NeoPixels: see Adafruit documentation and the FasLED project.
     See as an initial document:
     https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     Classes:
 
     PioWs2812
-    Set pixel output for a strip for a strip of WS2812 LEDs (aka NeoPixels: Adafruit).
-    An RP2040 PIO StateMachine is used to improve performance over NeoPixel class.
+    Set pixel output for a strip of WS2812 LEDs (aka NeoPixels: Adafruit).
+    Compared to built-in NeoPixel class:
+    - RP2040 PIO StateMachine is used for minor performance gain
+    - direct access to the RGB array significantly improves some grid-based algorithms
 
     Ws2812Strip(PioWs2812)
     This extends the PioWs2812 class by adding attributes and methods intended to
-    simplify user coding.
-    Core methods only; see strip and grid classes for application-specific methods.
-    The interface largely matches the NeoPixel class interface.
-    An important difference for performance is that there is direct access to
-    the RGB array; this particularly helps with grid character shifts.
+    match the NeoPixel interface, and to simplify user coding.
+    See 'helper' functions for application-specific code.
 
-    - 'set_' functions do not write() pixels - this allows for colour overlays
+    Notes:
+    - methods do not write() pixels - allows for colour overlays
     - implicit setting of output levels and gamma correction is not included
-        as this is more efficiently implemented before calling these methods
-        (see the ColourSpace class)
-    
+        in the interest of code clarity: see class ColourSpace
+
     See also:
     PixelGrid(PixelStrip)
-    Set pixel output for a rectangular grid, viewed as 8x8 pixel blocks
-
-    ColourSpace
-    Define a basic colour set and add methods to adjust RGB values for 
-    level (brightness ) and gamma correction.
-
+    Set pixel output for a rectangular grid
 """
-# Example using PIO to drive a set of WS2812 LEDs.
 
 import rp2
 from machine import Pin
@@ -75,24 +67,25 @@ class PioWs2812:
         self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=8_000_000, sideset_base=Pin(pin))
 
     def set_active(self, state_):
-        """ set StateMachine active, True or False """
+        """ set StateMachine active-state, True or False """
         self.sm.active(state_)
 
 
 class Ws2812Strip(PioWs2812):
     """ extend PioWs2812 for NeoPixel strip
-        - MicroPython NeoPixel interface is matched as per documentation
+        - MicroPython NeoPixel interface is matched as per MP documentation
         - not all NeoPixel parameters are instantiated:
             -- frequency fixed at 800kHz
             -- RGBW (bpp) not currently implemented
         - StateMachine pulls 32-bit words for Tx FIFO
-        - it is marginally quicker to shift 24-bit colour to MSB
-            as a block with sm.put(value, shift=8)
+        - as in the R Pi example code, it is marginally quicker to shift
+            24-bit colour to MSB as a block ( with sm.put(value, shift=8) )
         - WS2812 expects colour order: GRB
-            __setitem__, set_pixel(), set_strip() set order
+            __setitem__, set_pixel() and set_strip() implicitly set this order
         - some code is repeated to avoid additional method calls
         - no implicit conversion of colour levels to RGB;
-            implement externally for clarity 
+            implement externally for clarity and consistency
+        - list comprehension is not used as it reduces performance, allegedly
     """
 
     RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes
@@ -105,43 +98,30 @@ class Ws2812Strip(PioWs2812):
         self.timing = timing  # 1 is 800kHz, 0 is 400kHz; currently ignored
         self.n = n_pixels  # NeoPixel undocumented attribute
         self.set_active(True)
-        # LED RGB values, typecode 'I' is 32-bit unsigned integer
+        # LED RGB values, typecode 'I' is for 32-bit unsigned integers
         self.arr = array.array('I', [0]*n_pixels)
 
     def __len__(self):
-        """ NeoPixel interface """
+        """ matches NeoPixel interface """
         return self.n_pixels
 
     def __setitem__(self, index, colour):
-        """ NeoPixel interface """
+        """ matches NeoPixel interface; RGB -> GRB """
         # RGB -> GRB for WS2812 order; shift to MSB on put()
         self.arr[index] = (colour[1] << 16) + (colour[0] << 8) + colour[2]
 
     def __getitem__(self, index):
-        """ NeoPixel interface GRB -> RGB """
+        """ matches NeoPixel interface; GRB -> RGB """
         grb = self.arr[index]
         return (grb >> 8) & 0xff, (grb >> 16) & 0xff, grb & 0xff,
 
-    """def write_level(self, level):
-        # deprecated: set level externally
-        # put pixel array into Tx FIFO, first setting level """
-        arr = self.arr  # avoid repeated dict lookup
-        for i, c in enumerate(self.arr):
-            r = int(((c >> 8) & 0xFF) * level)
-            g = int(((c >> 16) & 0xFF) * level)
-            b = int((c & 0xFF) * level)
-            arr[i] = (g << 16) + (r << 8) + b
-        self.sm.put(arr, self.RGB_SHIFT)"""
-
     def write(self):
         """ 'put' pixel array into StateMachine Tx FIFO """
-        # shift moves rgb bits to MSB postion
+        # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.RGB_SHIFT)
 
     def set_pixel(self, i, rgb_):
-        """ set WS2812 pixel RGB
-            - duplicates __setitem__()
-        """
+        """ set pixel RGB; duplicates __setitem__() """
         self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
     def set_strip(self, rgb_):
@@ -149,6 +129,14 @@ class Ws2812Strip(PioWs2812):
         arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
             arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
+
+    def set_range(self, index_, count_, rgb_):
+        """ fill count_ pixels with rgb_  """
+        arr = self.arr
+        for _ in range(count_):
+            index_ %= self.n
+            self[index_] = rgb_
+            index_ += 1
 
     def set_list(self, index_list_, rgb_):
         """ fill index_list pixels with rgb_ """
@@ -158,7 +146,6 @@ class Ws2812Strip(PioWs2812):
 
     def clear(self):
         """ clear all pixels """
-        arr = self.arr  # avoid repeated dict lookup
+        arr = self.arr
         for i in range(self.n_pixels):
             arr[i] = 0
-
