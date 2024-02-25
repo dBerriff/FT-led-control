@@ -122,15 +122,16 @@ class Ws2812Strip(PioWs2812):
         grb = self.arr[index]
         return (grb >> 8) & 0xff, (grb >> 16) & 0xff, grb & 0xff,
 
-    def write_level(self, level):
-        """ put pixel array into Tx FIFO, first setting level """
+    """def write_level(self, level):
+        # deprecated: set level externally
+        # put pixel array into Tx FIFO, first setting level """
         arr = self.arr  # avoid repeated dict lookup
         for i, c in enumerate(self.arr):
             r = int(((c >> 8) & 0xFF) * level)
             g = int(((c >> 16) & 0xFF) * level)
             b = int((c & 0xFF) * level)
             arr[i] = (g << 16) + (r << 8) + b
-        self.sm.put(arr, self.RGB_SHIFT)
+        self.sm.put(arr, self.RGB_SHIFT)"""
 
     def write(self):
         """ 'put' pixel array into StateMachine Tx FIFO """
@@ -138,23 +139,26 @@ class Ws2812Strip(PioWs2812):
         self.sm.put(self.arr, self.RGB_SHIFT)
 
     def set_pixel(self, i, rgb_):
-        """ set pixel colour in WS2812 order
+        """ set WS2812 pixel RGB
             - duplicates __setitem__()
         """
         self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
     def set_strip(self, rgb_):
-        """ fill strip with RGB in WS2812 order """
+        """ fill WS2812 strip with RGB """
+        arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
-            self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
+            arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
-    def set_list_rgb(self, index_list_, rgb_):
+    def set_list(self, index_list_, rgb_):
         """ fill index_list pixels with rgb_ """
-        for index in index_list_:
-            self[index] = rgb_
+        arr = self.arr
+        for i in index_list_:
+            arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
     def clear(self):
-        """ set and write all pixels to off """
-        for index in range(self.n_pixels):
-            self[index] = (0, 0, 0)
-        self.write()
+        """ clear all pixels """
+        arr = self.arr  # avoid repeated dict lookup
+        for i in range(self.n_pixels):
+            arr[i] = 0
+
