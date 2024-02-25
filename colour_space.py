@@ -6,12 +6,16 @@ from micropython import const
 
 class ColourSpace:
     """ 
-        8-bit RGB colours
-        get_rgb() applies brightness level and (fixed-value) gamma correction
+        implements 8-bit RGB colours as 3-element tuples (R, G, B)
+        each colour is represented by an integer in range(256), 0 to 255
+        method get_rgb() applies brightness level and gamma correction
+        brightness is in range(256)
         gamma-correction is applied from a look-up list to speed up processing
-        class-methods only
+        methods are all @classmethod
+        list comprehension not used for faster computation
     """
 
+    # full brightness colour "templates"
     colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -48,7 +52,7 @@ class ColourSpace:
         """
             return a level-converted, gamma-corrected rgb value
             - c_template is colours dict key: str, or (r, g, b)
-            - tests for level_ == 255 and 0 could be included
+            - explicit tests for level_ == 255 or 0 could be included
                 if these values are frequently set
         """
         if isinstance(rgb_template, str):
@@ -58,14 +62,9 @@ class ColourSpace:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        if level_ == 0:
-            return 0, 0, 0
-        elif level_ == 255:
-            return rgb_template
-        else:
-            return cls.RGB_GAMMA[rgb_template[0] * level_ // 255], \
-                cls.RGB_GAMMA[rgb_template[1] * level_ // 255], \
-                cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
+        return cls.RGB_GAMMA[rgb_template[0] * level_ // 255], \
+            cls.RGB_GAMMA[rgb_template[1] * level_ // 255], \
+            cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
 
     @classmethod
     def get_rgb_list(cls, template_list, level_):
