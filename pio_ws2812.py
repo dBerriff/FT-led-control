@@ -21,6 +21,7 @@
     Ws2812Strip(PioWs2812)
     This extends the PioWs2812 class by adding attributes and methods intended to
     simplify user coding.
+    Core methods only; see strip and grid classes for application-specific methods.
     The interface largely matches the NeoPixel class interface.
     An important difference for performance is that there is direct access to
     the RGB array; this particularly helps with grid character shifts.
@@ -35,7 +36,8 @@
     Set pixel output for a rectangular grid, viewed as 8x8 pixel blocks
 
     ColourSpace
-    Define basic colours and adjust RGB values for level and gamma correction.
+    Define a basic colour set and add methods to adjust RGB values for 
+    level (brightness ) and gamma correction.
 
 """
 # Example using PIO to drive a set of WS2812 LEDs.
@@ -44,7 +46,6 @@ import rp2
 from machine import Pin
 import array
 from micropython import const
-import time
 
 
 class PioWs2812:
@@ -89,18 +90,20 @@ class Ws2812Strip(PioWs2812):
             as a block with sm.put(value, shift=8)
         - WS2812 expects colour order: GRB
             __setitem__, set_pixel(), set_strip() set order
-        - code is repeated to avoid additional method calls
-        - implicit conversion of colour-keys to RGB has been removed
+        - some code is repeated to avoid additional method calls
+        - no implicit conversion of colour levels to RGB;
+            implement externally for clarity 
     """
 
     RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes
+    # RGBW_SHIFT = const(0)  # future use
 
     def __init__(self, pin, n_pixels, bpp=3, timing=1):
         super().__init__(pin)
         self.n_pixels = n_pixels
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
         self.timing = timing  # 1 is 800kHz, 0 is 400kHz; currently ignored
-        self.n = n_pixels  # NeoPixel undocumented
+        self.n = n_pixels  # NeoPixel undocumented attribute
         self.set_active(True)
         # LED RGB values, typecode 'I' is 32-bit unsigned integer
         self.arr = array.array('I', [0]*n_pixels)
@@ -115,13 +118,13 @@ class Ws2812Strip(PioWs2812):
         self.arr[index] = (colour[1] << 16) + (colour[0] << 8) + colour[2]
 
     def __getitem__(self, index):
-        """ NeoPixel interface """
+        """ NeoPixel interface GRB -> RGB """
         grb = self.arr[index]
         return (grb >> 8) & 0xff, (grb >> 16) & 0xff, grb & 0xff,
 
     def write_level(self, level):
         """ put pixel array into Tx FIFO, first setting level """
-        arr = self.arr
+        arr = self.arr  # avoid repeated dict lookup
         for i, c in enumerate(self.arr):
             r = int(((c >> 8) & 0xFF) * level)
             g = int(((c >> 16) & 0xFF) * level)
@@ -131,6 +134,7 @@ class Ws2812Strip(PioWs2812):
 
     def write(self):
         """ 'put' pixel array into StateMachine Tx FIFO """
+        # shift moves rgb bits to MSB postion
         self.sm.put(self.arr, self.RGB_SHIFT)
 
     def set_pixel(self, i, rgb_):
