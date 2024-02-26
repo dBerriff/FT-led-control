@@ -103,9 +103,9 @@ def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
 
 def main():
 
-    # !!! select required character set (no file extension)
+    # === select required character set (no file extension)
     charset = '5x7'
-    # !!!
+    # ===
 
     font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
 
