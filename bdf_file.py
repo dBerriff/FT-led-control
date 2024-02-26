@@ -24,8 +24,11 @@ def get_font_bitmaps(filename):
 
     def get_line_as_tokens(f_):
         """ fetch a line and split into tokens """
-        line_ = f_.readline()
-        line_.strip()
+        try:
+            line_ = f_.readline()
+            line_.strip()
+        except EOFError:
+            print(f'get_line_as_tokens(): font file {f_} is incomplete.')
         return line_.split()
 
     def find_keyword(f_, keyword):
@@ -34,8 +37,11 @@ def get_font_bitmaps(filename):
         """
         line_ = ''
         while not line_.startswith(keyword):
-            line_ = f_.readline()
-            line_.strip()
+            try:
+                line_ = f_.readline()
+                line_.strip()
+            except EOFError:
+                print(f'find_keyword(): font file {f_} is incomplete.')
         return line_.split()
 
     preamble_dict = {'filename': filename}
