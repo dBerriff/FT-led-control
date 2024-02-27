@@ -24,6 +24,7 @@ def get_font_bitmaps(filename):
 
     def get_line_as_tokens(f_):
         """ fetch a line and split into tokens """
+        line_ = ''
         try:
             line_ = f_.readline()
             line_.strip()
@@ -47,6 +48,7 @@ def get_font_bitmaps(filename):
     preamble_dict = {'filename': filename}
     font_dict = {}
     # no exception handling!
+    print(f'font filename: {filename}')
     with open(filename) as f:
         tokens = find_keyword(f, 'FONTBOUNDINGBOX')
         preamble_dict['width'] = int(tokens[1])
@@ -72,6 +74,7 @@ def get_font_bitmaps(filename):
             font_dict[code] = bit_map
             # optional: consume remainder of character block
             find_keyword(f, 'ENDCHAR')
+        font_dict.pop(0, 0)  # default value prevents error if not in dict
 
     return preamble_dict, font_dict
 
@@ -115,9 +118,6 @@ def main():
         json.dump({x: list(bitmaps[x]) for x in list(bitmaps.keys())}, f)
     """
 
-    # remove null character if in dict
-    bitmaps.pop(0, 0)  # default value prevents error if not in dict
-
     # pad out bitmaps to 8 rows
     pad_rows = 8 - font_parameters['height']
     if pad_rows > 0:
@@ -139,6 +139,7 @@ def main():
     with open(charset + '.json', 'r') as f:
         retrieved = json.load(f)
     print()
+    print('Encoded characters:')
     for key in retrieved:
         print(f'"{key}": {retrieved[key]}')
 

@@ -41,7 +41,7 @@ async def main():
     asyncio.create_task(set_4_aspect(nps, cs, 16, 128, 1_300))
     asyncio.create_task(set_3_aspect(nps, cs, 32, 128, 1_900))
     
-    await asyncio.sleep_ms(25_000)
+    await asyncio.sleep_ms(20_000)
     nps.clear()
     nps.write()
     await asyncio.sleep_ms(20)

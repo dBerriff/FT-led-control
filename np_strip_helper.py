@@ -85,3 +85,25 @@ async def colour_chase(nps, rgb_list, pause=20):
         nps.write()
         await asyncio.sleep_ms(pause)
         c_index = (c_index - 1) % n_rgb
+
+async def two_flash(nps, offset, rgb_, flash_ev, period=1000):
+    """ flash 2 pixels alternatively """
+    off = (0, 0, 0)
+    hold = period // 2
+    offset_1 = offset + 1
+    nps[offset] = off
+    while True:
+        nps[offset_1] = off
+        nps.write()
+        await asyncio.sleep_ms(20)
+        await flash_ev.wait()  # wait until set
+        while flash_ev.is_set():
+            nps[offset] = rgb_
+            nps[offset_1] = off
+            nps.write()
+            await asyncio.sleep_ms(hold)
+            nps[offset] = off
+            nps[offset_1] = rgb_
+            nps.write()
+            await asyncio.sleep_ms(hold)
+    
