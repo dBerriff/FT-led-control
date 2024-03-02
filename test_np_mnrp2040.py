@@ -24,28 +24,28 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    pin_number = 11
+    pin_number = 27
     n_pixels = 2
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
     off = (0, 0, 0)
+    level = 128
 
-    test_rgb = cs.get_rgb('orange', 100)
+    test_rgb = cs.get_rgb('orange', level)
     
     time_set_strip(nps, test_rgb)
     nps.set_strip(off)
     nps.write()
     await asyncio.sleep_ms(20)
-    
 
-    nps.set_pixel(0, cs.get_rgb('green', 100))
+    nps.set_pixel(0, cs.get_rgb('green', level))
     nps.write()
     await asyncio.sleep_ms(1_000)
     nps.set_pixel(0, off)
     nps.write()
     await asyncio.sleep_ms(20)
 
-    nps.set_pixel(1, cs.get_rgb('blue', 100))
+    nps.set_pixel(1, cs.get_rgb('blue', level))
     nps.write()
     await asyncio.sleep_ms(1_000)
     nps.set_pixel(1, off)
@@ -60,7 +60,7 @@ async def main():
     await asyncio.sleep_ms(20)
 
     # test twin pixel flash: red
-    test_rgb = cs.get_rgb('red', 100)
+    test_rgb = cs.get_rgb('red', level)
     # asyncio Event controls flashing
     do_flash = asyncio.Event()
     # create the task, adding to scheduler

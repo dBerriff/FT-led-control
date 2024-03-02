@@ -12,11 +12,13 @@ async def np_arc_weld(nps, cs, px_index, play_ev):
     arc_rgb_ = 'white'
     glow_rgb_ = 'red'
     while play_ev.is_set():
+        # flash 100 to 200 times at random level
         for _ in range(randrange(100, 200)):
             level = randrange(96, 192)
             nps[px_index] = cs.get_rgb(arc_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(20)
+        # fade out glow
         for level in range(128, -1, -1):
             nps[px_index] = cs.get_rgb(glow_rgb_, level)
             nps.write()
@@ -86,24 +88,28 @@ async def colour_chase(nps, rgb_list, pause=20):
         await asyncio.sleep_ms(pause)
         c_index = (c_index - 1) % n_rgb
 
-async def two_flash(nps, offset, rgb_, flash_ev, period=1000):
-    """ flash 2 pixels alternatively """
+
+async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
+    """ flash 2 pixels alternatively
+        - flash_ev is an asyncio.Event() to switch flashing on/off
+    """
+    
+    def set_display(rgb_0, rgb_1):
+        """ set the 2 pixels """
+        nps[base_index] = rgb_0
+        nps[bi_1] = rgb_1
+        nps.write()
+        
     off = (0, 0, 0)
     hold = period // 2
-    offset_1 = offset + 1
-    nps[offset] = off
+    bi_1 = base_index + 1
+    write_delay_ms = 2  # allow PIO write to complete
     while True:
-        nps[offset_1] = off
-        nps.write()
-        await asyncio.sleep_ms(20)
-        await flash_ev.wait()  # wait until set
-        while flash_ev.is_set():
-            nps[offset] = rgb_
-            nps[offset_1] = off
-            nps.write()
-            await asyncio.sleep_ms(hold)
-            nps[offset] = off
-            nps[offset_1] = rgb_
-            nps.write()
-            await asyncio.sleep_ms(hold)
+        set_display(off, off)
+        await asyncio.sleep_ms(write_delay_ms)
+        await flash_ev.wait()  # pass-through or wait for set()
+        set_display(rgb, off)
+        await asyncio.sleep_ms(hold)
+        set_display(off, rgb)
+        await asyncio.sleep_ms(hold)
     
