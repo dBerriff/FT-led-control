@@ -9,6 +9,7 @@ import gc
 import random
 from colour_space import ColourSpace
 from np_grid import Ws2812Grid
+from np_grid_ws import display_string_shift
 
 
 async def main():
@@ -96,6 +97,12 @@ async def main():
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(200)
+
+    await display_string_shift(' This is a test.', rgb)
+    await asyncio.sleep_ms(1000)
+    npg.clear()
+    npg.write()
+    await asyncio.sleep_ms(20)
 
 
 if __name__ == '__main__':

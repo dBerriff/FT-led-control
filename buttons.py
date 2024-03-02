@@ -67,4 +67,4 @@ class HoldButton(Button):
                         self.state = self.HOLD
                     self.press_ev.set()
                 prev_pin_state = pin_state
-            await asyncio.sleep_ms(20)
+            await asyncio.sleep_ms(self.POLL_INTERVAL)
