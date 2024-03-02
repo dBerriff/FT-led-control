@@ -66,7 +66,7 @@ async def mono_chase(nps_, rgb_list, pause=20):
     n_pixels = nps_.n
     n_colours = len(rgb_list)
     index = 0
-    for _ in range(100):
+    for _ in range(500):
         for i in range(n_colours):
             nps_[(index + i) % n_pixels] = rgb_list[i]
         nps_.write()
@@ -89,6 +89,27 @@ async def colour_chase(nps_, rgb_list, pause=20):
         nps_.write()
         await asyncio.sleep_ms(pause)
         c_index = (c_index - 1) % n_colours
+
+    def set_colours(nps, rgb_list):
+        """ fill WS2812 strip with RGB """
+        arr = nps.arr  # avoid repeated dict lookup
+        n = nps.n_pixels
+        c_i = 1
+        for i in range(self.n_pixels):
+            clr = rgb_list[c_i]
+            arr[i] = (clr[1] << 16) + (clr[0] << 8) + clr[2]
+            c_i += 1 % nps.n_pixels
+
+def set_colour_list(nps, rgb_list):
+    """ fill WS2812 strip with RGB """
+    arr = nps.arr  # avoid repeated dict lookup
+    c_i = 0
+    n_clrs = len(rgb_list)
+    for i in range(nps.n_pixels):
+        clr = rgb_list[c_i]
+        arr[i] = (clr[1] << 16) + (clr[0] << 8) + clr[2]
+        c_i += 1
+        c_i %= n_clrs
 
 
 class ColourSignal:

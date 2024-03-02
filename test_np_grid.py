@@ -1,104 +1,108 @@
 # test_np_grid.py
 
-""" test LED- and NeoPixel-related classes """
+""" test WS1802-related classes
+    - test for 8x8 pixel grid
+"""
 
 import asyncio
-from neo_pixel import PixelGrid
 import gc
 import random
-from np_grid_helper import fill_grid, traverse_strip, \
-     traverse_grid, fill_cols, fill_rows, display_string
+from colour_space import ColourSpace
+from np_grid import Ws2812Grid
 
 
 async def main():
-    """ coro: test NeoPixel grid helper functions """
+    """ coro: test WS1802 grid methods """
 
     pin_number = 27
-    npg = PixelGrid(
-        pin_number, n_cols_=8, n_rows_=8, cs_file='5x7.json')
+    cs = ColourSpace()
+    npg = Ws2812Grid(
+        pin_number, n_cols_=8, n_rows_=8, charset_file='5x7.json')
     off = (0, 0, 0)
     level = 64
     gc.collect()
 
-    colour_list = ['amber', 'aqua', 'blue','cyan', 'ghost_white', 'gold',
+    colour_list = ['amber', 'aqua', 'blue', 'cyan', 'ghost_white', 'gold',
                    'green', 'jade', 'magenta', 'mint_cream', 'old_lace',
                    'orange', 'dark_orange', 'pink', 'purple', 'red', 'snow',
                    'teal', 'white', 'yellow']
     cl_len = len(colour_list)
 
-    while True:
-        rgb = 'dark_orange'
-        # fill grid with single colour
-        await fill_grid(npg, rgb, level)
-        await asyncio.sleep_ms(1000)
-        npg.clear()
+    rgb = cs.get_rgb('dark_orange', level)
+    # fill grid with single colour
+    await npg.fill_grid(rgb, level)
+    await asyncio.sleep_ms(1000)
+    npg.clear()
+    await asyncio.sleep_ms(500)
+    
+    pix_pause_ms = 20
+
+    print('fill pixels as strip')
+    await npg.traverse_strip(rgb, pix_pause_ms)
+    await asyncio.sleep_ms(1000)
+    await npg.traverse_strip(off, pix_pause_ms) 
+    await asyncio.sleep_ms(500)
+
+    print('fill pixels in col, row order')
+    await npg.traverse_grid(rgb, pix_pause_ms)
+    await asyncio.sleep_ms(1000)
+    await npg.traverse_grid(off, pix_pause_ms) 
+    await asyncio.sleep_ms(500)
+ 
+    # build list of rgb values at same level
+    colour_set = ('red', 'orange', 'yellow', 'green', 'blue', 'purple')
+    rgb_set = [cs.get_rgb(c, level) for c in colour_set]
+
+    print('fill cols in sequence')
+    await npg.fill_cols(rgb_set, pix_pause_ms)
+    await asyncio.sleep_ms(1000)
+    await npg.fill_cols((off,), pix_pause_ms)  # list/tuple required
+    await asyncio.sleep_ms(500)
+
+    print('fill rows in sequence')
+    await npg.fill_rows(rgb_set, pix_pause_ms)
+    await asyncio.sleep_ms(1000)
+    await npg.fill_rows((off,), pix_pause_ms)  # list/tuple required
+    await asyncio.sleep_ms(500)
+
+    colour = colour_list[random.randrange(cl_len)]
+    print(colour)
+    rgb = cs.get_rgb(colour, level)
+
+    print('fill diagonals')
+    pause_ms = 1000
+    for _ in range(12):
+        npg.set_diagonal(rgb, mirror=False)
         npg.write()
-        await asyncio.sleep_ms(500)
+        await asyncio.sleep_ms(pause_ms)
+        npg.set_diagonal(off, mirror=False)
+        npg.write()
+        npg.set_diagonal(rgb, mirror=True)
+        npg.write()
+        await asyncio.sleep_ms(pause_ms)
+        npg.set_diagonal(off, mirror=True)
+        npg.write()
+        pause_ms //= 2
+    npg.clear()
+    await asyncio.sleep_ms(2000)
 
-        print('fill pixels as strip')
-        await traverse_strip(npg, rgb, level)
-        await asyncio.sleep_ms(1000)
-        await traverse_strip(npg, off, level) 
-        await asyncio.sleep_ms(500)
+    print('display strings')
+    await npg.display_string('MERG', rgb)
+    npg.clear()
+    gc.collect()
+    await asyncio.sleep_ms(1000)
 
-        print('fill pixels in col, row order')
-        await traverse_grid(npg, rgb, level)
-        await asyncio.sleep_ms(1000)
-        await traverse_grid(npg, off, level) 
-        await asyncio.sleep_ms(500)
-     
-        # build list of rgb values at same level
-        rgb_set = 'red', 'orange', 'yellow', 'green', 'blue', 'purple'
+    await npg.display_string('0123456789', rgb)
+    npg.clear()
+    gc.collect()
+    await asyncio.sleep_ms(200)
 
-        print('fill cols in sequence')
-        await fill_cols(npg, rgb_set, level)
-        await asyncio.sleep_ms(1000)
-        await fill_cols(npg, (off,), level)  # list/tuple required
-        await asyncio.sleep_ms(500)
+    await npg.display_string_shift(' This is a test.', rgb, 1000)
+    await asyncio.sleep_ms(1000)
+    npg.clear()
+    npg.write()
+    await asyncio.sleep_ms(20)
 
-        print('fill rows in sequence')
-        await fill_rows(npg, rgb_set, level)
-        await asyncio.sleep_ms(1000)
-        await fill_rows(npg, (off,), level)  # list/tuple required
-        await asyncio.sleep_ms(500)
-
-        rgb = colour_list[random.randrange(cl_len)]
-        print(rgb)
-        
-        print('fill diagonals')
-        pause_ms = 1000
-        for _ in range(12):
-            npg.fill_diagonal(rgb, level)
-            npg.write()
-            await asyncio.sleep_ms(pause_ms)
-            npg.fill_diagonal(off, level)
-            npg.write()
-            npg.fill_diagonal(rgb, level, mirror=True)
-            npg.write()
-            await asyncio.sleep_ms(pause_ms)
-            npg.fill_diagonal(off, level, mirror=True)
-            npg.write()
-            pause_ms //= 2
-        npg.clear()
-        await asyncio.sleep_ms(2000)
-        
-        print('display strings')
-        await display_string(npg, 'MERG', rgb, level)
-        npg.clear()
-        gc.collect()
-        await asyncio.sleep_ms(1000)
-        await display_string(npg, 'Raspberry Pi SIG', rgb, level)
-        npg.clear()
-        gc.collect()
-        await asyncio.sleep_ms(1000)
-        await display_string(npg, 'Famous Trains Derby', rgb, level)
-        npg.clear()
-        gc.collect()
-        await asyncio.sleep_ms(1000)
-        await display_string(npg, '0123456789', rgb, level)
-        npg.clear()
-        gc.collect()
-        await asyncio.sleep_ms(200)
 
 
 if __name__ == '__main__':

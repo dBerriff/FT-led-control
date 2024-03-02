@@ -1,22 +1,20 @@
-# led_test.py
+# ltest_np.py
 
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
 import time
-import random
-from neo_pixel import PixelStrip
-from neo_pixel_helper import np_arc_weld, np_twinkler, \
-     mono_chase, colour_chase, FourAspect
+from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
+from neo_pixel_helper import mono_chase, colour_chase, set_colour_list
 
 
 # helper functions
 
-async def time_set_strip(nps_, rgb_, level_):
-    """ coro: test and time fill-strip method """
+def time_set_strip(nps_, rgb_):
+    """ test and time fill-strip method """
     c_time = time.ticks_us()
-    nps_.set_strip(rgb_, level_)
+    nps_.set_strip(rgb_)
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps_.write()
@@ -26,57 +24,79 @@ async def time_set_strip(nps_, rgb_, level_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    pin_number = 27
-    n_pixels = 30
-    nps = PixelStrip(pin_number, n_pixels)
+    pin_number = 28
+    n_pixels = 300
+    nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    colour_list = ['amber', 'aqua', 'blue', 'cyan', 'ghost_white', 'gold',
-                   'green', 'jade', 'magenta', 'mint_cream', 'old_lace',
-                   'orange', 'dark_orange', 'pink', 'purple', 'red', 'snow',
-                   'teal', 'white', 'yellow'
-                   ]
-
-    cl_len = len(colour_list)
-
-    level = 64
+    test_rgb = cs.get_rgb((200, 200, 255), 255)
+    list_rgb = [cs.get_rgb('green', 126), cs.get_rgb('red', 126),  cs.get_rgb('blue', 126)]
+    list_1 = [cs.get_rgb('green', 126), cs.get_rgb('red', 126), cs.get_rgb('blue', 126)]
+    list_2 = [cs.get_rgb('red', 126), cs.get_rgb('blue', 126), cs.get_rgb('green', 126)]
+    list_3 = [cs.get_rgb('blue', 126), cs.get_rgb('green', 126), cs.get_rgb('red', 126)]
     
-    t_4 = FourAspect(nps, 0, level)
-    print(t_4, t_4.aspect_codes)
-    sequence = ['red', 'yellow', 'double yellow', 'green']
-    states = len(sequence)
-    for aspect in sequence:
-        print(aspect)
-        t_4.set_aspect(aspect)
-        await asyncio.sleep_ms(2_000)
-    await asyncio.sleep_ms(2_000)
-
-    for n in [0, 1, 2, 3, 3, 2, 1, 0]:
-        print('clear blocks:', n)
-        t_4.set_by_blocks_clear(n)
-        await asyncio.sleep_ms(2_000)
-
-    """
-    mono_set = [cs.get_rgb('orange', 40), cs.get_rgb('orange', 90), cs.get_rgb('orange', 192)]
-    nps[1] = mono_set[2]
-    nps[0] = nps[1]
+    time_set_strip(nps, test_rgb)
+    await asyncio.sleep_ms(5_000)
+    nps.clear()
     nps.write()
-    await asyncio.sleep_ms(1000)
-    await mono_chase(nps, mono_set, 20)
-    
+    await asyncio.sleep_ms(200)
+    """
+    nps.set_pixel(0, test_rgb)
+    nps.write()
+    await asyncio.sleep_ms(5_000)
     nps.clear()
-    await asyncio.sleep_ms(20)
-    
-    colour_set = [cs.get_rgb('purple', 64),
-                  cs.get_rgb('blue', 64),
-                  cs.get_rgb('green', 64),
-                  cs.get_rgb('yellow', 64),
-                  cs.get_rgb('red', 64)
-                  ]
-    await colour_chase(nps, colour_set, 200)
-    """    
+    nps.write()
+    await asyncio.sleep_ms(200)
+    """
+    set_colour_list(nps, list_1)
+    nps.write()
+    await asyncio.sleep_ms(5000)
+    set_colour_list(nps, list_2)
+    nps.write()
+    await asyncio.sleep_ms(5000)
+    set_colour_list(nps, list_3)
+    nps.write()
+    await asyncio.sleep_ms(5000)
     nps.clear()
-    await asyncio.sleep_ms(20)
+    nps.write()
+
+    while True:
+        for i in range(25, 179):
+            test_rgb = cs.get_rgb((255, 255, 255), i)
+            nps.set_range(0, 179, test_rgb)
+            nps.write()
+            await asyncio.sleep_ms(2)
+        for i in range(179, 25, -1):
+            test_rgb = cs.get_rgb((200, 200, 255), i)
+            nps.set_range(0, 179, test_rgb)
+            nps.write()
+            await asyncio.sleep_ms(2)
+        """
+        nps.set_range(100, 100, test_rgb)
+        nps.write()
+        await asyncio.sleep_ms(5_000)
+        nps.clear()
+        nps.write()
+        await asyncio.sleep_ms(200)
+
+        nps.set_list((0, 100, 102, 104), test_rgb)
+        nps.write()
+        await asyncio.sleep_ms(5_000)
+        nps.clear()
+        nps.write()
+        await asyncio.sleep_ms(200)
+
+        ev = asyncio.Event()
+        ev.set()
+        asyncio.create_task(mono_chase(nps, list_rgb, ev, 20))
+        await asyncio.sleep_ms(60_000)
+        print('Clear ev')
+        ev.clear()
+        await asyncio.sleep_ms(20)
+        nps.clear()
+        nps.write()
+        await asyncio.sleep_ms(5_000)
+    """
 
 if __name__ == '__main__':
     try:
