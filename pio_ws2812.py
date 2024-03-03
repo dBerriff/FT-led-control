@@ -7,7 +7,7 @@
 
     Source of information for the PIO: Raspberry Pi documentation.
     Thanks to MERG member Paul Redhead for addition information and inspiration.
-    NeoPixels: see Adafruit documentation and the FasLED project.
+    NeoPixels: see Adafruit documentation and the FastLED project.
     See as an initial document:
     https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
