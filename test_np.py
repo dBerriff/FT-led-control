@@ -6,7 +6,7 @@ import asyncio
 import time
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from np_strip_helper import mono_chase, colour_chase
+from np_strip_helper import mono_chase, colour_chase, two_flash
 
 
 # helper functions
@@ -24,14 +24,14 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    pin_number = 27
-    n_pixels = 64
+    pin_number = 15
+    n_pixels = 30
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
 
     test_rgb = cs.get_rgb('orange', 100)
     list_rgb = [cs.get_rgb('blue', 192), cs.get_rgb('red', 96), cs.get_rgb('green', 32)]
-    
+    level = 128
     time_set_strip(nps, test_rgb)
     await asyncio.sleep_ms(5_000)
     nps.clear()
