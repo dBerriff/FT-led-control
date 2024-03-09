@@ -77,6 +77,28 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(5_000)
 
+    # test twin pixel flash: red
+    test_rgb = cs.get_rgb('red', level)
+    # asyncio Event controls flashing
+    do_flash = asyncio.Event()
+    # create the task, adding to scheduler
+    asyncio.create_task(two_flash(nps, 0, test_rgb, do_flash))
+    print('Wait for it...')
+    await asyncio.sleep_ms(1_000)
+    print('Now!')
+    # set the flag
+    do_flash.set()
+    await asyncio.sleep_ms(10_000)
+    do_flash.clear()
+    print('Wait for more...')
+    await asyncio.sleep_ms(5_000)
+    print('Now!')
+    # set the flag
+    do_flash.set()
+    await asyncio.sleep_ms(10_000)
+    do_flash.clear()
+    await asyncio.sleep_ms(200)
+
 
 if __name__ == '__main__':
     try:
