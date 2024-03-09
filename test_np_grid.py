@@ -97,13 +97,6 @@ async def main():
     gc.collect()
     await asyncio.sleep_ms(200)
 
-    await npg.display_string_shift(' This is a test.', rgb, 1000)
-    await asyncio.sleep_ms(1000)
-    npg.clear()
-    npg.write()
-    await asyncio.sleep_ms(20)
-
-
 
 if __name__ == '__main__':
     try:
