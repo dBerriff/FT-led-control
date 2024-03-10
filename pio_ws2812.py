@@ -43,28 +43,33 @@ from micropython import const
 class PioWs2812:
     """
         Implement WS2812 driver using RP2040 programmable i/o
-        See: https://docs.micropython.org/en/latest/library/
-                     rp2.StateMachine.html#rp2.StateMachine
+        See:
+        - R Pi Pico C SDK: section 3.2.2
+        - R Pi [Micro]Python SDK: section 3.9.2
     """
-    
+
     @rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW,
                  out_shiftdir=rp2.PIO.SHIFT_LEFT,
                  autopull=True, pull_thresh=24)
     def ws2812():
-        t1m1 = 1
-        t2m1 = 4
-        t3m1 = 2
+        t1 = 1
+        t2 = 4
+        t3 = 2
         wrap_target()
         label("bitloop")
-        out(x, 1)               .side(0)    [t3m1]
-        jmp(not_x, "do_zero")   .side(1)    [t1m1]
-        jmp("bitloop")          .side(1)    [t2m1]
+        out(x, 1)               .side(0)    [t3]
+        jmp(not_x, "do_zero")   .side(1)    [t1]
+        jmp("bitloop")          .side(1)    [t2]
         label("do_zero")
-        nop()                   .side(0)    [t2m1]
+        nop()                   .side(0)    [t2]
         wrap()
 
-    def __init__(self, pin):
-        self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=8_000_000, sideset_base=Pin(pin))
+    # t1 + 1 + t2 + 1 + t3 + 1 = 10 program cycles per output cycle
+    # WS2812 baud-rate = 800 000Hz
+    # state-machine frequency = 10 * 800_000
+    def __init__(self, pin, f_):
+        self.pin = pin  # for trace/debug
+        self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=f_, sideset_base=Pin(pin))
 
     def set_active(self, state_):
         """ set StateMachine active-state, True or False """
@@ -75,7 +80,7 @@ class Ws2812Strip(PioWs2812):
     """ extend PioWs2812 for NeoPixel strip
         - MicroPython NeoPixel interface is matched as per MP documentation
         - not all NeoPixel parameters are instantiated:
-            -- frequency fixed at 800kHz
+            -- WS2812 f is 800kHz; state machine runs 10 cycles/output
             -- RGBW (bpp) not currently implemented
         - StateMachine pulls 32-bit words for Tx FIFO
         - as in the R Pi example code, it is marginally quicker to shift
@@ -92,10 +97,14 @@ class Ws2812Strip(PioWs2812):
     # RGBW_SHIFT = const(0)  # future use
 
     def __init__(self, pin, n_pixels, bpp=3, timing=1):
-        super().__init__(pin)
+        sm_f_mpy = 10
+        if timing == 1:
+            self.frequency = 800_000 * sm_f_mpy
+        else:
+            self.frequency = 400_000 * sm_f_mpy
+        super().__init__(pin, self.frequency)
         self.n_pixels = n_pixels
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
-        self.timing = timing  # 1 is 800kHz, 0 is 400kHz; currently ignored
         self.n = n_pixels  # NeoPixel undocumented attribute
         self.set_active(True)
         # LED RGB values, typecode 'I' is for 32-bit unsigned integers
