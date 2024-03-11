@@ -77,6 +77,7 @@ class LightingST:
     """
     # rgb dictionaries
     np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
+    # onboad LED
     led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
     step_period = 200  # ms
@@ -131,13 +132,13 @@ class LightingST:
         """ coro: invoke transition for state & button-press event """
         self.state = self.transitions[self.state][btn_name]()
         self.board.set_onboard(self.led_rgb[self.state])
-        await asyncio.sleep_ms(20)  # allow for task/event processing
+        await asyncio.sleep_ms(20)  # allow for some task/event processing
 
     async def fade_transitions(self):
         """ coro: fade day/night/hold output when fade_ev.is_set """
 
         async def fade_hold(rgb_0, rgb_1):
-            """ coro: fade and hold single transition """
+            """ coro: fade-and-hold single transition """
             fade_percent = 0
             while fade_percent < 100 and self.fade_ev.is_set():
                 strip_rgb = self.get_fade_rgb(rgb_0, rgb_1, fade_percent)
