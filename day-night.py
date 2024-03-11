@@ -74,7 +74,6 @@ class LightingST:
     """
         lighting State-Transition logic
         - dict stores event: transitions
-        - add await to fade transitions for event to propagate
     """
     # rgb dictionaries
     np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
