@@ -4,7 +4,7 @@
     written for Pimoroni Plasma 2040 board
     
     asyncio version
-    gamma correction appears to be implicit in plasma2040 software
+    No gamma correction
     
     - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
         A, B and User (labelled BOOT); and RESET which resets the processor
@@ -28,14 +28,16 @@
 """
 
 import asyncio
+from machine import Pin
 import gc
-import plasma
 from plasma import plasma2040
 from pimoroni import RGBLED, Analog
 from buttons import Button
+from pio_ws2812 import Ws2812Strip
+from colour_space import ColourSpace
 
 
-class Plasma2040:
+class Plasma2040(Ws2812Strip):
     """
         Pimoroni Plasma 2040 board
         - control WS2812 LED strip
@@ -45,11 +47,10 @@ class Plasma2040:
             SW_A: 12, SW_B: 13, SW_U: 23  : user buttons
     """
     
-    def __init__(self, n_leds):
-        self.n_leds = n_leds
+    def __init__(self, n_pixels_):
+        super().__init__(Pin(15, Pin.OUT), n_pixels_)
         self.buttons = {'A': Button(12, 'A'), 'B': Button(13, 'B'), 'U': Button(23, 'U')}
         self.led = RGBLED(plasma2040.LED_R, plasma2040.LED_G, plasma2040.LED_B)
-        self.l_strip = plasma.WS2812(n_leds, 0, 0, plasma2040.DAT)
 
     def set_onboard(self, rgb_):
         """ set onboard LED to rgb_ """
@@ -57,8 +58,8 @@ class Plasma2040:
 
     def set_strip(self, rgb_):
         """ set all pixels to rgb_ """
-        for i in range(self.n_leds):
-            self.l_strip.set_rgb(i, *rgb_)
+        for i in range(self.n_pixels):
+            self.set_pixel(i, rgb_)
 
     def set_strip_level(self, rgb_, level_):
         """
@@ -78,7 +79,12 @@ class LightingST:
         - add await to fade transitions for event to propagate
     """
     # rgb dictionaries
-    np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
+    cs = ColourSpace()
+    # apply gamma correction
+    np_rgb = {'day': cs.get_rgb((90, 80, 45)),
+              'night': cs.get_rgb((10, 30, 80)),
+              'off': cs.get_rgb((0, 0, 0))
+              }
     led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
     step_period = 200  # ms
@@ -104,6 +110,7 @@ class LightingST:
         self.day_night = ''
         self.fade_ev.clear()
         self.board.set_strip(self.np_rgb['off'])
+        self.board.write()
         return 'off'
 
     def set_fade(self):
@@ -119,10 +126,12 @@ class LightingST:
             print('Set night')
             self.day_night = 'night'
             self.board.set_strip(self.np_rgb['night'])
+            self.board.write()
         else:
             print('Set day')
             self.day_night = 'day'
             self.board.set_strip(self.np_rgb['day'])
+            self.board.write()
         return 'day_night'
 
     def no_t(self):
@@ -141,9 +150,10 @@ class LightingST:
         async def fade_hold(rgb_0, rgb_1):
             """ coro: fade and hold single transition """
             fade_percent = 0
-            while fade_percent < 100 and self.fade_ev.is_set():
+            while fade_percent < 101 and self.fade_ev.is_set():
                 strip_rgb = self.get_fade_rgb(rgb_0, rgb_1, fade_percent)
                 self.board.set_strip(strip_rgb)
+                self.board.write()
                 await asyncio.sleep_ms(self.step_period)
                 fade_percent += 1
             t = 0  # ms
@@ -159,7 +169,11 @@ class LightingST:
 
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
-        """ return percentage rgb value """
+        """
+            return percentage rgb value
+            - simple linear fade to avoid double gamma correction
+                need to work from uncorrected (r, g, b)!
+        """
         r = rgb_0_[0] + (rgb_1_[0] - rgb_0_[0]) * percent_ // 100
         g = rgb_0_[1] + (rgb_1_[1] - rgb_0_[1]) * percent_ // 100
         b = rgb_0_[2] + (rgb_1_[2] - rgb_0_[2]) * percent_ // 100
@@ -184,13 +198,12 @@ async def main():
 
     # ====== parameters
 
-    n_leds = 30
+    n_pixels = 30
 
     # ====== end-of-parameters
 
-    board = Plasma2040(n_leds)
+    board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    board.l_strip.start()  # plasma.WS2812 requirement
     system = LightingST(board)
 
     # create tasks to pass press_ev events to system
