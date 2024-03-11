@@ -6,21 +6,21 @@
     asyncio version
     No gamma correction
     
-    - three buttons are used: A, B and User (labelled BOOT)
-    - button-click is treated as an event and passed as button name:
+    - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
+        A, B and User (labelled BOOT); and RESET which resets the processor
+    - button-click is an event and passed as button name:
         'A', 'B' or 'U'
 
     The system has 3 states:
 
-    - 'off': all LEDs off; this is the start state.
-        always returns system to 'off' state (does not stop code)
+    - 'off': all WS2812 LEDs off; this is the start state.
+        'U' button returns system to 'off' (does not stop code)
 
-    - 'static': day/night illumination; A-button sets and toggles day/night
+    - 'day_night': day/night illumination; 'A' button sets and toggles day/night
 
-    - 'fade': fade from day to night and back repeatedly; B-button sets
+    - 'fade': fade from day to night and back repeatedly; 'B' button sets
 
     - print() statements confirm action: many or all of these can be deleted
-    - elif statements with pass are "no action" statements included to show structure
 
     class Plasma2040: models Pimoroni Plasma 2040 board
     class LightingST: models lighting states and state-transition logic
@@ -40,9 +40,9 @@ class Plasma2040:
         Pimoroni Plasma 2040 board
         - control WS2812 LED strip
         - hardwired GPIO pins (see schematic):
-            CLK 3V3: 14, DATA 3V3: 15
-            LED_R: 16, LED_G: 17, LED_B: 18
-            SW_A: 12, SW_B: 13, SW_U: 23
+            CLK 3V3: 14, DATA 3V3: 15  : pixel-strip clock and data to 5V logic-shift
+            LED_R: 16, LED_G: 17, LED_B: 18  : onboard 3-colour LED
+            SW_A: 12, SW_B: 13, SW_U: 23  : user buttons
     """
     
     def __init__(self, n_leds):
@@ -74,25 +74,26 @@ class Plasma2040:
 class LightingST:
     """
         lighting State-Transition logic
-        - simple if ... elif structure
+        - dict stores event: transitions
         - add await to fade transitions for event to propagate
     """
     # rgb dictionaries
     np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
-    led_rgb = {'red': (32, 0, 0), 'green': (0, 32, 0), 'blue': (0, 0, 32)}
+    led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
     step_period = 200  # ms
     hold_period = 5_000  # ms
 
     def __init__(self, board):  # Plasma2040
         self.board = board
-        self.day_night = 'day'
+        self.day_night = ''
         self.fade_ev = asyncio.Event()
         self.state = self.set_off()
+        self.board.set_onboard(self.led_rgb['off'])
         # state-transition logic
         self.transitions = {
-            'off': {'A': self.set_static, 'B': self.set_fade, 'U': self.no_t},
-            'static': {'A': self.toggle_day_night, 'B': self.no_t, 'U': self.set_off},
+            'off': {'A': self.set_day_night, 'B': self.set_fade, 'U': self.no_t},
+            'day_night': {'A': self.set_day_night, 'B': self.no_t, 'U': self.set_off},
             'fade': {'A': self.no_t, 'B': self.no_t, 'U': self.set_off}
             }
 
@@ -100,29 +101,20 @@ class LightingST:
     def set_off(self):
         """ set parameters for off """
         print('Set state "off"')
+        self.day_night = ''
         self.fade_ev.clear()
         self.board.set_strip(self.np_rgb['off'])
-        self.board.set_onboard(self.led_rgb['red'])
         return 'off'
-
-    def set_static(self):
-        """ set parameters for static """
-        print('Set state "static"')
-        self.day_night = 'day'
-        self.board.set_strip(self.np_rgb['day'])
-        self.board.set_onboard(self.led_rgb['green'])
-        return 'static'
 
     def set_fade(self):
         """ set parameters for fade """
         print('Set state "fade"')
         self.fade_ev.set()
         asyncio.create_task(self.fade_transitions())
-        self.board.set_onboard(self.led_rgb['blue'])
         return 'fade'
 
-    def toggle_day_night(self):
-        """ toggle static output """
+    def set_day_night(self):
+        """ set or toggle static output """
         if self.day_night == 'day':
             print('Set night')
             self.day_night = 'night'
@@ -131,7 +123,7 @@ class LightingST:
             print('Set day')
             self.day_night = 'day'
             self.board.set_strip(self.np_rgb['day'])
-        return 'static'
+        return 'day_night'
 
     def no_t(self):
         """ no transition """
@@ -140,7 +132,8 @@ class LightingST:
     async def state_transition_logic(self, btn_name):
         """ coro: invoke transition for state & button-press event """
         self.state = self.transitions[self.state][btn_name]()
-        await asyncio.sleep_ms(20)  # task/event processing
+        self.board.set_onboard(self.led_rgb[self.state])
+        await asyncio.sleep_ms(20)  # allow for task/event processing
 
     async def fade_transitions(self):
         """ coro: fade day/night/hold output when fade_ev.is_set """
@@ -195,10 +188,8 @@ async def main():
 
     # ====== end-of-parameters
 
-    # buttons are hard-wired on the Plasma 2040
-    buttons = {'A': Button(12, 'A'), 'B': Button(13, 'B'), 'U': Button(23, 'U')}
-
     board = Plasma2040(n_leds)
+    buttons = board.buttons  # hard-wired on Plasma 2040
     board.l_strip.start()  # plasma.WS2812 requirement
     system = LightingST(board)
 
