@@ -56,13 +56,13 @@ class Plasma2040:
         self.led.set_rgb(*rgb_)
 
     def set_strip(self, rgb_):
-        """ set whole strip to rgb_ """
+        """ set all pixels to rgb_ """
         for i in range(self.n_leds):
             self.l_strip.set_rgb(i, *rgb_)
 
     def set_strip_level(self, rgb_, level_):
         """
-            set whole strip to level in range 0 - 255
+            set all pixels to level in range 0 - 255
             - no gamma correction
         """
         r = rgb_[0] * level_ // 255
@@ -77,90 +77,70 @@ class LightingST:
         - simple if ... elif structure
         - add await to fade transitions for event to propagate
     """
+    # rgb dictionaries
+    np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
+    led_rgb = {'red': (32, 0, 0), 'green': (0, 32, 0), 'blue': (0, 0, 32)}
 
-    day_rgb = (90, 80, 45)
-    night_rgb = (10, 30, 80)
-    off_rgb = (0, 0, 0)
-    led_red = (32, 0, 0)
-    led_green = (0, 32, 0)
-    led_blue = (0, 0, 32)
     step_period = 200  # ms
     hold_period = 5_000  # ms
 
     def __init__(self, board):  # Plasma2040
         self.board = board
-        self.state = 'off'  # 'static', 'fade'
         self.day_night = 'day'
-        self.board.set_onboard(self.led_red)
         self.fade_ev = asyncio.Event()
+        self.state = self.set_off()
+        # state-transition logic
+        self.transitions = {
+            'off': {'A': self.set_static, 'B': self.set_fade, 'U': self.no_t},
+            'static': {'A': self.toggle_day_night, 'B': self.no_t, 'U': self.set_off},
+            'fade': {'A': self.no_t, 'B': self.no_t, 'U': self.set_off}
+            }
+
+    # transition methods: each must return state
+    def set_off(self):
+        """ set parameters for off """
+        print('Set state "off"')
+        self.fade_ev.clear()
+        self.board.set_strip(self.np_rgb['off'])
+        self.board.set_onboard(self.led_rgb['red'])
+        return 'off'
+
+    def set_static(self):
+        """ set parameters for static """
+        print('Set state "static"')
+        self.day_night = 'day'
+        self.board.set_strip(self.np_rgb['day'])
+        self.board.set_onboard(self.led_rgb['green'])
+        return 'static'
+
+    def set_fade(self):
+        """ set parameters for fade """
+        print('Set state "fade"')
+        self.fade_ev.set()
+        asyncio.create_task(self.fade_transitions())
+        self.board.set_onboard(self.led_rgb['blue'])
+        return 'fade'
+
+    def toggle_day_night(self):
+        """ toggle static output """
+        if self.day_night == 'day':
+            print('Set night')
+            self.day_night = 'night'
+            self.board.set_strip(self.np_rgb['night'])
+        else:
+            print('Set day')
+            self.day_night = 'day'
+            self.board.set_strip(self.np_rgb['day'])
+        return 'static'
+
+    def no_t(self):
+        """ no transition """
+        return self.state
 
     async def state_transition_logic(self, btn_name):
-        """
-            coro: respond to button-press event
-            - coro for fade control
-        """
-
-        # functions to set states
-
-        def set_off():
-            """ set parameters for off """
-            print('Set state "off"')
-            self.fade_ev.clear()
-            self.board.set_strip(self.off_rgb)
-            self.board.set_onboard(self.led_red)
-            return 'off'
-
-        def set_static():
-            """ set parameters for static """
-            print('Set state "static"')
-            self.day_night = 'day'
-            self.board.set_strip(self.day_rgb)
-            self.board.set_onboard(self.led_green)
-            return 'static'
-
-        def set_fade():
-            """ set parameters for fade """
-            print('Set state "fade"')
-            self.fade_ev.set()
-            asyncio.create_task(self.fade_transitions())
-            self.board.set_onboard(self.led_blue)
-            return 'fade'
-
-        # process events
-
-        if self.state == 'off':
-            if btn_name == 'A':
-                self.state = set_static()
-            elif btn_name == 'B':
-                self.state = set_fade()
-            elif btn_name == 'U':
-                pass
-
-        elif self.state == 'static':
-            if btn_name == 'A':
-                # toggle between day and night
-                if self.day_night == 'day':
-                    print('Set night')
-                    self.day_night = 'night'
-                    self.board.set_strip(self.night_rgb)
-                else:
-                    print('Set day')
-                    self.day_night = 'day'
-                    self.board.set_strip(self.day_rgb)
-            elif btn_name == 'B':
-                pass
-            elif btn_name == 'U':
-                self.state = set_off()
-
-        elif self.state == 'fade':
-            if btn_name == 'A':
-                pass
-            elif btn_name == 'B':
-                pass
-            elif btn_name == 'U':
-                self.state = set_off()
-
-        await asyncio.sleep_ms(20)  # allow tasks/events to get processed
+        """ coro: invoke transition for state & button-press event """
+        self.state = self.transitions[self.state][btn_name]()
+        await asyncio.sleep_ms(20)  # task/event processing
 
     async def fade_transitions(self):
         """ coro: fade day/night/hold output when fade_ev.is_set """
@@ -180,8 +160,8 @@ class LightingST:
 
         print('Start fade_transitions()')
         while self.fade_ev.is_set():
-            await fade_hold(self.day_rgb, self.night_rgb)
-            await fade_hold(self.night_rgb, self.day_rgb)
+            await fade_hold(self.np_rgb['day'], self.np_rgb['night'])
+            await fade_hold(self.np_rgb['night'], self.np_rgb['day'])
         print('End fade_transitions()')
 
     @staticmethod
