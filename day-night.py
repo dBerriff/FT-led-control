@@ -1,24 +1,23 @@
 # day-night.py
 """
     Set LED strip using Pimoroni library
-    written for Pimoroni Plasma 2040 board
+    for Pimoroni Plasma 2040 board
     
-    asyncio version
-    No gamma correction
+    - asyncio cooperative multi-tasking 
+    - no gamma correction
     
     - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
         A, B and User (labelled BOOT); and RESET which resets the processor
     - button-click is an event and passed as button name:
         'A', 'B' or 'U'
 
-    The system has 3 states:
+    - system states:
+        
+        'off': all WS2812 LEDs off; this is the initial state
 
-    - 'off': all WS2812 LEDs off; this is the start state.
-        'U' button returns system to 'off' (does not stop code)
+        'day_night': day/night illumination
 
-    - 'day_night': day/night illumination; 'A' button sets and toggles day/night
-
-    - 'fade': fade from day to night and back repeatedly; 'B' button sets
+        'fade': fade from day to night and back repeatedly
 
     - print() statements confirm action: many or all of these can be deleted
 
