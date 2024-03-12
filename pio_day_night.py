@@ -4,7 +4,6 @@
     written for Pimoroni Plasma 2040 board
     
     asyncio version
-    No gamma correction
     
     - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
         A, B and User (labelled BOOT); and RESET which resets the processor
@@ -91,6 +90,7 @@ class LightingST:
     hold_period = 5_000  # ms
 
     def __init__(self, board):  # Plasma2040
+        print(self.np_rgb)
         self.board = board
         self.day_night = ''
         self.fade_ev = asyncio.Event()
