@@ -27,7 +27,7 @@
 """
 
 import asyncio
-from machine import Pin
+from machine import Pin, freq
 import gc
 from plasma import plasma2040
 from pimoroni import RGBLED, Analog
@@ -60,16 +60,6 @@ class Plasma2040(Ws2812Strip):
         for i in range(self.n_pixels):
             self.set_pixel(i, rgb_)
 
-    def set_strip_level(self, rgb_, level_):
-        """
-            set all pixels to level in range 0 - 255
-            - no gamma correction
-        """
-        r = rgb_[0] * level_ // 255
-        g = rgb_[1] * level_ // 255
-        b = rgb_[2] * level_ // 255
-        self.set_strip((r, g, b))
-
 
 class LightingST:
     """
@@ -77,25 +67,27 @@ class LightingST:
         - dict stores event: transitions
         - add await to fade transitions for event to propagate
     """
-    # rgb dictionaries
-    cs = ColourSpace()
-    # apply gamma correction
-    np_rgb = {'day': cs.get_rgb((90, 80, 45)),
-              'night': cs.get_rgb((10, 30, 80)),
-              'off': cs.get_rgb((0, 0, 0))
-              }
+    # onboard LED colours confirm button press
     led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
     step_period = 200  # ms
     hold_period = 5_000  # ms
 
-    def __init__(self, board):  # Plasma2040
-        print(self.np_rgb)
+    def __init__(self, board, np_rgb):  # Plasma2040
         self.board = board
+        self.np_rgb = np_rgb
+        self.cs = ColourSpace()
+        self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
+                         'night': self.cs.get_rgb_g(np_rgb['night']),
+                         'off': (0, 0, 0)
+                         }
         self.day_night = ''
         self.fade_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
+        # derive gamma-corrected rgb values
+        print(self.np_rgb)
+        print(self.np_rgb_g)
         # state-transition logic
         self.transitions = {
             'off': {'A': self.set_day_night, 'B': self.set_fade, 'U': self.no_t},
@@ -109,7 +101,7 @@ class LightingST:
         print('Set state "off"')
         self.day_night = ''
         self.fade_ev.clear()
-        self.board.set_strip(self.np_rgb['off'])
+        self.board.set_strip(self.np_rgb_g['off'])
         self.board.write()
         return 'off'
 
@@ -125,12 +117,12 @@ class LightingST:
         if self.day_night == 'day':
             print('Set night')
             self.day_night = 'night'
-            self.board.set_strip(self.np_rgb['night'])
+            self.board.set_strip(self.np_rgb_g['night'])
             self.board.write()
         else:
             print('Set day')
             self.day_night = 'day'
-            self.board.set_strip(self.np_rgb['day'])
+            self.board.set_strip(self.np_rgb_g['day'])
             self.board.write()
         return 'day_night'
 
@@ -148,11 +140,14 @@ class LightingST:
         """ coro: fade day/night/hold output when fade_ev.is_set """
 
         async def fade_hold(rgb_0, rgb_1):
-            """ coro: fade and hold single transition """
+            """
+                coro: fade-and-hold single transition
+                - linear fade with each result gamma corrected
+            """
             fade_percent = 0
             while fade_percent < 101 and self.fade_ev.is_set():
-                strip_rgb = self.get_fade_rgb(rgb_0, rgb_1, fade_percent)
-                self.board.set_strip(strip_rgb)
+                self.board.set_strip(
+                    self.cs.get_rgb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
                 self.board.write()
                 await asyncio.sleep_ms(self.step_period)
                 fade_percent += 1
@@ -162,6 +157,7 @@ class LightingST:
                 t += self.step_period
 
         print('Start fade_transitions()')
+        # fade raw rgb and apply gamma correction at set_strip()
         while self.fade_ev.is_set():
             await fade_hold(self.np_rgb['day'], self.np_rgb['night'])
             await fade_hold(self.np_rgb['night'], self.np_rgb['day'])
@@ -169,11 +165,7 @@ class LightingST:
 
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
-        """
-            return percentage rgb value
-            - simple linear fade to avoid double gamma correction
-                need to work from uncorrected (r, g, b)!
-        """
+        """ return percentage rgb value """
         r = rgb_0_[0] + (rgb_1_[0] - rgb_0_[0]) * percent_ // 100
         g = rgb_0_[1] + (rgb_1_[1] - rgb_0_[1]) * percent_ // 100
         b = rgb_0_[2] + (rgb_1_[2] - rgb_0_[2]) * percent_ // 100
@@ -191,7 +183,7 @@ async def main():
     async def process_event(btn, system_):
         """ passes button events to the system """
         while True:
-            gc.collect()  # garbage collect
+            gc.collect()  # garbage collect before wait
             await btn.press_ev.wait()
             await system_.state_transition_logic(btn.name)
             btn.clear_state()
@@ -199,12 +191,18 @@ async def main():
     # ====== parameters
 
     n_pixels = 30
+    rgb = {'day': (90, 80, 45),
+           'night': (10, 30, 80),
+           'off': (0, 0, 0)
+           }
 
     # ====== end-of-parameters
+    
+    print(f'Raspberry Pi Pico; processor frequency: {freq():,}')
 
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    system = LightingST(board)
+    system = LightingST(board, rgb)
 
     # create tasks to pass press_ev events to system
     for b in buttons:

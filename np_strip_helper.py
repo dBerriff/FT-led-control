@@ -15,12 +15,12 @@ async def np_arc_weld(nps, cs, px_index, play_ev):
         # flash 100 to 200 times at random level
         for _ in range(randrange(100, 200)):
             level = randrange(96, 192)
-            nps[px_index] = cs.get_rgb(arc_rgb_, level)
+            nps[px_index] = cs.get_rgb_lg(arc_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(20)
         # fade out glow
         for level in range(128, -1, -1):
-            nps[px_index] = cs.get_rgb(glow_rgb_, level)
+            nps[px_index] = cs.get_rgb_lg(glow_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(10)
         await asyncio.sleep_ms(randrange(1_000, 5_000))
@@ -49,7 +49,7 @@ async def np_twinkler(nps, cs, pixel_, play_ev):
             for i in range(n_smooth):
                 levels[i] = dim_level
             level = dim_level
-        nps[pixel_] = cs.get_rgb(lamp_rgb, level)
+        nps[pixel_] = cs.get_rgb_lg(lamp_rgb, level)
         nps.write()
         await asyncio.sleep_ms(randrange(20, 200, 20))
         l_index += 1

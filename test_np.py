@@ -30,8 +30,8 @@ async def main():
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    test_rgb = cs.get_rgb('orange', 100)
-    list_rgb = [cs.get_rgb('blue', 192), cs.get_rgb('red', 96), cs.get_rgb('green', 32)]
+    test_rgb = cs.get_rgb_lg('orange', 100)
+    list_rgb = [cs.get_rgb_lg('blue', 192), cs.get_rgb_lg('red', 96), cs.get_rgb_lg('green', 32)]
     level = 128
 
     print('Time strip fill and write')
@@ -86,7 +86,7 @@ async def main():
     await asyncio.sleep_ms(5_000)
 
     print('Set twin pixel flash: red')
-    test_rgb = cs.get_rgb('red', level)
+    test_rgb = cs.get_rgb_lg('red', level)
     # asyncio Event controls flashing
     do_flash = asyncio.Event()
     # create the task, adding to scheduler
