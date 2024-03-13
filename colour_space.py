@@ -6,13 +6,11 @@ from micropython import const
 
 class ColourSpace:
     """ 
-        implements 8-bit RGB colours as 3-element tuples (R, G, B)
-        each colour is represented by an integer in range(256), 0 to 255
-        method get_rgb() applies brightness level and gamma correction
-        brightness is in range(256)
-        gamma-correction is applied from a look-up list to speed up processing
-        methods are all @classmethod
-        list comprehension not used for faster computation
+        implement 24-bit RGB colour: 3-element tuple (R, G, B)
+        - gamma-correction is applied by a lookup list
+        - methods are all @classmethod
+        - get_rgb_lg(), get_rgb_l(), get_rgb_g():
+            suffix denotes transform: level and or gamma
     """
 
     # full brightness colour "templates"
@@ -41,19 +39,19 @@ class ColourSpace:
     }
 
     # build gamma-correction lookup list
-    GAMMA = const(2.6)
+    GAMMA = const(2.6)  # Adafruit uses this value?
+    # faster than list comprehension
     RGB_GAMMA = []
     for x in range(0, 256):
         RGB_GAMMA.append(round(pow(x / 255, GAMMA) * 255))
     RGB_GAMMA = tuple(RGB_GAMMA)
 
     @classmethod
-    def get_rgb(cls, rgb_template, level_=255):
+    def get_rgb_lg(cls, rgb_template, level_=255):
         """
             return a level-converted, gamma-corrected rgb value
-            - c_template is colours dict key: str, or (r, g, b)
-            - explicit tests for level_ == 255 or 0 could be included
-                if these values are frequently set
+            - rgb_template is colours dict key: str;
+                or (r, g, b) as 8-bit int
         """
         if isinstance(rgb_template, str):
             try:
@@ -67,9 +65,28 @@ class ColourSpace:
             cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
 
     @classmethod
-    def get_rgb_list(cls, template_list, level_):
-        """ return a tuple of level-converted, gamma-corrected rgb values """
-        values = []
-        for t in template_list:
-            values.append(cls.get_rgb(t, level_))
-        return tuple(values)
+    def get_rgb_g(cls, rgb_template):
+        """
+            return a gamma-corrected rgb value """
+        if isinstance(rgb_template, str):
+            try:
+                rgb_template = cls.colours[rgb_template]
+            except KeyError:
+                return 0, 0, 0
+        return cls.RGB_GAMMA[rgb_template[0]], \
+            cls.RGB_GAMMA[rgb_template[1]], \
+            cls.RGB_GAMMA[rgb_template[2]]
+
+    @classmethod
+    def get_rgb_l(cls, rgb_template, level_=255):
+        """ return a level-converted rgb value """
+        if isinstance(rgb_template, str):
+            try:
+                rgb_template = cls.colours[rgb_template]
+            except KeyError:
+                return 0, 0, 0
+        level_ = max(level_, 0)
+        level_ = min(level_, 255)
+        return rgb_template[0] * level_ // 255, \
+            rgb_template[1] * level_ // 255, \
+            rgb_template[2] * level_ // 255

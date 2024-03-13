@@ -10,10 +10,12 @@ class Button:
     """ button with click state - no debounce """
     PIN_ON = const(0)
     PIN_OFF = const(1)
+    WAITING = const(0)
     CLICK = const(1)
     POLL_INTERVAL = const(20)  # ms
 
-    def __init__(self, pin):
+    def __init__(self, pin, name=''):
+        self.name = name
         self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
         self.state = 0
         self.press_ev = asyncio.Event()
@@ -21,7 +23,7 @@ class Button:
 
     async def poll_state(self):
         """ poll self for click event
-            - button state must be cleared by event handler
+            - event handler must call clear_state
         """
         prev_pin_state = self.PIN_OFF
         while True:
@@ -35,7 +37,7 @@ class Button:
 
     def clear_state(self):
         """ set state to 0 """
-        self.state = 0
+        self.state = self.WAITING
         self.press_ev.clear()
 
 

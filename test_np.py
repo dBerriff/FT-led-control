@@ -4,9 +4,10 @@
 
 import asyncio
 import time
+from machine import freq
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from np_strip_helper import mono_chase, colour_chase
+from np_strip_helper import mono_chase, colour_chase, two_flash
 
 
 # helper functions
@@ -23,21 +24,27 @@ def time_set_strip(nps_, rgb_):
 
 async def main():
     """ coro: test NeoPixel strip helper functions """
+    freq(125_000_000)
+    print(f'Raspberry Pi Pico; processor frequency: {freq():,}')
 
-    pin_number = 27
-    n_pixels = 64
+    # Pimoroni Plasma 2040 is hardwired to GPIO 15
+    pin_number = 15
+    n_pixels = 30
     nps = Ws2812Strip(pin_number, n_pixels)
     cs = ColourSpace()
 
-    test_rgb = cs.get_rgb('orange', 100)
-    list_rgb = [cs.get_rgb('blue', 192), cs.get_rgb('red', 96), cs.get_rgb('green', 32)]
-    
+    test_rgb = cs.get_rgb_lg('orange', 100)
+    list_rgb = [cs.get_rgb_lg('blue', 192), cs.get_rgb_lg('red', 96), cs.get_rgb_lg('green', 32)]
+    level = 128
+
+    print('Time strip fill and write')
     time_set_strip(nps, test_rgb)
     await asyncio.sleep_ms(5_000)
     nps.clear()
     nps.write()
     await asyncio.sleep_ms(200)
 
+    print('Set single pixel')
     nps.set_pixel(0, test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
@@ -45,6 +52,7 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(200)
 
+    print('Set strip')
     nps.set_strip(test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
@@ -52,6 +60,7 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(200)
 
+    print('Set range')
     nps.set_range(8, 8, test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
@@ -59,6 +68,7 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(200)
 
+    print('Set list')
     nps.set_list((0, 2, 4, 6), test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
@@ -66,6 +76,7 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(200)
 
+    print('Set mono chase')
     ev = asyncio.Event()
     ev.set()
     asyncio.create_task(mono_chase(nps, list_rgb, ev, 20))
@@ -77,8 +88,8 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(5_000)
 
-    # test twin pixel flash: red
-    test_rgb = cs.get_rgb('red', level)
+    print('Set twin pixel flash: red')
+    test_rgb = cs.get_rgb_lg('red', level)
     # asyncio Event controls flashing
     do_flash = asyncio.Event()
     # create the task, adding to scheduler
@@ -86,6 +97,7 @@ async def main():
     print('Wait for it...')
     await asyncio.sleep_ms(1_000)
     print('Now!')
+    
     # set the flag
     do_flash.set()
     await asyncio.sleep_ms(10_000)
@@ -93,6 +105,7 @@ async def main():
     print('Wait for more...')
     await asyncio.sleep_ms(5_000)
     print('Now!')
+    
     # set the flag
     do_flash.set()
     await asyncio.sleep_ms(10_000)

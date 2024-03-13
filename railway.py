@@ -26,9 +26,9 @@ class ColourSignal:
     def __init__(self, nps_, cs_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
-        self.c_red = cs_.get_rgb('red', level_)
-        self.c_yellow = cs_.get_rgb('yellow', level_)
-        self.c_green = cs_.get_rgb('green', level_)
+        self.c_red = cs_.get_rgb_lg('red', level_)
+        self.c_yellow = cs_.get_rgb_lg('yellow', level_)
+        self.c_green = cs_.get_rgb_lg('green', level_)
         self.c_off = (0, 0, 0)
 
 

@@ -29,7 +29,7 @@ async def main():
                    'teal', 'white', 'yellow']
     cl_len = len(colour_list)
 
-    rgb = cs.get_rgb('dark_orange', level)
+    rgb = cs.get_rgb_lg('dark_orange', level)
     # fill grid with single colour
     await npg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
@@ -52,7 +52,7 @@ async def main():
  
     # build list of rgb values at same level
     colour_set = ('red', 'orange', 'yellow', 'green', 'blue', 'purple')
-    rgb_set = [cs.get_rgb(c, level) for c in colour_set]
+    rgb_set = [cs.get_rgb_lg(c, level) for c in colour_set]
 
     print('fill cols in sequence')
     await npg.fill_cols(rgb_set, pix_pause_ms)
@@ -68,7 +68,7 @@ async def main():
 
     colour = colour_list[random.randrange(cl_len)]
     print(colour)
-    rgb = cs.get_rgb(colour, level)
+    rgb = cs.get_rgb_lg(colour, level)
 
     print('fill diagonals')
     pause_ms = 1000
