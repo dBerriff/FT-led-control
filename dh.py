@@ -194,7 +194,6 @@ while True:
         if time.ticks_diff(t, t_fade_0) > fade_ms:
 
             if fade_state == 'down':  # day -> night
-                print(f'Fade: {fade_percent}%')
                 if fade_percent < 100:
                     strip_rgb = get_fade_rgb(day_rgb, night_rgb, fade_percent)
                     set_strip(strip_rgb)
@@ -206,7 +205,6 @@ while True:
                     hold_start_ms = time.time()  # s
 
             elif fade_state == 'up':  # night -> day
-                print(f'Fade: {fade_percent}%')
                 if fade_percent < 100:
                     strip_rgb = get_fade_rgb(night_rgb, day_rgb, fade_percent)
                     set_strip(strip_rgb)
