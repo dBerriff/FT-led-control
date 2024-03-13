@@ -70,12 +70,11 @@ class LightingST:
     # onboard LED colours confirm button press
     led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
-    step_period = 200  # ms
-    hold_period = 5_000  # ms
-
-    def __init__(self, board, np_rgb):  # Plasma2040
+    def __init__(self, board, np_rgb, hold_t_s=5, step_t_ms=200):
         self.board = board
         self.np_rgb = np_rgb
+        self.hold_t_s = hold_t_s
+        self.step_t_ms = step_t_ms
         self.cs = ColourSpace()
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
                          'night': self.cs.get_rgb_g(np_rgb['night']),
@@ -85,9 +84,7 @@ class LightingST:
         self.fade_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
-        # derive gamma-corrected rgb values
-        print(self.np_rgb)
-        print(self.np_rgb_g)
+
         # state-transition logic
         self.transitions = {
             'off': {'A': self.set_day_night, 'B': self.set_fade, 'U': self.no_t},
@@ -115,12 +112,12 @@ class LightingST:
     def set_day_night(self):
         """ set or toggle static output """
         if self.day_night == 'day':
-            print('Set night')
+            print('Set state "day_night" night')
             self.day_night = 'night'
             self.board.set_strip(self.np_rgb_g['night'])
             self.board.write()
         else:
-            print('Set day')
+            print('Set state "day_night" day')
             self.day_night = 'day'
             self.board.set_strip(self.np_rgb_g['day'])
             self.board.write()
@@ -149,12 +146,12 @@ class LightingST:
                 self.board.set_strip(
                     self.cs.get_rgb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
                 self.board.write()
-                await asyncio.sleep_ms(self.step_period)
+                await asyncio.sleep_ms(self.step_t_ms)
                 fade_percent += 1
-            t = 0  # ms
-            while t < self.hold_period and self.fade_ev.is_set():
-                await asyncio.sleep_ms(self.step_period)
-                t += self.step_period
+            t = 0  # s
+            while t < self.hold_t_s and self.fade_ev.is_set():
+                await asyncio.sleep(1)
+                t += 1
 
         print('Start fade_transitions()')
         # fade raw rgb and apply gamma correction at set_strip()
@@ -197,8 +194,6 @@ async def main():
            }
 
     # ====== end-of-parameters
-    
-    print(f'Raspberry Pi Pico; processor frequency: {freq():,}')
 
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040

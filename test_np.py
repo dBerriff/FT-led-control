@@ -4,6 +4,7 @@
 
 import asyncio
 import time
+from machine import freq
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
 from np_strip_helper import mono_chase, colour_chase, two_flash
@@ -23,6 +24,8 @@ def time_set_strip(nps_, rgb_):
 
 async def main():
     """ coro: test NeoPixel strip helper functions """
+    freq(125_000_000)
+    print(f'Raspberry Pi Pico; processor frequency: {freq():,}')
 
     # Pimoroni Plasma 2040 is hardwired to GPIO 15
     pin_number = 15
@@ -94,6 +97,7 @@ async def main():
     print('Wait for it...')
     await asyncio.sleep_ms(1_000)
     print('Now!')
+    
     # set the flag
     do_flash.set()
     await asyncio.sleep_ms(10_000)
@@ -101,6 +105,7 @@ async def main():
     print('Wait for more...')
     await asyncio.sleep_ms(5_000)
     print('Now!')
+    
     # set the flag
     do_flash.set()
     await asyncio.sleep_ms(10_000)

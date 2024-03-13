@@ -6,11 +6,11 @@ from micropython import const
 
 class ColourSpace:
     """ 
-        implements 8-bit RGB colours as 3-element tuples (R, G, B)
-        - each colour is represented by an 8-bit integer [range(256)]
+        implement 24-bit RGB colour: 3-element tuple (R, G, B)
         - gamma-correction is applied by a lookup list
         - methods are all @classmethod
-        - get_rgb_lg(), get_rgb_l(), get_rgb_g(): suffix denotes transform
+        - get_rgb_lg(), get_rgb_l(), get_rgb_g():
+            suffix denotes transform: level and or gamma
     """
 
     # full brightness colour "templates"
@@ -39,7 +39,7 @@ class ColourSpace:
     }
 
     # build gamma-correction lookup list
-    GAMMA = const(2.6)
+    GAMMA = const(2.6)  # Adafruit uses this value?
     # faster than list comprehension
     RGB_GAMMA = []
     for x in range(0, 256):
@@ -65,6 +65,19 @@ class ColourSpace:
             cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
 
     @classmethod
+    def get_rgb_g(cls, rgb_template):
+        """
+            return a gamma-corrected rgb value """
+        if isinstance(rgb_template, str):
+            try:
+                rgb_template = cls.colours[rgb_template]
+            except KeyError:
+                return 0, 0, 0
+        return cls.RGB_GAMMA[rgb_template[0]], \
+            cls.RGB_GAMMA[rgb_template[1]], \
+            cls.RGB_GAMMA[rgb_template[2]]
+
+    @classmethod
     def get_rgb_l(cls, rgb_template, level_=255):
         """ return a level-converted rgb value """
         if isinstance(rgb_template, str):
@@ -77,16 +90,3 @@ class ColourSpace:
         return rgb_template[0] * level_ // 255, \
             rgb_template[1] * level_ // 255, \
             rgb_template[2] * level_ // 255
-
-    @classmethod
-    def get_rgb_g(cls, rgb_template):
-        """
-            return a gamma-corrected rgb value """
-        if isinstance(rgb_template, str):
-            try:
-                rgb_template = cls.colours[rgb_template]
-            except KeyError:
-                return 0, 0, 0
-        return cls.RGB_GAMMA[rgb_template[0]], \
-            cls.RGB_GAMMA[rgb_template[1]], \
-            cls.RGB_GAMMA[rgb_template[2]]
