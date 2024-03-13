@@ -80,8 +80,8 @@ class FourAspect(ColourSignal):
 
 
 class ThreeAspect(ColourSignal):
-    """ model UK 4-aspect colour signal
-        - bottom to top: red-yellow-green-yellow
+    """ model UK 3-aspect colour signal
+        - bottom to top: red-yellow-green
     """
 
     # (r, y, g, y)
@@ -112,11 +112,10 @@ class ThreeAspect(ColourSignal):
                 aspect = self.aspect_codes[aspect]
             else:
                 aspect = self.aspect_codes['red']
-        if aspect == 2:
-            aspect = 3
+        aspect = 3 if aspect == 2 else aspect
         setting = self.settings[aspect]
         self.nps[self.i_red] = self.c_red if setting[0] == 1 else self.c_off
-        self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1 or setting[3] else self.c_off
+        self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1  else self.c_off
         self.nps[self.i_grn] = self.c_green if setting[2] == 1 else self.c_off
         self.nps.write()
 
