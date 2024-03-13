@@ -4,7 +4,7 @@
     written for Pimoroni Plasma 2040 board
     
     Non-asyncio version
-    No gamma correction
+    Gamma correction implicit in the Pimoroni software. 
     
     Script runs until powered off or Reset button pressed
     - note: LED strip will retain state until powered off
@@ -61,7 +61,6 @@ def set_strip_level(rgb_, level):
     """
         set whole strip to adjusted level
         - level in range 0 - 255
-        - no gamma correction in this version
     """
     r = rgb_[0] * level // 255
     g = rgb_[1] * level // 255
