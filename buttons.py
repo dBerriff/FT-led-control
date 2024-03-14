@@ -13,7 +13,6 @@ class Button:
     # button states
     WAITING = const(0)
     CLICK = const(1)
-    HOLD = const(2)
 
     POLL_INTERVAL = const(20)  # ms
 
