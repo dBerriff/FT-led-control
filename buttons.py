@@ -20,9 +20,8 @@ class Button:
     def __init__(self, pin, name=''):
         self.name = name
         self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
-        self.state = self.WATING
         self.press_ev = asyncio.Event()
-        self.press_ev.clear()
+        self.clear_state()
 
     async def poll_state(self):
         """ poll self for click event
