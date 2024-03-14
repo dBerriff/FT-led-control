@@ -10,8 +10,11 @@ class Button:
     """ button with click state - no debounce """
     PIN_ON = const(0)
     PIN_OFF = const(1)
+    # button states
     WAITING = const(0)
     CLICK = const(1)
+    HOLD = const(2)
+
     POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
