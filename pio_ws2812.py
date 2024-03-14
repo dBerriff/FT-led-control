@@ -7,8 +7,7 @@
 
     Source of information for the PIO: Raspberry Pi documentation.
     Thanks to MERG member Paul Redhead for addition information and inspiration.
-    NeoPixels: see Adafruit documentation and the FastLED project.
-    See as an initial document:
+    NeoPixels: see as an initial document:
     https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
 
     Classes:
@@ -25,13 +24,9 @@
     See 'helper' functions for application-specific code.
 
     Notes:
-    - methods do not write() pixels - allows for colour overlays
-    - implicit setting of output levels and gamma correction is not included
-        in the interest of code clarity: see class ColourSpace
+    - methods do not implicitly write() pixels - allows for colour overlays
+    - namedtuple RGB values are handled transparently
 
-    See also:
-    PixelGrid(PixelStrip)
-    Set pixel output for a rectangular grid
 """
 
 import rp2
@@ -79,35 +74,30 @@ class PioWs2812:
 class Ws2812Strip(PioWs2812):
     """ extend PioWs2812 for NeoPixel strip
         - MicroPython NeoPixel interface is matched as per MP documentation
-        - not all NeoPixel parameters are instantiated:
-            -- WS2812 f is 800kHz; state machine runs 10 cycles/output
-            -- RGBW (bpp) not currently implemented
+        - RGBW (bpp) not currently implemented
         - StateMachine pulls 32-bit words for Tx FIFO
         - as in the R Pi example code, it is marginally quicker to shift
             24-bit colour to MSB as a block ( with sm.put(value, shift=8) )
         - WS2812 expects colour order: GRB
             __setitem__, set_pixel() and set_strip() implicitly set this order
         - some code is repeated to avoid additional method calls
-        - no implicit conversion of colour levels to RGB;
-            implement externally for clarity and consistency
-        - list comprehension is not used as it reduces performance, allegedly
     """
 
-    RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes
+    RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes in 32-bit word
     # RGBW_SHIFT = const(0)  # future use
 
     def __init__(self, pin, n_pixels, bpp=3, timing=1):
-        sm_f_mpy = 10
+        sm_f_mpy = 10  # state machine clock cycles per output period
         if timing == 1:
-            self.frequency = 800_000 * sm_f_mpy
+            self.frequency = 800_000 * sm_f_mpy  # WS2812 f = 800kHz
         else:
             self.frequency = 400_000 * sm_f_mpy
         super().__init__(pin, self.frequency)
         self.n_pixels = n_pixels
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
-        self.n = n_pixels  # NeoPixel undocumented attribute
+        self.n = n_pixels  # undocumented MP library attribute
         self.set_active(True)
-        # LED RGB values, typecode 'I' is for 32-bit unsigned integers
+        # array element type 'I': 32-bit unsigned integer
         self.arr = array.array('I', [0]*n_pixels)
 
     def __len__(self):

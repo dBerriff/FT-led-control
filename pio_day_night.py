@@ -31,7 +31,7 @@ from plasma import plasma2040
 from pimoroni import RGBLED, Analog
 from buttons import Button
 from pio_ws2812 import Ws2812Strip
-from colour_space import ColourSpace
+from colour_space import RGB, ColourSpace
 
 
 class Plasma2040(Ws2812Strip):
@@ -46,17 +46,15 @@ class Plasma2040(Ws2812Strip):
     
     def __init__(self, n_pixels_):
         super().__init__(Pin(15, Pin.OUT), n_pixels_)
-        self.buttons = {'A': Button(12, 'A'), 'B': Button(13, 'B'), 'U': Button(23, 'U')}
+        self.buttons = {'A': Button(12, 'A'),
+                        'B': Button(13, 'B'),
+                        'U': Button(23, 'U')
+                        }
         self.led = RGBLED(plasma2040.LED_R, plasma2040.LED_G, plasma2040.LED_B)
 
     def set_onboard(self, rgb_):
         """ set onboard LED to rgb_ """
         self.led.set_rgb(*rgb_)
-
-    def set_strip(self, rgb_):
-        """ set all pixels to rgb_ """
-        for i in range(self.n_pixels):
-            self.set_pixel(i, rgb_)
 
 
 class DayNightST:
@@ -65,8 +63,14 @@ class DayNightST:
         - dict stores event: transitions
         - add await to fade transitions for event to propagate
     """
+
     # onboard LED colours confirm button press
-    led_rgb = {'off': (32, 0, 0), 'day': (0, 32, 0), 'night': (0, 8, 0), 'fade': (0, 0, 32)}
+    led_rgb = {
+        'off': (32, 0, 0),
+        'day': (0, 32, 0),
+        'night': (0, 8, 0),
+        'fade': (0, 0, 32)
+        }
 
     def __init__(self, board, np_rgb, hold_t_s=5, step_t_ms=200):
         self.board = board
@@ -76,7 +80,7 @@ class DayNightST:
         self.cs = ColourSpace()
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
                          'night': self.cs.get_rgb_g(np_rgb['night']),
-                         'off': (0, 0, 0)
+                         'off': RGB(0, 0, 0)
                          }
         self.day_night = ''
         self.fade_ev = asyncio.Event()
@@ -165,22 +169,22 @@ class DayNightST:
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
         """ return percentage rgb value """
-        r = rgb_0_[0] + (rgb_1_[0] - rgb_0_[0]) * percent_ // 100
-        g = rgb_0_[1] + (rgb_1_[1] - rgb_0_[1]) * percent_ // 100
-        b = rgb_0_[2] + (rgb_1_[2] - rgb_0_[2]) * percent_ // 100
-        return r, g, b
+        r = rgb_0_.r + (rgb_1_.r - rgb_0_.r) * percent_ // 100
+        g = rgb_0_.g + (rgb_1_.g - rgb_0_.g) * percent_ // 100
+        b = rgb_0_.b + (rgb_1_.b - rgb_0_.b) * percent_ // 100
+        return RGB(r, g, b)
 
 
 async def main():
     """ coro: initialise then run tasks under asyncio scheduler """
     
     async def keep_alive():
-        """ coro to be awaited """
+        """ coro: to be awaited """
         while True:
             await asyncio.sleep(1)
 
     async def process_event(btn, system_):
-        """ passes button events to the system """
+        """ coro: passes button events to the system """
         while True:
             gc.collect()  # garbage collect before wait
             await btn.press_ev.wait()
@@ -190,10 +194,12 @@ async def main():
     # ====== parameters
 
     n_pixels = 30
-    rgb = {'day': (90, 80, 45),
-           'night': (10, 30, 80),
-           'off': (0, 0, 0)
-           }
+    # linear system-state colours (no gamma correction)
+    rgb = {
+        'day': RGB(90, 80, 45),
+        'night': RGB(10, 30, 80),
+        'off': RGB(0, 0, 0)
+        }
 
     # ====== end-of-parameters
 
