@@ -48,8 +48,8 @@ class HoldButton(Button):
     HOLD = const(2)
     T_HOLD = const(750)  # ms - adjust as required
 
-    def __init__(self, pin):
-        super().__init__(pin)
+    def __init__(self, pin, name=''):
+        super().__init__(pin, name)
 
     async def poll_state(self):
         """ poll self for click or hold events
