@@ -9,15 +9,15 @@ import gc
 import random
 from colour_space import ColourSpace
 from np_grid import Ws2812Grid
-from np_grid_ws import display_string_shift
+from np_grid_ws import BlockGrid
 
 
 async def main():
     """ coro: test WS1802 grid methods """
 
-    pin_number = 27
+    pin_number = 15
     cs = ColourSpace()
-    npg = Ws2812Grid(
+    npg = BlockGrid(
         pin_number, n_cols_=8, n_rows_=8, charset_file='5x7.json')
     off = (0, 0, 0)
     level = 64
@@ -98,7 +98,7 @@ async def main():
     gc.collect()
     await asyncio.sleep_ms(200)
 
-    await display_string_shift(' This is a test.', rgb)
+    await npg.display_string_shift(' This is the MERG East Midlands Area Group.', rgb)
     await asyncio.sleep_ms(1000)
     npg.clear()
     npg.write()

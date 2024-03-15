@@ -143,7 +143,7 @@ class Ws2812Grid(Ws2812Strip):
                 self[self.coord_index[col, col]] = rgb_
         else:
             for col in range(self.n_rows):
-                self[self.coord_index[self.max_col - col, col]] = rgb_
+                self[self.coord_index[self.n_rows - col, col]] = rgb_
 
     async def display_string(self, str_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string

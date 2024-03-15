@@ -1,6 +1,13 @@
 # railway.py
 """ model-railway related classes """
 
+from colour_space import ColourSpace
+from collections import namedtuple
+import asyncio
+from pio_ws2812 import Ws2812Strip
+from colour_space import ColourSpace
+
+Lights = namedtuple('Lights', ('r', 'y1', 'g', 'y2'))
 
 class ColourSignal:
     """
@@ -20,17 +27,21 @@ class ColourSignal:
         'clear': 3,
         'green': 3
     }
+    
+    cs = ColourSpace()
+
 
     # change keys to match layout terminology
 
-    def __init__(self, nps_, cs_, pixel_, level_):
+    def __init__(self, nps_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
-        self.c_red = cs_.get_rgb_lg('red', level_)
-        self.c_yellow = cs_.get_rgb_lg('yellow', level_)
-        self.c_green = cs_.get_rgb_lg('green', level_)
-        self.c_off = (0, 0, 0)
-
+        self.clrs = {'red': self.cs.get_rgb_lg('red', level_),
+                     'yellow': self.cs.get_rgb_lg('yellow', level_),
+                     'green': self.cs.get_rgb_lg('green', level_),
+                     'off': (0, 0, 0)
+                     }
+        
 
 class FourAspect(ColourSignal):
     """ model UK 4-aspect colour signal
@@ -39,14 +50,14 @@ class FourAspect(ColourSignal):
 
     # (r, y, g, y)
     settings = {
-        0: (1, 0, 0, 0),
-        1: (0, 1, 0, 0),
-        2: (0, 1, 0, 1),
-        3: (0, 0, 1, 0)
-    }
+        0: Lights(1, 0, 0, 0),
+        1: Lights(0, 1, 0, 0),
+        2: Lights(0, 1, 0, 1),
+        3: Lights(0, 0, 1, 0)
+        }
 
-    def __init__(self, nps_, cs_, pixel_, level_):
-        super().__init__(nps_, cs_, pixel_, level_)
+    def __init__(self, nps_, pixel_, level_):
+        super().__init__(nps_, pixel_, level_)
         self.i_red = pixel_
         self.i_yw1 = pixel_ + 1
         self.i_grn = pixel_ + 2
@@ -67,10 +78,10 @@ class FourAspect(ColourSignal):
             else:
                 aspect = self.aspect_codes['red']
         setting = self.settings[aspect]
-        self.nps[self.i_red] = self.c_red if setting[0] == 1 else self.c_off
-        self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1 or setting[3] else self.c_off
-        self.nps[self.i_grn] = self.c_green if setting[2] == 1 else self.c_off
-        self.nps[self.i_yw2] = self.c_yellow if setting[3] == 1 else self.c_off
+        self.nps[self.i_red] = self.clrs['red'] if setting[0] else self.clrs['off']
+        self.nps[self.i_yw1] = self.clrs['yellow'] if setting[1] or setting[3] else self.clrs['off']
+        self.nps[self.i_grn] = self.clrs['green'] if setting[2] else self.clrs['off']
+        self.nps[self.i_yw2] = self.clrs['yellow'] if setting[3] else self.clrs['off']
         self.nps.write()
 
     def set_by_blocks_clear(self, clr_blocks):
@@ -84,16 +95,16 @@ class ThreeAspect(ColourSignal):
         - bottom to top: red-yellow-green
     """
 
-    # (r, y, g, y)
+    # (r, y, g)
     settings = {
-        0: (1, 0, 0, 0),
-        1: (0, 1, 0, 0),
-        2: (0, 0, 1, 0),
-        3: (0, 0, 1, 0)
+        0: Lights(1, 0, 0, 0),
+        1: Lights(0, 1, 0, 0),
+        2: Lights(0, 0, 1, 0),
+        3: Lights(0, 0, 1, 0)
     }
 
-    def __init__(self, nps_, cs_, pixel_, level_):
-        super().__init__(nps_, cs_, pixel_, level_)
+    def __init__(self, nps_, pixel_, level_):
+        super().__init__(nps_, pixel_, level_)
         self.i_red = pixel_
         self.i_yw1 = pixel_ + 1
         self.i_grn = pixel_ + 2
@@ -112,14 +123,59 @@ class ThreeAspect(ColourSignal):
                 aspect = self.aspect_codes[aspect]
             else:
                 aspect = self.aspect_codes['red']
-        aspect = 3 if aspect == 2 else aspect
+        if aspect == 2:
+            aspect = 3
         setting = self.settings[aspect]
-        self.nps[self.i_red] = self.c_red if setting[0] == 1 else self.c_off
-        self.nps[self.i_yw1] = self.c_yellow if setting[1] == 1  else self.c_off
-        self.nps[self.i_grn] = self.c_green if setting[2] == 1 else self.c_off
+        self.nps[self.i_red] = self.clrs['red'] if setting[0] else self.clrs['off']
+        self.nps[self.i_yw1] = self.clrs['yellow'] if setting[1]  else self.clrs['off']
+        self.nps[self.i_grn] = self.clrs['green'] if setting[2] else self.clrs['off']
         self.nps.write()
 
     def set_by_blocks_clear(self, clr_blocks):
         """ set aspect by clear blocks """
         clr_blocks = min(clr_blocks, 2)  # > 2 clear is still 'green'
         self.set_aspect(clr_blocks)
+
+async def set_4_aspect(nps_, pixel_, level_, delay):
+    """ """
+    f_aspect = FourAspect(nps_, pixel_, level_)
+    print(f_aspect)
+    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
+        print(f'at pixel: {pixel_}; blocks clear: {bc}')
+        f_aspect.set_by_blocks_clear(bc)
+        await asyncio.sleep_ms(delay)
+    await asyncio.sleep_ms(2_000)
+    
+
+async def set_3_aspect(nps_, pixel_, level_, delay):
+    """ """
+    f_aspect = ThreeAspect(nps_, pixel_, level_)
+    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
+        print(f'at pixel: {pixel_}; blocks clear: {bc}')
+        f_aspect.set_by_blocks_clear(bc)
+        await asyncio.sleep_ms(delay)
+    await asyncio.sleep_ms(2_000)
+    
+
+async def main():
+    """ coro: test NeoPixel strip helper functions """
+
+    pin_number = 15
+    n_pixels = 30
+    nps = Ws2812Strip(pin_number, n_pixels)
+    cs = ColourSpace()
+
+    asyncio.create_task(set_4_aspect(nps, 0, 128, 5_000))
+    await set_3_aspect(nps, 8, 128, 5_000)
+    
+    nps.clear()
+    nps.write()
+    await asyncio.sleep_ms(2000)
+
+
+if __name__ == '__main__':
+    try:
+        asyncio.run(main())
+    finally:
+        asyncio.new_event_loop()  # clear retained state
+        print('execution complete')

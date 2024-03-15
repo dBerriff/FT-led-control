@@ -8,7 +8,7 @@ from np_grid import Ws2812Grid
 
 class BlockGrid(Ws2812Grid):
     """ extend Ws2812Grid to support block-to-block left shift
-        - right-hand virtual block can be added for char shift-in
+        - right-hand virtual block added for char shift-in
         - this version assumes horizontal blocks
     """
 
@@ -17,16 +17,16 @@ class BlockGrid(Ws2812Grid):
     def __init__(self, np_pin, n_cols_, n_rows_, charset_file):
         # add virtual block to end of grid
         self.n_cols = n_cols_ + self.BLOCK_SIZE
-        super().__init__(Pin(np_pin, Pin.OUT), n_cols_, n_rows_, charset_file)
+        super().__init__(Pin(np_pin, Pin.OUT), self.n_cols, n_rows_, charset_file)
         # attributes block-shift algorithm
         self.block_pixels = self.BLOCK_SIZE * self.BLOCK_SIZE
         self.seg_len = self.n_rows
         self.max_seg_index = (self.n_cols - 1) * self.seg_len
         self.shift_offset = 2 * self.n_rows - 1
 
-    def set_block_list(self, block_i, index_list_, rgb_):
-        """ fill block n index_list with rgb_ """
-        offset = block_i * self.block_pixels
+    def set_block_list(self, block_n, index_list_, rgb_):
+        """ fill block_n index_list with rgb_ """
+        offset = block_n * self.block_pixels
         for index in index_list_:
             self[index + offset] = rgb_
 
