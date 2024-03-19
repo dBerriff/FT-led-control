@@ -93,12 +93,12 @@ async def main():
     gc.collect()
     await asyncio.sleep_ms(1000)
 
-    await npg.display_string('0123456789', rgb)
+    await npg.display_string('9876543210', rgb)
     npg.clear()
     gc.collect()
     await asyncio.sleep_ms(200)
 
-    await npg.display_string_shift(' This is the MERG East Midlands Area Group.', rgb)
+    await npg.display_string_shift(' MERG East Midlands Area Group ', rgb)
     await asyncio.sleep_ms(1000)
     npg.clear()
     npg.write()

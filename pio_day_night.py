@@ -72,7 +72,7 @@ class DayNightST:
         'fade': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb, hold_t_s=5, step_t_ms=200):
+    def __init__(self, board, np_rgb, day_s=600, night_s = 500, sunset_s=50):
         self.board = board
         self.np_rgb = np_rgb
         self.hold_t_s = hold_t_s
@@ -135,14 +135,16 @@ class DayNightST:
         self.board.set_onboard(self.led_rgb[self.state])
         await asyncio.sleep_ms(20)  # allow any transition tasks to start/end
 
-    async def fade_transitions(self):
+    async def fade_transitions(self, day_=600, night_=500, fade_=50):
         """ coro: fade day/night/hold output when fade_ev.is_set """
 
-        async def hold_fade(rgb_0, rgb_1):
+        async def hold_fade(period_0, period_1):
             """
                 coro: fade-and-hold single transition
                 - linear fade with each result gamma corrected
             """
+            rgb_0 = self.np_rgb[period_0]
+            rgb_1 = self.np_rgb[period_1]
             # hold
             self.board.set_strip(self.cs.get_rgb_g(rgb_0))
             self.board.write()
@@ -162,8 +164,8 @@ class DayNightST:
         print('Start fade_transitions()')
         # fade raw rgb and apply gamma correction at set_strip()
         while self.fade_ev.is_set():
-            await hold_fade(self.np_rgb['day'], self.np_rgb['night'])
-            await hold_fade(self.np_rgb['night'], self.np_rgb['day'])
+            await hold_fade('day', 'night')
+            await hold_fade('night', 'day')
         print('End fade_transitions()')
 
     @staticmethod
