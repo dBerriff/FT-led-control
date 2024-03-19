@@ -32,6 +32,7 @@ from pimoroni import RGBLED, Analog
 from buttons import Button
 from pio_ws2812 import Ws2812Strip
 from colour_space import RGB, ColourSpace
+from v_time import VTime
 
 
 class Plasma2040(Ws2812Strip):
@@ -72,11 +73,12 @@ class DayNightST:
         'fade': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb, day_s=600, night_s = 500, sunset_s=50):
+    def __init__(self, board, np_rgb, vt_):
         self.board = board
         self.np_rgb = np_rgb
-        self.hold_t_s = hold_t_s
-        self.step_t_ms = step_t_ms
+        self.vt = vt_
+        self.Vhm = vt_.Vhm  # namedtuple
+        self.step_t_ms = 200
         self.cs = ColourSpace()
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
                          'night': self.cs.get_rgb_g(np_rgb['night']),
@@ -89,7 +91,7 @@ class DayNightST:
 
         # event: state-transition logic
         self.transitions = {
-            'off': {'A': self.set_day, 'B': self.set_fade, 'U': self.no_t},
+            'off': {'A': self.set_day, 'B': self.set_by_clock, 'U': self.no_t},
             'day': {'A': self.set_night, 'B': self.no_t, 'U': self.set_off},
             'night': {'A': self.set_day, 'B': self.no_t, 'U': self.set_off},
             'fade': {'A': self.no_t, 'B': self.no_t, 'U': self.set_off}
@@ -118,11 +120,12 @@ class DayNightST:
         self.board.write()
         return 'night'
 
-    def set_fade(self):
+    def set_by_clock(self):
         """ set parameters for fade """
         print('Set state "fade"')
         self.fade_ev.set()
-        asyncio.create_task(self.fade_transitions())
+        self.vt.time_hm = self.Vhm(12, 0)
+        asyncio.create_task(self.clock_transitions())
         return 'fade'
 
     def no_t(self):
@@ -135,24 +138,17 @@ class DayNightST:
         self.board.set_onboard(self.led_rgb[self.state])
         await asyncio.sleep_ms(20)  # allow any transition tasks to start/end
 
-    async def fade_transitions(self, day_=600, night_=500, fade_=50):
-        """ coro: fade day/night/hold output when fade_ev.is_set """
+    async def clock_transitions(self):
+        """ coro: fade day/night/hold output while fade_ev.is_set """
 
-        async def hold_fade(period_0, period_1):
+        async def fade(state_0, state_1):
             """
                 coro: fade-and-hold single transition
                 - linear fade with each result gamma corrected
             """
-            rgb_0 = self.np_rgb[period_0]
-            rgb_1 = self.np_rgb[period_1]
-            # hold
-            self.board.set_strip(self.cs.get_rgb_g(rgb_0))
-            self.board.write()
-            t = 0  # s
-            while t < self.hold_t_s and self.fade_ev.is_set():
-                await asyncio.sleep(1)
-                t += 1
-            # fade
+            print(f'In fade {state_0} {state_1}')
+            rgb_0 = self.np_rgb[state_0]
+            rgb_1 = self.np_rgb[state_1]
             fade_percent = 0
             while fade_percent < 101 and self.fade_ev.is_set():
                 self.board.set_strip(
@@ -161,11 +157,23 @@ class DayNightST:
                 await asyncio.sleep_ms(self.step_t_ms)
                 fade_percent += 1
                 
-        print('Start fade_transitions()')
+        print('Entered clock transitions')
+        # clear any previous Event setting; initialise state
+        self.vt.change_state_ev.clear()
+        if self.vt.state == 'day':
+            self.set_day()
+        else:
+            self.set_night()
         # fade raw rgb and apply gamma correction at set_strip()
         while self.fade_ev.is_set():
-            await hold_fade('day', 'night')
-            await hold_fade('night', 'day')
+            if self.vt.change_state_ev.is_set():
+                self.vt.change_state_ev.clear()
+                if self.vt.state == 'night':
+                    await fade('day', 'night')
+                else:
+                    await fade('night', 'day')
+
+            await asyncio.sleep_ms(1000)
         print('End fade_transitions()')
 
     @staticmethod
@@ -179,11 +187,6 @@ class DayNightST:
 
 async def main():
     """ coro: initialise then run tasks under asyncio scheduler """
-    
-    async def keep_alive():
-        """ coro: to be awaited """
-        while True:
-            await asyncio.sleep(1)
 
     async def process_event(btn, system_):
         """ coro: passes button events to the system """
@@ -192,6 +195,12 @@ async def main():
             await btn.press_ev.wait()
             await system_.state_transition_logic(btn.name)
             btn.clear_state()
+
+    async def show_time(vt_):
+        """ print virtual time at set intervals """
+        while True:
+            print(vt_)
+            await asyncio.sleep_ms(1_000)
 
     # ====== parameters
 
@@ -205,17 +214,20 @@ async def main():
 
     # ====== end-of-parameters
 
+    vt = VTime(720)
+    vt.start_clock()
+    await asyncio.sleep_ms(20)
+
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    system = DayNightST(board, rgb, hold_t_s=15)
+    system = DayNightST(board, rgb, vt)
 
     # create tasks to pass press_ev events to system
     for b in buttons:
         asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
-
-    await keep_alive()  # keep scheduler running
+    await show_time(vt)
 
 
 if __name__ == '__main__':
