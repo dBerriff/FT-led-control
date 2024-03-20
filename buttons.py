@@ -7,21 +7,27 @@ from time import ticks_ms, ticks_diff
 
 
 class Button:
-    """ button with click state """
+    """ button with click state"""
     # pull-up logic
     BTN_ON = const(0)
     BTN_OFF = const(1)
     # button states
-    WAITING = const(0)
-    CLICK = const(1)
+    WAITING = const('0')
+    CLICK = const('1')
 
     POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
-        self.name = name
+        if name:
+            self.name = name
+        else:
+            self.name = str(pin)
+        self.states = {'waiting': self.name + self.WAITING,
+                       'click': self.name + self.CLICK
+                       }
         self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
         self.press_ev = asyncio.Event()  # starts cleared
-        self.state = self.WAITING
+        self.state = self.name[0] + '_' + self.WAITING
 
     async def poll_state(self):
         """ poll self for click event
@@ -33,25 +39,26 @@ class Button:
             pin_state = self._hw_in.value()
             if pin_state != prev_pin_state:
                 if pin_state == self.BTN_OFF:
-                    self.state = self.CLICK
+                    self.state = self.states['click']
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
 
     def clear_state(self):
         """ set state to 0 """
-        self.state = self.WAITING
+        self.state = self.states['waiting']
         self.press_ev.clear()
 
 
 class HoldButton(Button):
     """ button add hold state """
     # additional button state
-    HOLD = const(2)
+    HOLD = const('2')
     T_HOLD = const(750)  # ms - adjust as required
 
     def __init__(self, pin, name=''):
         super().__init__(pin, name)
+        self.states['hold'] = self.name + self.HOLD
 
     async def poll_state(self):
         """ poll self for click or hold events
@@ -68,9 +75,9 @@ class HoldButton(Button):
                     on_time = time_stamp
                 else:
                     if ticks_diff(time_stamp, on_time) < self.T_HOLD:
-                        self.state = self.CLICK
+                        self.state = self.states['click']
                     else:
-                        self.state = self.HOLD
+                        self.state = self.states['hold']
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
@@ -78,10 +85,11 @@ class HoldButton(Button):
 
 async def main():
     """ coro: test Button and HoldButton classes """
+
     # Plasma 2040 buttons
     buttons = {
         'A': Button(12, 'A'),
-        'B': Button(13, 'B'),
+        'B': HoldButton(13, 'B'),
         'U': HoldButton(23, 'U')
     }
 

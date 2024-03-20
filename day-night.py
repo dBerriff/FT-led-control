@@ -136,7 +136,7 @@ class LightingST:
         await asyncio.sleep_ms(20)  # allow for task/event processing
 
     async def fade_transitions(self):
-        """ coro: fade day/night/hold output when fade_ev.is_set """
+        """ coro: fade day/night/hold output when clock_ev.is_set """
 
         async def fade_hold(rgb_0, rgb_1):
             """ coro: fade and hold single transition """

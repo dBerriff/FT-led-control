@@ -69,7 +69,7 @@ class VTime:
         asyncio.create_task(self.check_day_transition())
 
     def __str__(self):
-        return f'{self.time_hm} {self.state}'
+        return f'{self.time_hm}'
 
     @staticmethod
     def daytime_seconds(time_):
