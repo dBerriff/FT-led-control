@@ -1,30 +1,21 @@
 """
     Control WS2812E/NeoPixel lighting
-    This software takes a basic approach to colour manipulation.
-    For far more sophisticated approaches see:
-    - Adafruit Circuit Python
-    - FastLED project.
 
-    Source of information for the PIO: Raspberry Pi documentation.
-    Thanks to MERG member Paul Redhead for addition information and inspiration.
-    NeoPixels: see as an initial document:
-    https://cdn-learn.adafruit.com/downloads/pdf/adafruit-neopixel-uberguide.pdf
+    Thanks to MERG member Paul Redhead for information on PIO.
 
     Classes:
 
     PioWs2812
-    Set pixel output for a strip of WS2812 LEDs (aka NeoPixels: Adafruit).
-    Compared to built-in NeoPixel class:
-    - RP2040 PIO StateMachine is used for minor performance gain
-    - direct access to the RGB array significantly improves some grid-based algorithms
-
+    Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
+    - there should be a 50µs pause between strip writes: not usually a problem
+    
     Ws2812Strip(PioWs2812)
     This extends the PioWs2812 class by adding attributes and methods intended to
     match the NeoPixel interface, and to simplify user coding.
     See 'helper' functions for application-specific code.
 
     Notes:
-    - methods do not implicitly write() pixels - allows for colour overlays
+    - methods do not implicitly write() pixels to allow for overlays
     - namedtuple RGB values are handled transparently
 
 """
@@ -41,30 +32,27 @@ class PioWs2812:
         See:
         - R Pi Pico C SDK: section 3.2.2
         - R Pi [Micro]Python SDK: section 3.9.2
+        - https://tutoduino.fr/en/pio-rp2040-en/
+            for simplified PIO code
     """
 
-    @rp2.asm_pio(sideset_init=rp2.PIO.OUT_LOW,
+    @rp2.asm_pio(set_init=rp2.PIO.OUT_LOW,
+                 out_init=rp2.PIO.OUT_LOW,
                  out_shiftdir=rp2.PIO.SHIFT_LEFT,
                  autopull=True, pull_thresh=24)
     def ws2812():
-        t1 = 1
-        t2 = 4
-        t3 = 2
         wrap_target()
-        label("bitloop")
-        out(x, 1)               .side(0)    [t3]
-        jmp(not_x, "do_zero")   .side(1)    [t1]
-        jmp("bitloop")          .side(1)    [t2]
-        label("do_zero")
-        nop()                   .side(0)    [t2]
+        out(x, 1)
+        set(pins, 1) [1]
+        mov(pins, x) [1]
+        set(pins, 0)
         wrap()
 
-    # t1 + 1 + t2 + 1 + t3 + 1 = 10 program cycles per output cycle
-    # WS2812 baud-rate = 800 000Hz
-    # state-machine frequency = 10 * 800_000
-    def __init__(self, pin, f_):
+    def __init__(self, pin):
+        f_ = 5_000_000  # this version
         self.pin = pin  # for trace/debug
-        self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=f_, sideset_base=Pin(pin))
+        self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=f_,
+                                   set_base=Pin(pin), out_base=Pin(pin))
 
     def set_active(self, state_):
         """ set StateMachine active-state, True or False """
@@ -75,24 +63,15 @@ class Ws2812Strip(PioWs2812):
     """ extend PioWs2812 for NeoPixel strip
         - MicroPython NeoPixel interface is matched as per MP documentation
         - RGBW (bpp) not currently implemented
-        - StateMachine pulls 32-bit words for Tx FIFO
-        - as in the R Pi example code, it is marginally quicker to shift
-            24-bit colour to MSB as a block ( with sm.put(value, shift=8) )
-        - WS2812 expects colour order: GRB
-            __setitem__, set_pixel() and set_strip() implicitly set this order
+        - __setitem__, set_pixel() and set_strip() implicitly set GRB colour order
         - some code is repeated to avoid additional method calls
     """
 
     RGB_SHIFT = const(8)  # shift 24-bit colour to MSBytes in 32-bit word
     # RGBW_SHIFT = const(0)  # future use
 
-    def __init__(self, pin, n_pixels, bpp=3, timing=1):
-        sm_f_mpy = 10  # state machine clock cycles per output period
-        if timing == 1:
-            self.frequency = 800_000 * sm_f_mpy  # WS2812 f = 800kHz
-        else:
-            self.frequency = 400_000 * sm_f_mpy
-        super().__init__(pin, self.frequency)
+    def __init__(self, pin, n_pixels, bpp=3):
+        super().__init__(pin)
         self.n_pixels = n_pixels
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
         self.n = n_pixels  # undocumented MP library attribute
@@ -123,8 +102,8 @@ class Ws2812Strip(PioWs2812):
         """ set pixel RGB; duplicates __setitem__() """
         self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
-    def set_strip(self, rgb_):
-        """ fill WS2812 strip with RGB """
+    def fill_array(self, rgb_):
+        """ fill array with RGB """
         arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
             arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]

@@ -30,7 +30,6 @@ import asyncio
 from machine import Pin, freq
 from micropython import const
 import gc
-from plasma import plasma2040
 from pimoroni import RGBLED, Analog
 from buttons import Button, HoldButton
 from pio_ws2812 import Ws2812Strip
@@ -87,11 +86,11 @@ class DayNightST:
         'clock': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb, vt_):
+    def __init__(self, board, np_rgb):
         self.board = board
         self.np_rgb = np_rgb
-        self.vt = vt_
-        self.Vhm = vt_.Vhm  # namedtuple
+        self.vt = VTime()
+        self.vhm = self.vt.Vhm  # namedtuple
         self.step_t_ms = 200
         self.cs = ColourSpace()
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
@@ -99,6 +98,10 @@ class DayNightST:
                          'off': RGB(0, 0, 0)
                          }
         self.day_night = ''
+        self.init_time = self.vhm(12, 0)
+        self.sunrise = self.vhm(6, 0)
+        self.sunset = self.vhm(20, 0)
+
         self.clock_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
@@ -114,37 +117,38 @@ class DayNightST:
 
     # set LED strip display state
 
-    def set_display(self, state):
+    def set_strip(self, state):
         """ set strip to state """
-        self.board.set_strip(self.np_rgb_g[state])
+        self.board.fill_array(self.np_rgb_g[state])
         self.board.write()
 
-    # state-transition methods: each must return state
+    # state-transition methods
 
     def set_off(self):
         """ set state """
         print('Set state "off"')
         self.clock_ev.clear()  # end fade task if running
-        self.set_display('off')
+        self.vt.run_ev.clear()
+        self.set_strip('off')
         return 'off'
 
     def set_day(self):
         """ set state """
         print('Set state "day"')
-        self.set_display('day')
+        self.set_strip('day')
         return 'day'
 
     def set_night(self):
         """ set state """
         print('Set state "night"')
-        self.set_display('night')
+        self.set_strip('night')
         return 'night'
 
     def set_by_clock(self):
         """ set state """
         print('Set state "clock"')
         self.clock_ev.set()
-        self.vt.time_hm = self.Vhm(12, 0)
+        self.vt.start_clock(self.init_time, self.sunrise, self.sunset)
         asyncio.create_task(self.clock_transitions())
         return 'clock'
 
@@ -175,7 +179,7 @@ class DayNightST:
             rgb_1 = self.np_rgb[state_1]
             fade_percent = 0
             while fade_percent < 101 and self.clock_ev.is_set():
-                self.board.set_strip(
+                self.board.fill_array(
                     self.cs.get_rgb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
                 self.board.write()
                 await asyncio.sleep_ms(self.step_t_ms)
@@ -183,7 +187,7 @@ class DayNightST:
                 
         # clear any previous Event setting; initialise state
         self.vt.change_state_ev.clear()
-        self.set_display(self.vt.state)
+        self.set_strip(self.vt.state)
         # fade rgb between states
         while self.clock_ev.is_set():  # cleared if OFF pressed
             if self.vt.change_state_ev.is_set():
@@ -195,7 +199,6 @@ class DayNightST:
                     await fade('night', 'day')
 
             await asyncio.sleep_ms(1000)
-        print('End clock_transitions')
 
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
@@ -220,7 +223,7 @@ async def main():
     async def show_time(vt_):
         """ print virtual time at set intervals """
         while True:
-            # print(vt_)
+            print(vt_)
             await asyncio.sleep_ms(1_000)
 
     # ====== parameters
@@ -232,23 +235,26 @@ async def main():
         'night': RGB(10, 30, 80),
         'off': RGB(0, 0, 0)
         }
+    """
+    rgb = {'day': RGB(225, 200, 112),
+           'night': RGB(25, 75, 200),
+           'off': RGB(0, 0, 0)
+           }
+    """
 
     # ====== end-of-parameters
 
-    vt = VTime(720)
-    vt.start_clock()
-    await asyncio.sleep_ms(20)
-
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    system = DayNightST(board, rgb, vt)
+    system = DayNightST(board, rgb)
 
     # create tasks to pass press_ev events to system
     for b in buttons:
         asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
-    await show_time(vt)
+    asyncio.create_task(show_time(system.vt))
+    await asyncio.sleep(120)
 
 
 if __name__ == '__main__':

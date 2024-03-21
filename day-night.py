@@ -78,7 +78,8 @@ class LightingST:
         - add await to fade transitions for event to propagate
     """
     # rgb dictionaries
-    np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
+    # np_rgb = {'day': (90, 80, 45), 'night': (10, 30, 80), 'off': (0, 0, 0)}
+    np_rgb = {'day': (225, 200, 112), 'night': (25, 75, 200), 'off': (0, 0, 0)}
     led_rgb = {'off': (32, 0, 0), 'day_night': (0, 32, 0), 'fade': (0, 0, 32)}
 
     step_period = 200  # ms
@@ -103,7 +104,7 @@ class LightingST:
         print('Set state "off"')
         self.day_night = ''
         self.fade_ev.clear()
-        self.board.set_strip(self.np_rgb['off'])
+        self.board.fill_array(self.np_rgb['off'])
         return 'off'
 
     def set_fade(self):
@@ -118,11 +119,11 @@ class LightingST:
         if self.day_night == 'day':
             print('Set night')
             self.day_night = 'night'
-            self.board.set_strip(self.np_rgb['night'])
+            self.board.fill_array(self.np_rgb['night'])
         else:
             print('Set day')
             self.day_night = 'day'
-            self.board.set_strip(self.np_rgb['day'])
+            self.board.fill_array(self.np_rgb['day'])
         return 'day_night'
 
     def no_t(self):
@@ -143,7 +144,7 @@ class LightingST:
             fade_percent = 0
             while fade_percent < 100 and self.fade_ev.is_set():
                 strip_rgb = self.get_fade_rgb(rgb_0, rgb_1, fade_percent)
-                self.board.set_strip(strip_rgb)
+                self.board.fill_array(strip_rgb)
                 await asyncio.sleep_ms(self.step_period)
                 fade_percent += 1
             t = 0  # ms
