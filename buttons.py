@@ -18,6 +18,7 @@ class Button:
     POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
+        self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
         if name:
             self.name = name
         else:
@@ -25,9 +26,8 @@ class Button:
         self.states = {'waiting': self.name + self.WAITING,
                        'click': self.name + self.CLICK
                        }
-        self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
         self.press_ev = asyncio.Event()  # starts cleared
-        self.state = self.name[0] + '_' + self.WAITING
+        self.state = self.states['waiting']
 
     async def poll_state(self):
         """ poll self for click event
@@ -105,7 +105,7 @@ async def main():
         while True:
             # wait until press_ev is set
             await btn.press_ev.wait()
-            print(btn.name, btn._state)
+            print(btn.name, btn.state)
             btn.clear_state()
 
     # create tasks to test each button
