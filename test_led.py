@@ -3,7 +3,7 @@
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
-from pwm_led import LedChannel
+from led_pwm import LedPwm
 from colour_space import ColourSpace
 
 # helper coroutines
@@ -45,9 +45,9 @@ async def blink(led_, dc_u8, n):
     """ coro: blink the LED n times at dc_u8 """
     dc_u16 = led_.u8_u16(dc_u8)
     for _ in range(n):
-        led_.duty_u16(dc_u16)
+        led_.set_dc_u16(dc_u16)
         await asyncio.sleep_ms(100)
-        led_.duty_u16(0)
+        led_.set_dc_u16(0)
         await asyncio.sleep_ms(900)
 
 
@@ -71,7 +71,7 @@ async def main():
     dc_gamma = ColourSpace().RGB_GAMMA
 
     led_pins = (10, 11, 12, 13, 14)
-    led_list = [LedChannel(pwm_pin=p) for p in led_pins]
+    led_list = [LedPwm(p) for p in led_pins]
     for led in led_list:
         print(f'led: {led}')
 

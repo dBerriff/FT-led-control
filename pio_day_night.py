@@ -30,8 +30,8 @@ import asyncio
 from machine import Pin, freq
 from micropython import const
 import gc
-from pimoroni import RGBLED, Analog
 from buttons import Button, HoldButton
+from led_pwm import RGBLed
 from pio_ws2812 import Ws2812Strip
 from colour_space import RGB, ColourSpace
 from v_time import VTime
@@ -64,7 +64,7 @@ class Plasma2040(Ws2812Strip):
                         'B': HoldButton(self.SW_B, 'B'),
                         'U': Button(self.SW_U, 'U')
                         }
-        self.led = RGBLED(self.LED_R, self.LED_G, self.LED_B)
+        self.led = RGBLed(self.LED_R, self.LED_G, self.LED_B)
 
     def set_onboard(self, rgb_):
         """ set onboard LED to rgb_ """
@@ -88,6 +88,7 @@ class DayNightST:
 
     def __init__(self, board, np_rgb, clock_time):
         self.board = board
+        help(board)
         self.np_rgb = np_rgb
         self.clock_time = clock_time
         self.vt = VTime()
@@ -108,7 +109,10 @@ class DayNightST:
             'off': {'A1': self.set_day, 'B1': self.set_by_clock, 'U1': self.no_t},
             'day': {'A1': self.set_night, 'B1': self.no_t, 'U1': self.set_off},
             'night': {'A1': self.set_day, 'B1': self.no_t, 'U1': self.set_off},
-            'clock': {'A1': self.no_t, 'B1': self.no_t, 'B2': self.set_by_clock, 'U1': self.set_off}
+            'clock': {'A1': self.no_t,
+                      'B1': self.no_t, 'B2': self.set_by_clock,
+                      'U1': self.set_off
+                      }
             }
 
     # set LED strip display state

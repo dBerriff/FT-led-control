@@ -8,8 +8,7 @@ import asyncio
 import gc
 import random
 from colour_space import ColourSpace
-from np_grid import Ws2812Grid
-from np_grid_ws import BlockGrid
+from np_grid import BlockGrid
 
 
 async def main():
@@ -98,7 +97,7 @@ async def main():
     gc.collect()
     await asyncio.sleep_ms(200)
 
-    await npg.display_string_shift(' MERG East Midlands Area Group ', rgb)
+    await npg.display_string_shift(' Famous Trains Derby ', rgb)
     await asyncio.sleep_ms(1000)
     npg.clear()
     npg.write()
