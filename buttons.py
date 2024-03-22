@@ -105,7 +105,7 @@ async def main():
         while True:
             # wait until press_ev is set
             await btn.press_ev.wait()
-            print(btn.name, btn.state)
+            print(btn.name, btn._state)
             btn.clear_state()
 
     # create tasks to test each button

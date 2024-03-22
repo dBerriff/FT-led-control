@@ -55,7 +55,7 @@ class PioWs2812:
                                    set_base=Pin(pin), out_base=Pin(pin))
 
     def set_active(self, state_):
-        """ set StateMachine active-state, True or False """
+        """ set StateMachine active-_state, True or False """
         self.sm.active(state_)
 
 

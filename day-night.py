@@ -13,7 +13,7 @@
 
     The system has 3 states:
 
-    - 'off': all WS2812 LEDs off; this is the start state.
+    - 'off': all WS2812 LEDs off; this is the start _state.
         'U' button returns system to 'off' (does not stop code)
 
     - 'day_night': day/night illumination; 'A' button sets and toggles day/night
@@ -23,7 +23,7 @@
     - print() statements confirm action: many or all of these can be deleted
 
     class Plasma2040: models Pimoroni Plasma 2040 board
-    class LightingST: models lighting states and state-transition logic
+    class LightingST: models lighting states and _state-transition logic
 
 """
 
@@ -91,17 +91,17 @@ class LightingST:
         self.fade_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
-        # state-transition logic
+        # _state-transition logic
         self.transitions = {
             'off': {'A': self.set_day_night, 'B': self.set_fade, 'U': self.no_t},
             'day_night': {'A': self.set_day_night, 'B': self.no_t, 'U': self.set_off},
             'fade': {'A': self.no_t, 'B': self.no_t, 'U': self.set_off}
             }
 
-    # transition methods: each must return state
+    # transition methods: each must return _state
     def set_off(self):
         """ set parameters for off """
-        print('Set state "off"')
+        print('Set _state "off"')
         self.day_night = ''
         self.fade_ev.clear()
         self.board.fill_array(self.np_rgb['off'])
@@ -109,7 +109,7 @@ class LightingST:
 
     def set_fade(self):
         """ set parameters for fade """
-        print('Set state "fade"')
+        print('Set _state "fade"')
         self.fade_ev.set()
         asyncio.create_task(self.fade_transitions())
         return 'fade'
@@ -131,7 +131,7 @@ class LightingST:
         return self.state
 
     async def state_transition_logic(self, btn_name):
-        """ coro: invoke transition for state & button-press event """
+        """ coro: invoke transition for _state & button-press event """
         self.state = self.transitions[self.state][btn_name]()
         self.board.set_onboard(self.led_rgb[self.state])
         await asyncio.sleep_ms(20)  # allow for task/event processing
@@ -207,5 +207,5 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     finally:
-        asyncio.new_event_loop()  # clear retained state
+        asyncio.new_event_loop()  # clear retained _state
         print('execution complete')

@@ -21,7 +21,7 @@
 
     - 'night': night illumination; 'A': button toggles to day
 
-    - 'clock': day, sunset, night, sunrise; set by virtual clock;
+    - 'clock': day, _sunset, night, _sunrise; set by virtual clock;
         'B': button-click sets; button-hold restarts the clock
 
 """
@@ -86,11 +86,11 @@ class DayNightST:
         'clock': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb):
+    def __init__(self, board, np_rgb, clock_time):
         self.board = board
         self.np_rgb = np_rgb
+        self.clock_time = clock_time
         self.vt = VTime()
-        self.vhm = self.vt.Vhm  # namedtuple
         self.step_t_ms = 200
         self.cs = ColourSpace()
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
@@ -98,10 +98,6 @@ class DayNightST:
                          'off': RGB(0, 0, 0)
                          }
         self.day_night = ''
-        self.init_time = self.vhm(12, 0)
-        self.sunrise = self.vhm(6, 0)
-        self.sunset = self.vhm(20, 0)
-
         self.clock_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
@@ -148,7 +144,9 @@ class DayNightST:
         """ set state """
         print('Set state "clock"')
         self.clock_ev.set()
-        self.vt.start_clock(self.init_time, self.sunrise, self.sunset)
+        self.vt.start_clock(self.clock_time['hm'],
+                            self.clock_time['sunrise'],
+                            self.clock_time['sunset'])
         asyncio.create_task(self.clock_transitions())
         return 'clock'
 
@@ -229,12 +227,14 @@ async def main():
     # ====== parameters
 
     n_pixels = 30
-    # linear system-state colours (no gamma correction)
+    # linear system-_state colours (no gamma correction)
     rgb = {
         'day': RGB(90, 80, 45),
         'night': RGB(10, 30, 80),
         'off': RGB(0, 0, 0)
         }
+
+    clock_time = {'hm': '12:00', 'sunrise': '06:00', 'sunset': '20:00'}
     """
     rgb = {'day': RGB(225, 200, 112),
            'night': RGB(25, 75, 200),
@@ -246,7 +246,7 @@ async def main():
 
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    system = DayNightST(board, rgb)
+    system = DayNightST(board, rgb, clock_time)
 
     # create tasks to pass press_ev events to system
     for b in buttons:

@@ -31,7 +31,9 @@ async def main():
     cs = ColourSpace()
 
     test_rgb = cs.get_rgb_lg('orange', 100)
-    list_rgb = [cs.get_rgb_lg('blue', 192), cs.get_rgb_lg('red', 96), cs.get_rgb_lg('green', 32)]
+    list_rgb = [cs.get_rgb_lg('blue', 192),
+                cs.get_rgb_lg('red', 96),
+                cs.get_rgb_lg('green', 32)]
     level = 128
 
     print('Time strip fill and write')
