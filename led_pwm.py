@@ -48,10 +48,6 @@ class LedPwm(PWM):
         self.pin = pin_  # for debug
         self.dc_u16 = 0  # for fade and other algorithms
 
-    def reset_freq(self, frequency):
-        """ reset PWM frequency """
-        self.freq(frequency)
-
     def set_dc_u16(self, dc_u16_):
         """ set PWM duty cycle and store value """
         self.duty_u16(dc_u16_)
@@ -66,7 +62,7 @@ class LedPwm(PWM):
         self.set_dc_u16(dc_pc_ * 65535 // 100)
 
     def turn_on(self):
-        """ turn channel on at saved duty cycle """
+        """ set channel on at saved duty cycle """
         self.duty_u16(self.dc_u16)
 
     def turn_off(self):
@@ -75,29 +71,8 @@ class LedPwm(PWM):
 
 
 def main():
-    """ coro: initialise then run tasks under asyncio scheduler """
-
-    led = RGBLed(16, 17, 18)  # Plasma 2040
-
-    led.set_rgb(0, 0, 0)
-    time.sleep(1)
-
-    led.set_rgb(128, 0, 0)
-    time.sleep(1)
-    led.set_rgb(0, 128, 0)
-    time.sleep(1)
-    led.set_rgb(0, 0, 128)
-    time.sleep(1)
-
-    led.set_rgb(0, 128, 128)
-    time.sleep(1)
-    led.set_rgb(128, 0, 128)
-    time.sleep(1)
-    led.set_rgb(128, 128, 0)
-    time.sleep(1)
-
-    led.set_rgb(0, 0, 0)
-    time.sleep(1)
+    """ """
+    pass
 
 
 if __name__ == '__main__':
