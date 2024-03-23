@@ -26,9 +26,9 @@ class RGBLed:
             r = 255 - r
             g = 255 - g
             b = 255 - b
-        self.led_r.duty_u16(int((r * 65535) / 255))
-        self.led_g.duty_u16(int((g * 65535) / 255))
-        self.led_b.duty_u16(int((b * 65535) / 255))
+        self.led_r.duty_u16(r * 257)
+        self.led_g.duty_u16(g * 257)
+        self.led_b.duty_u16(b * 257)
 
 
 class LedPwm(PWM):
@@ -59,7 +59,7 @@ class LedPwm(PWM):
 
     def set_dc_u8(self, dc_u8_):
         """ set PWM duty cycle and store value """
-        self.set_dc_u16(dc_u8_ * 65535 // 255)
+        self.set_dc_u16(dc_u8_ * 257)
 
     def set_dc_pc(self, dc_pc_):
         """ set PWM duty cycle and store value """
