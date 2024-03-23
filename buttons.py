@@ -1,4 +1,10 @@
 # buttons.py
+""" implement press and hold buttons
+    class Button implements a click button
+    class HoldButton extends Button to include a hold event
+
+    button methods are coroutines and include self-polling methods
+"""
 
 import asyncio
 from machine import Pin

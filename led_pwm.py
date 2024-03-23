@@ -6,7 +6,6 @@
 """
 
 from machine import Pin, PWM
-import time
 
 
 class RGBLed:
