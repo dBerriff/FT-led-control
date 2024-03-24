@@ -3,6 +3,8 @@
     control a PWM output
     - developed for Famous Trains Derby by David Jones
     - shared with MERG by David Jones member 9042
+    - f = 1000Hz is used, as in Pimoroni code
+    - see: https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/modules_py/pimoroni.py
 """
 
 from machine import Pin, PWM
@@ -42,10 +44,10 @@ class LedPwm(PWM):
     # super() does not support keyword arguments
     def __init__(self, pin_):
         super().__init__(Pin(pin_))
+        self.pin = pin_  # for debug
         self.freq(1000)
         self.duty_u16(0)
-        self.pin = pin_  # for debug
-        self.dc_u16 = 0  # for fade and other algorithms
+        self.dc_u16 = 0  # for off/on and other methods
 
     def set_dc_u16(self, dc_u16_):
         """ set PWM duty cycle and store value """

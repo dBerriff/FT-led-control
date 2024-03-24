@@ -3,17 +3,18 @@
 
 from micropython import const
 from collections import namedtuple
-
-RGB = namedtuple ('RGB', ('r', 'g', 'b'))
  
+
 class ColourSpace:
     """ 
         implement 24-bit RGB colour: 3-element tuple (R, G, B)
         - gamma-correction is applied by a lookup list
-        - methods are all @classmethod
+        - methods are all class methods
         - get_rgb_lg(), get_rgb_l(), get_rgb_g():
             suffix denotes transform: level and or gamma
     """
+
+    RGB = namedtuple('RGB', ('r', 'g', 'b'))
 
     # full brightness colour "templates"
     colours = {
@@ -44,7 +45,7 @@ class ColourSpace:
     GAMMA = const(2.6)  # Adafruit uses this value?
     # faster than list comprehension
     RGB_GAMMA = []
-    for x in range(0, 256):
+    for x in range(256):
         RGB_GAMMA.append(round(pow(x / 255, GAMMA) * 255))
     RGB_GAMMA = tuple(RGB_GAMMA)
 
@@ -62,10 +63,10 @@ class ColourSpace:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        return RGB(
-            r = cls.RGB_GAMMA[rgb_template.r * level_ // 255], \
-            g = cls.RGB_GAMMA[rgb_template.g * level_ // 255], \
-            b = cls.RGB_GAMMA[rgb_template.b * level_ // 255]
+        return cls.RGB(
+            r=cls.RGB_GAMMA[rgb_template.r * level_ // 255],
+            g=cls.RGB_GAMMA[rgb_template.g * level_ // 255],
+            b=cls.RGB_GAMMA[rgb_template.b * level_ // 255]
             )
 
     @classmethod
@@ -77,10 +78,10 @@ class ColourSpace:
                 rgb_template = cls.colours[rgb_template]
             except KeyError:
                 return 0, 0, 0
-        return RGB(
-            r = cls.RGB_GAMMA[rgb_template.r], \
-            g = cls.RGB_GAMMA[rgb_template.g], \
-            b = cls.RGB_GAMMA[rgb_template.b]
+        return cls.RGB(
+            r=cls.RGB_GAMMA[rgb_template.r],
+            g=cls.RGB_GAMMA[rgb_template.g],
+            b=cls.RGB_GAMMA[rgb_template.b]
             )
 
     @classmethod
@@ -93,19 +94,53 @@ class ColourSpace:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        return RGB(
-            r = rgb_template.r * level_ // 255, \
-            g = rgb_template.g * level_ // 255, \
-            b = rgb_template.b * level_ // 255
+        return cls.RGB(
+            r=rgb_template.r * level_ // 255,
+            g=rgb_template.g * level_ // 255,
+            b=rgb_template.b * level_ // 255
             )
 
+    @classmethod
+    def get_hsv_rgb(cls, h_, s_, v_):
+        """
+            derived from Pimoroni GitHub code
+            h_: hue: int, angle in degrees
+            s_: saturation: float, 0 to 1
+            v_: value: float, 0 to 1
+        """
 
-def main():
-    """ test ColourSpace class """
-    c_space = ColourSpace()
-    for c in c_space.colours:
-        rgb = c_space.colours[c]
-        print(f'{c}: {rgb} {c_space.get_rgb_g(rgb)}')
+        h = (h_ % 360) / 360  # mod 360 ensures case_i in range(6)
+        case_i = int(h * 6.0)
+        f = h * 6.0 - case_i
 
-if __name__ == '__main__':
-    main()
+        v_ *= 255.0
+        p = v_ * (1.0 - s_)
+        # q = v_ * (1.0 - f * s_)
+        # t = v_ * (1.0 - (1.0 - f) * s_)
+
+        if case_i == 0:
+            r = v_
+            g = v_ * (1.0 - (1.0 - f) * s_)
+            b = p
+        elif case_i == 1:
+            r = v_ * (1.0 - f * s_)
+            g = v_
+            b = p
+        elif case_i == 2:
+            r = p
+            g = v_
+            b = v_ * (1.0 - (1.0 - f) * s_)
+        elif case_i == 3:
+            r = p
+            g = v_ * (1.0 - f * s_)
+            b = v_
+        elif case_i == 4:
+            r = v_ * (1.0 - (1.0 - f) * s_)
+            g = p
+            b = v_
+        else:  # case_i == 5:
+            r = v_
+            g = p
+            b = v_ * (1.0 - f * s_)
+
+        return cls.RGB(r=int(r), g=int(g), b=int(b))

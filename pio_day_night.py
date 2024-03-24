@@ -88,12 +88,12 @@ class DayNightST:
 
     def __init__(self, board, np_rgb, clock_time):
         self.board = board
-        help(board)
         self.np_rgb = np_rgb
         self.clock_time = clock_time
         self.vt = VTime()
         self.step_t_ms = 200
         self.cs = ColourSpace()
+        # set gamma-corrected strip colours
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
                          'night': self.cs.get_rgb_g(np_rgb['night']),
                          'off': RGB(0, 0, 0)
@@ -225,7 +225,7 @@ async def main():
     async def show_time(vt_):
         """ print virtual time at set intervals """
         while True:
-            print(vt_)
+            print(vt_, end='\r')
             await asyncio.sleep_ms(1_000)
 
     # ====== parameters
@@ -233,12 +233,12 @@ async def main():
     n_pixels = 30
     # linear system-_state colours (no gamma correction)
     rgb = {
-        'day': RGB(90, 80, 45),
-        'night': RGB(10, 30, 80),
+        'day': RGB(128, 128, 128),
+        'night': RGB(48, 48, 48),
         'off': RGB(0, 0, 0)
         }
 
-    clock_time = {'hm': '12:00', 'sunrise': '06:00', 'sunset': '20:00'}
+    clock_time = {'hm': '18:00', 'sunrise': '06:00', 'sunset': '20:00'}
     """
     rgb = {'day': RGB(225, 200, 112),
            'night': RGB(25, 75, 200),
@@ -258,7 +258,9 @@ async def main():
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
     asyncio.create_task(show_time(system.vt))
-    await asyncio.sleep(120)
+    await asyncio.sleep(6)
+    system.set_off()
+    await asyncio.sleep_ms(200)
 
 
 if __name__ == '__main__':
