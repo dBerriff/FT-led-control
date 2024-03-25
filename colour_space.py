@@ -2,8 +2,7 @@
 """ RGB colour data and functions """
 
 # from micropython import const
-from collections import namedtuple
- 
+
 
 class ColourSpace:
     """ 
@@ -48,54 +47,54 @@ class ColourSpace:
     RGB_GAMMA = tuple(RGB_GAMMA)
 
     @classmethod
-    def get_rgb_lg(cls, rgb_template, level_=255):
+    def get_rgb_lg(cls, rgb_, level_=255):
         """
             return a level-converted, gamma-corrected rgb value
             - rgb_template is colours dict key: str;
                 or (r, g, b) as 8-bit int
         """
-        if isinstance(rgb_template, str):
+        if isinstance(rgb_, str):
             try:
-                rgb_template = cls.colours[rgb_template]
+                rgb_ = cls.colours[rgb_]
             except KeyError:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
         return (
-            cls.RGB_GAMMA[rgb_template[0] * level_ // 255],
-            cls.RGB_GAMMA[rgb_template[1] * level_ // 255],
-            cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
+            cls.RGB_GAMMA[rgb_[0] * level_ // 255],
+            cls.RGB_GAMMA[rgb_[1] * level_ // 255],
+            cls.RGB_GAMMA[rgb_[2] * level_ // 255]
             )
 
     @classmethod
-    def get_rgb_g(cls, rgb_template):
+    def get_rgb_g(cls, rgb_):
         """
             return a gamma-corrected rgb value """
-        if isinstance(rgb_template, str):
+        if isinstance(rgb_, str):
             try:
-                rgb_template = cls.colours[rgb_template]
+                rgb_ = cls.colours[rgb_]
             except KeyError:
                 return 0, 0, 0
         return (
-            cls.RGB_GAMMA[0],
-            cls.RGB_GAMMA[1],
-            cls.RGB_GAMMA[2]
+            cls.RGB_GAMMA[rgb_[0]],
+            cls.RGB_GAMMA[rgb_[1]],
+            cls.RGB_GAMMA[rgb_[2]]
             )
 
     @classmethod
-    def get_rgb_l(cls, rgb_template, level_=255):
+    def get_rgb_l(cls, rgb_, level_=255):
         """ return a level-converted rgb value """
-        if isinstance(rgb_template, str):
+        if isinstance(rgb_, str):
             try:
-                rgb_template = cls.colours[rgb_template]
+                rgb_ = cls.colours[rgb_]
             except KeyError:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
         return (
-            rgb_template[0] * level_ // 255,
-            rgb_template[1] * level_ // 255,
-            rgb_template[2] * level_ // 255
+            rgb_[0] * level_ // 255,
+            rgb_[1] * level_ // 255,
+            rgb_[2] * level_ // 255
             )
 
     @classmethod

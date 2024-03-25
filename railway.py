@@ -1,13 +1,13 @@
 # railway.py
 """ model-railway related classes """
 
-from colour_space import ColourSpace
 from collections import namedtuple
 import asyncio
 from pio_ws2812 import Ws2812Strip
 from colour_space import ColourSpace
 
 Lights = namedtuple('Lights', ('r', 'y1', 'g', 'y2'))
+
 
 class ColourSignal:
     """
@@ -27,15 +27,12 @@ class ColourSignal:
         'clear': 3,
         'green': 3
     }
-    
-    cs = ColourSpace()
-
-
     # change keys to match layout terminology
 
     def __init__(self, nps_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
+        self.cs = ColourSpace()
         self.clrs = {'red': self.cs.get_rgb_lg('red', level_),
                      'yellow': self.cs.get_rgb_lg('yellow', level_),
                      'green': self.cs.get_rgb_lg('green', level_),
@@ -127,7 +124,7 @@ class ThreeAspect(ColourSignal):
             aspect = 3
         setting = self.settings[aspect]
         self.nps[self.i_red] = self.clrs['red'] if setting[0] else self.clrs['off']
-        self.nps[self.i_yw1] = self.clrs['yellow'] if setting[1]  else self.clrs['off']
+        self.nps[self.i_yw1] = self.clrs['yellow'] if setting[1] else self.clrs['off']
         self.nps[self.i_grn] = self.clrs['green'] if setting[2] else self.clrs['off']
         self.nps.write()
 
@@ -135,6 +132,7 @@ class ThreeAspect(ColourSignal):
         """ set aspect by clear blocks """
         clr_blocks = min(clr_blocks, 2)  # > 2 clear is still 'green'
         self.set_aspect(clr_blocks)
+
 
 async def set_4_aspect(nps_, pixel_, level_, delay):
     """ """
@@ -163,8 +161,6 @@ async def main():
     pin_number = 15
     n_pixels = 30
     nps = Ws2812Strip(pin_number, n_pixels)
-    cs = ColourSpace()
-
     asyncio.create_task(set_4_aspect(nps, 0, 128, 5_000))
     await set_3_aspect(nps, 8, 128, 5_000)
     
