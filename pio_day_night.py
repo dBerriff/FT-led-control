@@ -21,7 +21,7 @@
 
     - 'night': night illumination; 'A': button toggles to day
 
-    - 'clock': day, _sunset, night, _sunrise; set by virtual clock;
+    - 'clock_time': day, _sunset, night, _sunrise; set by virtual clock;
         'B': button-click sets; button-hold restarts the clock
 
 """
@@ -86,11 +86,11 @@ class DayNightST:
         'clock': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb, clock_time):
+    def __init__(self, board, np_rgb, vt, clock_time):
         self.board = board
         self.np_rgb = np_rgb
         self.clock_time = clock_time
-        self.vt = VTime()
+        self.vt = vt
         self.step_t_ms = 200
         self.cs = ColourSpace()
         # set gamma-corrected strip colours
@@ -106,11 +106,11 @@ class DayNightST:
         # event: state-transition logic
         # button state is key: value is transition function name
         self.transitions = {
-            'off': {'A1': self.set_day, 'B1': self.set_by_clock, 'U1': self.no_t},
+            'off': {'A1': self.set_day, 'B1': self.set_clock_time, 'U1': self.no_t},
             'day': {'A1': self.set_night, 'B1': self.no_t, 'U1': self.set_off},
             'night': {'A1': self.set_day, 'B1': self.no_t, 'U1': self.set_off},
             'clock': {'A1': self.no_t,
-                      'B1': self.no_t, 'B2': self.set_by_clock,
+                      'B1': self.no_t, 'B2': self.set_clock_time,
                       'U1': self.set_off
                       }
             }
@@ -119,7 +119,7 @@ class DayNightST:
 
     def set_strip(self, state):
         """ set strip to state """
-        self.board.fill_array(self.np_rgb_g[state])
+        self.board.set_strip(self.np_rgb_g[state])
         self.board.write()
 
     # state-transition methods
@@ -144,7 +144,7 @@ class DayNightST:
         self.set_strip('night')
         return 'night'
 
-    def set_by_clock(self):
+    def set_clock_time(self):
         """ set state """
         print('Set state "clock"')
         self.clock_ev.set()
@@ -181,7 +181,7 @@ class DayNightST:
             rgb_1 = self.np_rgb[state_1]
             fade_percent = 0
             while fade_percent < 101 and self.clock_ev.is_set():
-                self.board.fill_array(
+                self.board.set_strip(
                     self.cs.get_rgb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
                 self.board.write()
                 await asyncio.sleep_ms(self.step_t_ms)
@@ -231,26 +231,23 @@ async def main():
     # ====== parameters
 
     n_pixels = 30
-    # linear system-_state colours (no gamma correction)
+
+    # system colours (no gamma correction)
     rgb = {
         'day': (128, 128, 128),
-        'night': (48, 48, 48),
+        'night': (32, 32, 36),
         'off': (0, 0, 0)
         }
 
     clock_time = {'hm': '18:00', 'sunrise': '06:00', 'sunset': '20:00'}
-    """
-    rgb = {'day': (225, 200, 112),
-           'night': (25, 75, 200),
-           'off': (0, 0, 0)
-           }
-    """
+    clock_speed = 600
 
     # ====== end-of-parameters
 
     board = Plasma2040(n_pixels)
     buttons = board.buttons  # hard-wired on Plasma 2040
-    system = DayNightST(board, rgb, clock_time)
+    vt = VTime(s_inc=clock_speed)  # fast virtual clock
+    system = DayNightST(board, rgb, vt, clock_time)
 
     # create tasks to pass press_ev events to system
     for b in buttons:
@@ -258,7 +255,7 @@ async def main():
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
     asyncio.create_task(show_time(system.vt))
-    await asyncio.sleep(60)
+    await asyncio.sleep(600)
     system.set_off()
     await asyncio.sleep_ms(200)
 

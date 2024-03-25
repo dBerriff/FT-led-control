@@ -3,7 +3,7 @@
 """ test LED- and NeoPixel-related classes """
 
 import asyncio
-from led_pwm import LedPwm
+from led_pwm import PWMLed
 from colour_space import ColourSpace
 
 # helper coroutines
@@ -71,7 +71,7 @@ async def main():
     dc_gamma = ColourSpace().RGB_GAMMA
 
     led_pins = (10, 11, 12, 13, 14)
-    led_list = [LedPwm(p) for p in led_pins]
+    led_list = [PWMLed(p) for p in led_pins]
     for led in led_list:
         print(f'led: {led}')
 

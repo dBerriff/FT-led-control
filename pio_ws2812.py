@@ -94,7 +94,7 @@ class Ws2812Strip(PioWs2812):
         return (grb >> 8) & 0xff, (grb >> 16) & 0xff, grb & 0xff,
 
     def write(self):
-        """ 'put' pixel array into StateMachine Tx FIFO """
+        """ 'put' RGB array into StateMachine Tx FIFO """
         # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.RGB_SHIFT)
 
@@ -102,14 +102,14 @@ class Ws2812Strip(PioWs2812):
         """ set pixel RGB; duplicates __setitem__() """
         self.arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
-    def fill_array(self, rgb_):
-        """ fill array with RGB """
+    def set_strip(self, rgb_):
+        """ fill pixel strip with RGB """
         arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
             arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
     def set_range(self, index_, count_, rgb_):
-        """ fill count_ pixels with rgb_  """
+        """ fill count_ pixels with RGB  """
         arr = self.arr
         for _ in range(count_):
             index_ %= self.n
@@ -117,13 +117,13 @@ class Ws2812Strip(PioWs2812):
             index_ += 1
 
     def set_list(self, index_list_, rgb_):
-        """ fill index_list pixels with rgb_ """
+        """ fill index_list pixels with RGB """
         arr = self.arr
         for i in index_list_:
             arr[i] = (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
-    def clear(self):
-        """ clear all pixels """
+    def clear_strip(self):
+        """ set all pixels to (0, 0, 0) """
         arr = self.arr
         for i in range(self.n_pixels):
             arr[i] = 0

@@ -1,7 +1,7 @@
 # rgb.py
 """ RGB colour data and functions """
 
-# from micropython import const
+from micropython import const
 
 
 class ColourSpace:
@@ -39,7 +39,7 @@ class ColourSpace:
     }
 
     # build gamma-correction lookup list
-    GAMMA = 2.6  # Adafruit uses this value?
+    GAMMA = const(2.6)  # Adafruit uses this value?
     # faster than list comprehension
     RGB_GAMMA = []
     for x in range(256):

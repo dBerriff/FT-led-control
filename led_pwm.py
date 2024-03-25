@@ -32,7 +32,7 @@ class RGBLed:
         self.led_b.duty_u16(b * 257)
 
 
-class LedPwm(PWM):
+class PWMLed(PWM):
     """
     Control PWM output
         - frequency and duty cycle: no range checking

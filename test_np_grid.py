@@ -32,7 +32,7 @@ async def main():
     # fill grid with single colour
     await npg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
-    npg.clear()
+    npg.clear_strip()
     await asyncio.sleep_ms(500)
     
     pix_pause_ms = 20
@@ -83,23 +83,23 @@ async def main():
         npg.set_diagonal(off, mirror=True)
         npg.write()
         pause_ms //= 2
-    npg.clear()
+    npg.clear_strip()
     await asyncio.sleep_ms(2000)
 
     print('display strings')
     await npg.display_string('MERG', rgb)
-    npg.clear()
+    npg.clear_strip()
     gc.collect()
     await asyncio.sleep_ms(1000)
 
     await npg.display_string('9876543210', rgb)
-    npg.clear()
+    npg.clear_strip()
     gc.collect()
     await asyncio.sleep_ms(200)
 
     await npg.display_string_shift(' Famous Trains Derby ', rgb)
     await asyncio.sleep_ms(1000)
-    npg.clear()
+    npg.clear_strip()
     npg.write()
     await asyncio.sleep_ms(20)
 
