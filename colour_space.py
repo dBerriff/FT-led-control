@@ -1,7 +1,7 @@
 # rgb.py
 """ RGB colour data and functions """
 
-from micropython import const
+# from micropython import const
 from collections import namedtuple
  
 
@@ -14,6 +14,7 @@ class ColourSpace:
             suffix denotes transform: level and or gamma
     """
 
+    # is namedtuple helpful? - remove?
     RGB = namedtuple('RGB', ('r', 'g', 'b'))
 
     # full brightness colour "templates"
@@ -42,7 +43,7 @@ class ColourSpace:
     }
 
     # build gamma-correction lookup list
-    GAMMA = const(2.6)  # Adafruit uses this value?
+    GAMMA = 2.6  # Adafruit uses this value?
     # faster than list comprehension
     RGB_GAMMA = []
     for x in range(256):
@@ -64,9 +65,9 @@ class ColourSpace:
         level_ = max(level_, 0)
         level_ = min(level_, 255)
         return cls.RGB(
-            r=cls.RGB_GAMMA[rgb_template.r * level_ // 255],
-            g=cls.RGB_GAMMA[rgb_template.g * level_ // 255],
-            b=cls.RGB_GAMMA[rgb_template.b * level_ // 255]
+            cls.RGB_GAMMA[rgb_template.r * level_ // 255],
+            cls.RGB_GAMMA[rgb_template.g * level_ // 255],
+            cls.RGB_GAMMA[rgb_template.b * level_ // 255]
             )
 
     @classmethod
@@ -79,9 +80,9 @@ class ColourSpace:
             except KeyError:
                 return 0, 0, 0
         return cls.RGB(
-            r=cls.RGB_GAMMA[rgb_template.r],
-            g=cls.RGB_GAMMA[rgb_template.g],
-            b=cls.RGB_GAMMA[rgb_template.b]
+            cls.RGB_GAMMA[rgb_template.r],
+            cls.RGB_GAMMA[rgb_template.g],
+            cls.RGB_GAMMA[rgb_template.b]
             )
 
     @classmethod
@@ -95,52 +96,47 @@ class ColourSpace:
         level_ = max(level_, 0)
         level_ = min(level_, 255)
         return cls.RGB(
-            r=rgb_template.r * level_ // 255,
-            g=rgb_template.g * level_ // 255,
-            b=rgb_template.b * level_ // 255
+            rgb_template.r * level_ // 255,
+            rgb_template.g * level_ // 255,
+            rgb_template.b * level_ // 255
             )
 
     @classmethod
     def get_hsv_rgb(cls, h_, s_, v_):
         """
-            derived from Pimoroni GitHub code
+            see: http://www.easyrgb.com/en/math.php
             h_: hue: int, angle in degrees
-            s_: saturation: float, 0 to 1
-            v_: value: float, 0 to 1
+            s_: saturation: float, range 0 to 1
+            v_: value: float, range 0 to 1
         """
 
-        h = (h_ % 360) / 360  # mod 360 ensures case_i in range(6)
-        case_i = int(h * 6.0)
-        f = h * 6.0 - case_i
+        v_0 = v_ * 255.0
 
-        v_ *= 255.0
-        p = v_ * (1.0 - s_)
-        # q = v_ * (1.0 - f * s_)
-        # t = v_ * (1.0 - (1.0 - f) * s_)
+        if s_ == 0.0:
+            v_0 = int(v_0)
+            return cls.RGB(v_0, v_0, v_0)
+
+        h = (h_ % 360) / 60  # case_i in range(6)
+        case_i = int(h)
+        f = h - case_i
+
+        # intermediate variables to clarify formulae
+        v_1 = int(v_0 * (1.0 - s_))
+        v_2 = int(v_0 * (1.0 - s_ * f))
+        v_3 = int(v_0 * (1.0 - s_ * (1.0 - f)))
+        v_0 = int(v_0)
 
         if case_i == 0:
-            r = v_
-            g = v_ * (1.0 - (1.0 - f) * s_)
-            b = p
+            rgb = v_0, v_3, v_1
         elif case_i == 1:
-            r = v_ * (1.0 - f * s_)
-            g = v_
-            b = p
+            rgb = v_2, v_0, v_1
         elif case_i == 2:
-            r = p
-            g = v_
-            b = v_ * (1.0 - (1.0 - f) * s_)
+            rgb = v_1, v_0, v_3
         elif case_i == 3:
-            r = p
-            g = v_ * (1.0 - f * s_)
-            b = v_
+            rgb = v_1, v_2, v_0
         elif case_i == 4:
-            r = v_ * (1.0 - (1.0 - f) * s_)
-            g = p
-            b = v_
+            rgb = v_3, v_1, v_0
         else:  # case_i == 5:
-            r = v_
-            g = p
-            b = v_ * (1.0 - f * s_)
+            rgb = v_0, v_1, v_2
 
-        return cls.RGB(r=int(r), g=int(g), b=int(b))
+        return cls.RGB(*rgb)
