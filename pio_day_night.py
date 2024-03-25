@@ -33,7 +33,7 @@ import gc
 from buttons import Button, HoldButton
 from led_pwm import RGBLed
 from pio_ws2812 import Ws2812Strip
-from colour_space import RGB, ColourSpace
+from colour_space import ColourSpace
 from v_time import VTime
 
 
@@ -96,7 +96,7 @@ class DayNightST:
         # set gamma-corrected strip colours
         self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
                          'night': self.cs.get_rgb_g(np_rgb['night']),
-                         'off': RGB(0, 0, 0)
+                         'off': (0, 0, 0)
                          }
         self.day_night = ''
         self.clock_ev = asyncio.Event()
@@ -205,10 +205,10 @@ class DayNightST:
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
         """ return percentage rgb value """
-        r = rgb_0_.r + (rgb_1_.r - rgb_0_.r) * percent_ // 100
-        g = rgb_0_.g + (rgb_1_.g - rgb_0_.g) * percent_ // 100
-        b = rgb_0_.b + (rgb_1_.b - rgb_0_.b) * percent_ // 100
-        return RGB(r, g, b)
+        r = rgb_0_[0] + (rgb_1_[0] - rgb_0_[0]) * percent_ // 100
+        g = rgb_0_[1] + (rgb_1_[1] - rgb_0_[1]) * percent_ // 100
+        b = rgb_0_[2] + (rgb_1_[2] - rgb_0_[2]) * percent_ // 100
+        return r, g, b
 
 
 async def main():
@@ -233,16 +233,16 @@ async def main():
     n_pixels = 30
     # linear system-_state colours (no gamma correction)
     rgb = {
-        'day': RGB(128, 128, 128),
-        'night': RGB(48, 48, 48),
-        'off': RGB(0, 0, 0)
+        'day': (128, 128, 128),
+        'night': (48, 48, 48),
+        'off': (0, 0, 0)
         }
 
     clock_time = {'hm': '18:00', 'sunrise': '06:00', 'sunset': '20:00'}
     """
-    rgb = {'day': RGB(225, 200, 112),
-           'night': RGB(25, 75, 200),
-           'off': RGB(0, 0, 0)
+    rgb = {'day': (225, 200, 112),
+           'night': (25, 75, 200),
+           'off': (0, 0, 0)
            }
     """
 
@@ -258,7 +258,7 @@ async def main():
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
     asyncio.create_task(show_time(system.vt))
-    await asyncio.sleep(6)
+    await asyncio.sleep(60)
     system.set_off()
     await asyncio.sleep_ms(200)
 

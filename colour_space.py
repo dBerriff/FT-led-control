@@ -14,32 +14,29 @@ class ColourSpace:
             suffix denotes transform: level and or gamma
     """
 
-    # is namedtuple helpful? - remove?
-    RGB = namedtuple('RGB', ('r', 'g', 'b'))
-
     # full brightness colour "templates"
     colours = {
-        'amber': RGB(255, 100, 0),
-        'aqua': RGB(50, 255, 255),
-        'black': RGB(0, 0, 0),
-        'blue': RGB(0, 0, 255),
-        'cyan': RGB(0, 255, 255),
-        'ghost_white': RGB(248, 248, 255),
-        'gold': RGB(255, 255, 30),
-        'green': RGB(0, 255, 0),
-        'jade': RGB(0, 255, 40),
-        'magenta': RGB(255, 0, 255),
-        'mint_cream': RGB(245, 255, 250),
-        'old_lace': RGB(253, 245, 230),
-        'orange': RGB(255, 165, 0),
-        'dark_orange': RGB(255, 140, 0),
-        'pink': RGB(242, 90, 255),
-        'purple': RGB(180, 0, 255),
-        'red': RGB(255, 0, 0),
-        'snow': RGB(255, 250, 250),
-        'teal': RGB(0, 255, 120),
-        'white': RGB(255, 255, 255),
-        'yellow': RGB(255, 255, 0)
+        'amber': (255, 100, 0),
+        'aqua': (50, 255, 255),
+        'black': (0, 0, 0),
+        'blue': (0, 0, 255),
+        'cyan': (0, 255, 255),
+        'ghost_white': (248, 248, 255),
+        'gold': (255, 255, 30),
+        'green': (0, 255, 0),
+        'jade': (0, 255, 40),
+        'magenta': (255, 0, 255),
+        'mint_cream': (245, 255, 250),
+        'old_lace': (253, 245, 230),
+        'orange': (255, 165, 0),
+        'dark_orange': (255, 140, 0),
+        'pink': (242, 90, 255),
+        'purple': (180, 0, 255),
+        'red': (255, 0, 0),
+        'snow': (255, 250, 250),
+        'teal': (0, 255, 120),
+        'white': (255, 255, 255),
+        'yellow': (255, 255, 0)
     }
 
     # build gamma-correction lookup list
@@ -64,10 +61,10 @@ class ColourSpace:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        return cls.RGB(
-            cls.RGB_GAMMA[rgb_template.r * level_ // 255],
-            cls.RGB_GAMMA[rgb_template.g * level_ // 255],
-            cls.RGB_GAMMA[rgb_template.b * level_ // 255]
+        return (
+            cls.RGB_GAMMA[rgb_template[0] * level_ // 255],
+            cls.RGB_GAMMA[rgb_template[1] * level_ // 255],
+            cls.RGB_GAMMA[rgb_template[2] * level_ // 255]
             )
 
     @classmethod
@@ -79,10 +76,10 @@ class ColourSpace:
                 rgb_template = cls.colours[rgb_template]
             except KeyError:
                 return 0, 0, 0
-        return cls.RGB(
-            cls.RGB_GAMMA[rgb_template.r],
-            cls.RGB_GAMMA[rgb_template.g],
-            cls.RGB_GAMMA[rgb_template.b]
+        return (
+            cls.RGB_GAMMA[0],
+            cls.RGB_GAMMA[1],
+            cls.RGB_GAMMA[2]
             )
 
     @classmethod
@@ -95,10 +92,10 @@ class ColourSpace:
                 return 0, 0, 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        return cls.RGB(
-            rgb_template.r * level_ // 255,
-            rgb_template.g * level_ // 255,
-            rgb_template.b * level_ // 255
+        return (
+            rgb_template[0] * level_ // 255,
+            rgb_template[1] * level_ // 255,
+            rgb_template[2] * level_ // 255
             )
 
     @classmethod
@@ -114,7 +111,7 @@ class ColourSpace:
 
         if s_ == 0.0:
             v_0 = int(v_0)
-            return cls.RGB(v_0, v_0, v_0)
+            return v_0, v_0, v_0
 
         h = (h_ % 360) / 60  # case_i in range(6)
         case_i = int(h)
@@ -139,4 +136,4 @@ class ColourSpace:
         else:  # case_i == 5:
             rgb = v_0, v_1, v_2
 
-        return cls.RGB(*rgb)
+        return rgb

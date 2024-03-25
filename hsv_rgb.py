@@ -6,15 +6,15 @@
 
 def set_hsv(h_, s_, v_):
     """
-        derived from Pimoroni Github code
+        derived from Pimoroni GitHub code
         h_: hue: int, angle in degrees
         s_: saturation: float, 0 to 1
         v_: value: float, 0 to 1
     """
 
-    h = (h_ % 360) / 360  # mod 360 ensures case_i in range(6)
-    case_i = int(h * 6.0)
-    f = h * 6.0 - case_i
+    h_ = (h_ % 360) / 360  # mod 360 ensures case_i in range(6)
+    case_i = int(h_ * 6.0)
+    f = h_ * 6.0 - case_i
 
     v_ *= 255.0
     p = v_ * (1.0 - s_)
