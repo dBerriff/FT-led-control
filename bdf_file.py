@@ -52,20 +52,18 @@ def get_font_bitmaps(filename):
     with open(filename) as f:
         tokens = find_keyword(f, 'FONTBOUNDINGBOX')
         preamble_dict['width'] = int(tokens[1])
-        font_height = int(tokens[2])
-        preamble_dict['height'] = font_height
-        # optional: consume remainder of preamble block
+        preamble_dict['height'] = int(tokens[2])
+        # consume remainder of preamble block
         find_keyword(f, 'ENDPROPERTIES')
 
-        parse_fonts = True
         # check for end of file?
-        while parse_fonts:
+        font_height = preamble_dict['height']
+        code = 0
+        while code < 126:  # ASCII chars only
             find_keyword(f, 'STARTCHAR')
             tokens = find_keyword(f, 'ENCODING')
             code = int(tokens[1])
             # only scan ASCII set
-            if code > 126:
-                break  # end parsing
             find_keyword(f, 'BITMAP')
             bit_map = array.array('I')
             for _ in range(font_height):
@@ -74,7 +72,7 @@ def get_font_bitmaps(filename):
                 row = int(tokens[0], 16)  # hexadecimal data
                 bit_map.append(row)
             font_dict[code] = bit_map
-            # optional: consume remainder of character block
+            # consume remainder of character block
             find_keyword(f, 'ENDCHAR')
         font_dict.pop(0, 0)  # default value prevents error if not in dict
 
@@ -92,16 +90,18 @@ def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
     for row in range(8):
         # process next byte array
         ba = char_grid[row]
+        even = False
         for col in range(8):
+            even = not even  # first col is 0
             # ms bit is left-most col
             # select bit and test
             if ba & (1 << (7 - col)) > 0:
                 c = col + col_offset
                 r = row + row_offset
-                if c % 2 == 1:  # odd row
-                    r_index = 7 - r
-                else:
+                if even:
                     r_index = r
+                else:
+                    r_index = 7 - r
                 i_list.append(c * 8 + r_index)
     return i_list
 
@@ -110,11 +110,12 @@ def main():
 
     # === select required character set (no file extension)
 
-    charset = '4x6'
+    charset = '5x7'
 
     # ===
 
     font_parameters, bitmaps = get_font_bitmaps(charset + '.bdf')
+    print(f'font_parameters: {font_parameters}')
     
     """ 
     # for debug / logging; note: JSON converts int dict key to str

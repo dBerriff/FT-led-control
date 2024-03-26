@@ -33,9 +33,7 @@ class VTime:
         """ check time against _sunrise and _sunset """
         while self.run_ev.is_set():
             t = self._vt_s
-            if t < self._sunrise:
-                state = 'night'
-            elif t < self._sunset:
+            if self._sunrise <= t < self._sunset:
                 state = 'day'
             else:
                 state = 'night'

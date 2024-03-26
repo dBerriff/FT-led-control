@@ -21,46 +21,46 @@ async def main():
     rgb = cs.get_rgb_lg(cs.colours['orange'], level)
     nps.set_strip(rgb)
     nps.write()
-    await asyncio.sleep_ms(5000)
+    await asyncio.sleep_ms(1000)
 
 
     
+    # shift colour to red and darken
     h = 270
-    h_ = h
+    h_init = h
     h_delta = 90
-    s = 0.75
-    s_ = s
-    s_delta = 0
-    v = 0.75
-    v_ = v
+    s = 0.9
+    s_init = s
+    s_delta = -0.2
+    v_init = 0.95
     v_delta = -0.25
-
     for p in range(101):
-        h_ = h + int(p * h_delta / 100)
-        s_ = s + p * s_delta / 100
-        v_ = v + p * v_delta / 100
-        rgb = cs.get_hsv_rgb(h_, s_, v_)
+        h = h_init + p * h_delta / 100
+        s = s_init + p * s_delta / 100
+        v = v_init + p * v_delta / 100
+        rgb = cs.get_hsv_rgb(h/360.0, s, v)
         rgb1 = cs.get_rgb_g(rgb)
-        print('Set strip', h_, s_, v_, rgb, rgb1)
+        print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
         nps.set_strip(rgb1)
         nps.write()
         await asyncio.sleep_ms(100)
 
-    s = s_
-    v = v_
+    # hold hue, reduce saturation and value
+    s_init = s
+    v_init = v
     s_delta = -s
     v_delta = -0.35
     for p in range(101):
-        s_ = s + p * s_delta / 100
-        v_ = v + p * v_delta / 100
-        rgb = cs.get_hsv_rgb(h_, s_, v_)
+        s = s_init + p * s_delta / 100
+        v = v_init + p * v_delta / 100
+        rgb = cs.get_hsv_rgb(h/360.0, s, v)
         rgb1 = cs.get_rgb_g(rgb)
-        print('Set strip', s_, v_, rgb, rgb1)
+        print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
         nps.set_strip(rgb1)
         nps.write()
         await asyncio.sleep_ms(100)
 
-    await asyncio.sleep_ms(5_000)
+    await asyncio.sleep_ms(10_000)
     nps.clear_strip()
     nps.write()
     await asyncio.sleep_ms(200)

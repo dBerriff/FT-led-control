@@ -44,13 +44,16 @@ class Ws2812Grid(Ws2812Strip):
         """
         c_i_dict = {}
         max_row = self.max_row  # avoid repeated dict access
+        even = False  # row 0 is even
         for col in range(self.n_cols):
-            if col % 2 == 1:  # odd
+            base = col * self.n_rows
+            even = not even
+            if even:
                 for row in range(self.n_rows):
-                    c_i_dict[col, row] = col * self.n_rows + max_row - row
+                    c_i_dict[col, row] = base + row
             else:
                 for row in range(self.n_rows):
-                    c_i_dict[col, row] = col * self.n_rows + row
+                    c_i_dict[col, row] = base + max_row - row
         return c_i_dict
 
     def coord_inc(self, coord):
@@ -114,7 +117,7 @@ class Ws2812Grid(Ws2812Strip):
 
         for row in range(self.n_rows):
             for col in range(self.n_cols):
-                self[self.coord_index[(col, row)]] = rgb_
+                self[self.coord_index[col, row]] = rgb_
                 self.write()
                 await asyncio.sleep_ms(pause_ms)
 
@@ -138,12 +141,12 @@ class Ws2812Grid(Ws2812Strip):
         """ fill diagonal with rgb_ colour
             - assumes n_cols >= n_rows
         """
-        if not mirror:
+        if mirror:
             for col in range(self.n_rows):
-                self[self.coord_index[col, col]] = rgb_
+                self[self.coord_index[self.max_row - col, col]] = rgb_
         else:
             for col in range(self.n_rows):
-                self[self.coord_index[self.n_rows - col, col]] = rgb_
+                self[self.coord_index[col, col]] = rgb_
 
     async def display_string(self, str_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string

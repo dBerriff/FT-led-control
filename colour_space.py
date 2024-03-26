@@ -100,39 +100,49 @@ class ColourSpace:
     @classmethod
     def get_hsv_rgb(cls, h_, s_, v_):
         """
-            see: http://www.easyrgb.com/en/math.php
-            h_: hue: int, angle in degrees
-            s_: saturation: float, range 0 to 1
-            v_: value: float, range 0 to 1
+            see:
+            https://github.com/python/cpython/blob/3.12/Lib/colorsys.py
+            inputs: float [0.0...1.0]
+            h_: hue, s_: saturation, v_: value
+            returns: int [0...255]
+            r, g, b
+            
         """
 
-        v_0 = v_ * 255.0
-
         if s_ == 0.0:
-            v_0 = int(v_0)
-            return v_0, v_0, v_0
+            v_8 = int(v_ * 255.0)
+            return v_8, v_8, v_8
 
-        h = (h_ % 360) / 60  # case_i in range(6)
-        case_i = int(h)
-        f = h - case_i
+        # keep i in range(6)
+        if h_ == 1.0:
+            h_ = 0.0
+        h_6 = h_ * 6.0
+        i = int(h_6)
+        f = h_6 - i
 
-        # intermediate variables to clarify formulae
-        v_1 = int(v_0 * (1.0 - s_))
-        v_2 = int(v_0 * (1.0 - s_ * f))
-        v_3 = int(v_0 * (1.0 - s_ * (1.0 - f)))
-        v_0 = int(v_0)
+        if i == 0:
+            r = v_
+            g = v_ * (1.0 - s_ * (1.0 - f))
+            b = v_ * (1.0 - s_)
+        elif i == 1:
+            r = v_ * (1.0 - s_ * f)
+            g = v_
+            b = v_ * (1.0 - s_)
+        elif i == 2:
+            r = v_ * (1.0 - s_)
+            g = v_
+            b = v_ * (1.0 - s_ * (1.0 - f))
+        elif i == 3:
+            r = v_ * (1.0 - s_)
+            g = v_ * (1.0 - s_ * f)
+            b = v_
+        elif i == 4:
+            r = v_ * (1.0 - s_ * (1.0 - f))
+            g = v_ * (1.0 - s_)
+            b = v_
+        elif i == 5:
+            r = v_
+            g = v_ * (1.0 - s_)
+            b = v_ * (1.0 - s_ * f)
 
-        if case_i == 0:
-            rgb = v_0, v_3, v_1
-        elif case_i == 1:
-            rgb = v_2, v_0, v_1
-        elif case_i == 2:
-            rgb = v_1, v_0, v_3
-        elif case_i == 3:
-            rgb = v_1, v_2, v_0
-        elif case_i == 4:
-            rgb = v_3, v_1, v_0
-        else:  # case_i == 5:
-            rgb = v_0, v_1, v_2
-
-        return rgb
+        return int(r * 255), int(g * 255), int(b * 255)
