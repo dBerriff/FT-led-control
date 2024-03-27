@@ -1,19 +1,19 @@
 # rgb.py
-""" RGB colour data and functions """
+""" RGB grb_ data and functions """
 
 from micropython import const
 
 
 class ColourSpace:
     """ 
-        implement 24-bit RGB colour: 3-element tuple (R, G, B)
+        implement 24-bit RGB grb_: 3-element tuple (R, G, B)
         - gamma-correction is applied by a lookup list
         - methods are all class methods
         - get_rgb_lg(), get_rgb_l(), get_rgb_g():
             suffix denotes transform: level and or gamma
     """
 
-    # full brightness colour "templates"
+    # full brightness grb_ "templates"
     colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -108,7 +108,7 @@ class ColourSpace:
             r, g, b
             
         """
-        v_8 = v_ * 255.0
+        v_8 = v_ * 255.0  # int is 8-bit value
         if s_ == 0.0:
             v_8_int = int(v_8)
             return v_8_int, v_8_int, v_8_int
@@ -140,7 +140,7 @@ class ColourSpace:
             r = v_8 * (1.0 - s_ * (1.0 - f))
             g = v_8 * (1.0 - s_)
             b = v_8
-        elif i == 5:
+        else:  # i == 5:
             r = v_8 
             g = v_8 * (1.0 - s_)
             b = v_8 * (1.0 - s_ * f)

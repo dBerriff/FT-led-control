@@ -12,7 +12,7 @@ class Ws2812Grid(Ws2812Strip):
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
         - a block is an 8x8 area, intended for character display
-        - implicit conversion of colour-keys to RGB has been removed
+        - implicit conversion of grb_-keys to RGB has been removed
         - helper methods are examples or work-in-progress
     """
 
@@ -77,25 +77,35 @@ class Ws2812Grid(Ws2812Strip):
         return c, r
 
     def set_grid(self, rgb_):
-        """ fill all grid pixels with rgb colour """
+        """ fill all grid pixels with rgb grb_ """
+        grb = self.encode_grb(rgb_)
         for index in range(self.n_pixels):
-            self[index] = rgb_
+            self[index] = grb
 
     def set_col(self, col, rgb_):
-        """ fill col with rgb_ colour """
+        """ fill col with rgb_ """
+        self.set_col_grb(self.encode_grb(rgb_))
+
+    def set_col_grb(self, col, grb_):
+        """ fill col with rgb_ """
         for row in range(self.n_rows):
-            self[self.coord_index[col, row]] = rgb_
+            self[self.coord_index[col, row]] = grb_
 
     def set_row(self, row, rgb_):
-        """ fill row with rgb_ colour """
+        """ fill row with rgb_ grb_ """
+        self.set_row_grb(self.encode_grb(rgb_))
+
+    def set_row_grb(self, row, grb_):
+        """ fill row with rgb_ grb_ """
         for col in range(self.n_cols):
-            self[self.coord_index[col, row]] = rgb_
+            self[self.coord_index[col, row]] = grb_
 
     def set_coord_list(self, coord_list_, rgb_):
         """ set a list of pixels by coords """
+        grb = self.encode_grb(rgb_)
         if coord_list_:  # could be empty
             for c in coord_list_:
-                self[self.coord_index[c]] = rgb_
+                self[self.coord_index[c]] = grb
 
 # helper methods
 
@@ -107,57 +117,66 @@ class Ws2812Grid(Ws2812Strip):
 
     async def traverse_strip(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in strip order """
+        grb = self.encode_grb(rgb_)
         for index in range(self.n_pixels):
-            self[index] = rgb_
+            self[index] = grb
             self.write()
             await asyncio.sleep_ms(pause_ms)
 
     async def traverse_grid(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in grid coord order """
-
+        grb = self.encode_grb(rgb_)
         for row in range(self.n_rows):
             for col in range(self.n_cols):
-                self[self.coord_index[col, row]] = rgb_
+                self[self.coord_index[col, row]] = grb
                 self.write()
                 await asyncio.sleep_ms(pause_ms)
 
     async def fill_cols(self, rgb_set, pause_ms=20):
         """ coro: fill cols in order, cycling colours """
-        n_colours = len(rgb_set)
+        grb_set = []
+        for c in rgb_set:
+            grb_set.append(self.encode_grb(c))
+        n_colours = len(grb_set)
         for col in range(self.n_cols):
-            self.set_col(col, rgb_set[col % n_colours])
+            self.set_col_grb(col, grb_set[col % n_colours])
             self.write()
             await asyncio.sleep_ms(pause_ms)
 
     async def fill_rows(self, rgb_set, pause_ms=20):
         """ coro: fill rows in order, cycling colours """
-        n_colours = len(rgb_set)
+        grb_set = []
+        for c in rgb_set:
+            grb_set.append(self.encode_grb(c))
+        n_colours = len(grb_set)
         for row in range(self.n_rows):
-            self.set_row(row, rgb_set[row % n_colours])
+            self.set_row_grb(row, grb_set[row % n_colours])
             self.write()
             await asyncio.sleep_ms(pause_ms)
 
     def set_diagonal(self, rgb_, mirror=False):
-        """ fill diagonal with rgb_ colour
+        """ fill diagonal with rgb_ grb_
             - assumes n_cols >= n_rows
         """
+        grb = self.encode_grb(rgb_)
         if mirror:
             for col in range(self.n_rows):
-                self[self.coord_index[self.max_row - col, col]] = rgb_
+                self[self.coord_index[self.max_row - col, col]] = grb
         else:
             for col in range(self.n_rows):
-                self[self.coord_index[col, col]] = rgb_
+                self[self.coord_index[col, col]] = grb
 
     async def display_string(self, str_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string
             - set_char() overlays background
         """
+        grb = self.encode_grb(rgb_)
         # rgb is set for the whole string
         for char in str_:
-            self.set_list(self.charset[char], rgb_)
+            self.set_list_grb(self.charset[char], grb)
             self.write()
             await asyncio.sleep_ms(pause_ms)
-            self.set_list(self.charset[char], (0, 0, 0))
+            self.set_list_grb(self.charset[char], 0)
             self.write()
 
 
@@ -173,17 +192,17 @@ class BlockGrid(Ws2812Grid):
         # add virtual block to end of grid
         self.n_cols = n_cols_ + self.BLOCK_SIZE
         super().__init__(Pin(np_pin, Pin.OUT), self.n_cols, n_rows_, charset_file)
-        # attributes block-shift algorithm
+        # attributes for block-shift algorithm
         self.block_pixels = self.BLOCK_SIZE * self.BLOCK_SIZE
         self.seg_len = self.n_rows
         self.max_seg_index = (self.n_cols - 1) * self.seg_len
         self.shift_offset = 2 * self.n_rows - 1
 
-    def set_block_list(self, block_n, index_list_, rgb_):
+    def set_block_list(self, block_n, index_list_, grb_):
         """ fill block_n index_list with rgb_ """
         offset = block_n * self.block_pixels
         for index in index_list_:
-            self[index + offset] = rgb_
+            self[index + offset] = grb_
 
     async def shift_grid_left(self, pause_ms=20):
         """
@@ -206,9 +225,10 @@ class BlockGrid(Ws2812Grid):
             coro: display letters in a string, shifting in from right
             - block 1 is usually a virtual block
         """
+        grb = self.encode_grb(rgb_)
         for i in range(len(string_) - 1):
-            self.set_block_list(0, self.charset[string_[i]], rgb_)
-            self.set_block_list(1, self.charset[string_[i + 1]], rgb_)
+            self.set_block_list(0, self.charset[string_[i]], grb)
+            self.set_block_list(1, self.charset[string_[i + 1]], grb)
             self.write()
             await asyncio.sleep_ms(pause_ms)
             await self.shift_grid_left()

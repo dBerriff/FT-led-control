@@ -23,9 +23,7 @@ async def main():
     nps.write()
     await asyncio.sleep_ms(1000)
 
-
-    
-    # shift colour to red and darken
+    # shift grb_ to red and darken
     h = 270
     h_init = h
     h_delta = 90

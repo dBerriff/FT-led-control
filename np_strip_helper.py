@@ -5,7 +5,7 @@ import asyncio
 from random import randrange
 
 
-async def np_arc_weld(nps, cs, px_index, play_ev):
+async def np_arc_weld(nps, cs, pixel_, play_ev):
     """ coro: drive a single pixel to simulate
         arc-weld flash and 'glow' decay
     """
@@ -15,12 +15,12 @@ async def np_arc_weld(nps, cs, px_index, play_ev):
         # flash 100 to 200 times at random level
         for _ in range(randrange(100, 200)):
             level = randrange(96, 192)
-            nps[px_index] = cs.get_rgb_lg(arc_rgb_, level)
+            nps[pixel_] = nps.encode_rgb_lg(arc_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(20)
         # fade out glow
         for level in range(128, -1, -1):
-            nps[px_index] = cs.get_rgb_lg(glow_rgb_, level)
+            nps[pixel_] = cs.get_rgb_lg(glow_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(10)
         await asyncio.sleep_ms(randrange(1_000, 5_000))
@@ -49,58 +49,48 @@ async def np_twinkler(nps, cs, pixel_, play_ev):
             for i in range(n_smooth):
                 levels[i] = dim_level
             level = dim_level
-        nps[pixel_] = cs.get_rgb_lg(lamp_rgb, level)
+        nps[pixel_] = nps.encode_rgb_lg(lamp_rgb, level)
         nps.write()
         await asyncio.sleep_ms(randrange(20, 200, 20))
         l_index += 1
-        l_index %= n_smooth
+        if l_index == n_smooth:
+            l_index = 0
 
 
-async def mono_chase(nps, rgb_list, play_ev, pause=20):
+async def colour_chase(nps, rgb_list, play_ev, pause=20):
     """ np strip:
         fill count_ pixels with list of rgb values
         - n_rgb does not have to equal count_
     """
     n_pixels = nps.n
-    n_colours = len(rgb_list)
+    grb_list = []
+    # convert (R, G, B) encoding to WS2812 GRB
+    for c in rgb_list:
+        grb_list.append(nps.encode_grb(c))
+    n_colours = len(grb_list)
     index = 0
+    # <% n_pixels> arithmetic is slow but straightforward
     while play_ev.is_set():
         for i in range(n_colours):
-            nps[(index + i) % n_pixels] = rgb_list[i]
+            nps[(index + i) % n_pixels] = grb_list[i]
         nps.write()
         await asyncio.sleep_ms(pause)
-        nps[index] = (0, 0, 0)
+        nps[index] = 0
         index = (index + 1) % n_pixels
-
-
-async def colour_chase(nps, rgb_list, pause=20):
-    """ np strip:
-        fill count_ pixels with list of rgb values
-        - n_rgb does not have to equal count_
-    """
-    n_pixels = nps.n
-    n_rgb = len(rgb_list)
-    c_index = 0
-    for _ in range(100):
-        for i in range(n_pixels):
-            nps[i] = rgb_list[(i + c_index) % n_rgb]
-        nps.write()
-        await asyncio.sleep_ms(pause)
-        c_index = (c_index - 1) % n_rgb
-
 
 async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
     """ flash 2 pixels alternatively
         - flash_ev is an asyncio.Event() to switch flashing on/off
     """
     
-    def set_display(rgb_0, rgb_1):
+    def set_display(grb_0, grb_1):
         """ set the 2 pixels """
-        nps[base_index] = rgb_0
-        nps[bi_1] = rgb_1
+        nps[base_index] = grb_0
+        nps[bi_1] = grb_1
         nps.write()
         
-    off = (0, 0, 0)
+    grb = nps.encode_grb(rgb)
+    off = 0
     hold = period // 2
     bi_1 = base_index + 1
     write_delay_ms = 2  # allow PIO write to complete
@@ -108,8 +98,8 @@ async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
         set_display(off, off)
         await asyncio.sleep_ms(write_delay_ms)
         await flash_ev.wait()  # pass-through or wait for set()
-        set_display(rgb, off)
+        set_display(grb, off)
         await asyncio.sleep_ms(hold)
-        set_display(off, rgb)
+        set_display(off, grb)
         await asyncio.sleep_ms(hold)
     

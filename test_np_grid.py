@@ -29,7 +29,7 @@ async def main():
     cl_len = len(colour_list)
 
     rgb = cs.get_rgb_lg('dark_orange', level)
-    # fill grid with single colour
+    # fill grid with single grb_
     await npg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
     npg.clear_strip()
@@ -84,7 +84,7 @@ async def main():
         npg.write()
         pause_ms //= 2
     npg.clear_strip()
-    await asyncio.sleep_ms(2000)
+    await asyncio.sleep_ms(1000)
 
     print('display strings')
     await npg.display_string('MERG', rgb)
@@ -92,7 +92,7 @@ async def main():
     gc.collect()
     await asyncio.sleep_ms(1000)
 
-    await npg.display_string('9876543210', rgb)
+    await npg.display_string('3210', rgb)
     npg.clear_strip()
     gc.collect()
     await asyncio.sleep_ms(200)

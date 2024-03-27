@@ -43,7 +43,7 @@ class Plasma2040(Ws2812Strip):
         - control WS2812 LED strip
         - hardwired GPIO pins (see schematic and constants below):
             -- CLK, DATA: LED strip clock and data
-            -- LED_R, LED_G, LED_B: onboard 3-colour LED
+            -- LED_R, LED_G, LED_B: onboard 3-grb_ LED
             -- SW_A, SW_B, SW_U: user buttons
     """
 
