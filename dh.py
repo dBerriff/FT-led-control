@@ -1,7 +1,7 @@
 # dh.py
 """
     Set LED strip using Pimoroni library
-    written for Pimoroni Plasma 2040 board
+    written for Pimoroni Plasma 2040 p_2040
     
     Non-asyncio version
     Gamma correction implicit in the Pimoroni software. 
@@ -54,7 +54,7 @@ night_hold_s = 5  # s
 def set_strip(rgb_):
     """ set whole strip to rgb value """
     for i in range(NUM_LEDS):
-        led_strip.set_rgb(i, rgb_[0], rgb_[1], rgb_[2])
+        led_strip.set_rgb_u8(i, rgb_[0], rgb_[1], rgb_[2])
 
 
 def set_strip_level(rgb_, level):
@@ -80,7 +80,7 @@ def get_fade_rgb(rgb_0, rgb_1, percent):
 
 
 led = RGBLED(plasma2040.LED_R, plasma2040.LED_G, plasma2040.LED_B)
-led.set_rgb(128, 0, 0)  # onboard red: power on, LED strip off
+led.set_rgb_u8(128, 0, 0)  # onboard red: power on, LED strip off
  
 button_a = Button(plasma2040.BUTTON_A)
 button_b = Button(plasma2040.BUTTON_B)
@@ -135,7 +135,7 @@ while True:
                 strip_rgb = day_rgb
                 sys_state = 'day'
                 day_night_state = 'day'
-                led.set_rgb(0, 64, 0)  # onboard green for this state
+                led.set_rgb_u8(0, 64, 0)  # onboard green for this state
             elif btn_b_state:
                 print('Set state "fade"')
                 strip_rgb = day_rgb
@@ -143,7 +143,7 @@ while True:
                 fade_state = 'down'
                 fade_percent = 0
                 fade_rgb = strip_rgb
-                led.set_rgb(0, 0, 64)  # onboard blue for this state
+                led.set_rgb_u8(0, 0, 64)  # onboard blue for this state
                 t_fade_0 = time.ticks_ms()
             elif btn_u_state:
                 pass
@@ -167,7 +167,7 @@ while True:
                 day_night_state = 'day'
                 strip_rgb = off_rgb
                 sys_state = 'off'
-                led.set_rgb(128, 0, 0)
+                led.set_rgb_u8(128, 0, 0)
             set_strip(strip_rgb)
 
         elif sys_state == 'fade':
@@ -180,7 +180,7 @@ while True:
                 day_night_state = 'day'
                 strip_rgb = off_rgb
                 sys_state = 'off'
-                led.set_rgb(128, 0, 0)
+                led.set_rgb_u8(128, 0, 0)
             set_strip(strip_rgb)
 
     if sys_state == 'fade':

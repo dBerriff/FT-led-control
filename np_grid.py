@@ -84,7 +84,7 @@ class Ws2812Grid(Ws2812Strip):
 
     def set_col(self, col, rgb_):
         """ fill col with rgb_ """
-        self.set_col_grb(self.encode_grb(rgb_))
+        self.set_col_grb(col, self.encode_grb(rgb_))
 
     def set_col_grb(self, col, grb_):
         """ fill col with rgb_ """
@@ -93,7 +93,7 @@ class Ws2812Grid(Ws2812Strip):
 
     def set_row(self, row, rgb_):
         """ fill row with rgb_ grb_ """
-        self.set_row_grb(self.encode_grb(rgb_))
+        self.set_row_grb(row, self.encode_grb(rgb_))
 
     def set_row_grb(self, row, grb_):
         """ fill row with rgb_ grb_ """

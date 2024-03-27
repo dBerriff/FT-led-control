@@ -67,7 +67,7 @@ class VTime:
         return int(h_m[0]) * 3600 + int(h_m[1]) * 60
 
     def __str__(self):
-        return f'{self.get_time_hm()} {self.state}'
+        return f'{self.get_time_hm()} {self.state}  '
 
 
 async def main():

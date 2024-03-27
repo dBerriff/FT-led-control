@@ -14,7 +14,7 @@ from np_strip_helper import colour_chase, two_flash
 def time_set_strip(nps_, rgb_):
     """ test and time fill-strip method """
     c_time = time.ticks_us()
-    nps_.set_strip(rgb_)
+    nps_.set_strip_rgb(rgb_)
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps_.write()
@@ -44,7 +44,7 @@ async def main():
     await asyncio.sleep_ms(200)
 
     print('Set single pixel')
-    nps.set_pixel(0, test_rgb)
+    nps.set_pixel_rgb(0, test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
     nps.clear_strip()
@@ -52,7 +52,7 @@ async def main():
     await asyncio.sleep_ms(200)
 
     print('Set strip')
-    nps.set_strip(test_rgb)
+    nps.set_strip_rgb(test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
     nps.clear_strip()
@@ -60,7 +60,7 @@ async def main():
     await asyncio.sleep_ms(200)
 
     print('Set range')
-    nps.set_range(8, 8, test_rgb)
+    nps.set_range_rgb(8, 8, test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
     nps.clear_strip()
@@ -68,7 +68,7 @@ async def main():
     await asyncio.sleep_ms(200)
 
     print('Set list')
-    nps.set_list((0, 2, 4, 6), test_rgb)
+    nps.set_list_rgb((0, 2, 4, 6), test_rgb)
     nps.write()
     await asyncio.sleep_ms(5_000)
     nps.clear_strip()

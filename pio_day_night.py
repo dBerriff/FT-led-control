@@ -1,7 +1,7 @@
 # pio_day-night.py
 """
     Set LED strip using pio_ws2812 module (adapted from Pico docs)
-    - class Plasma2040: written for Pimoroni Plasma 2040 board
+    - class Plasma2040: written for Pimoroni Plasma 2040 p_2040
     - class LightingST: models lighting states and state-transition logic
     
     asyncio version
@@ -39,19 +39,19 @@ from v_time import VTime
 
 class Plasma2040(Ws2812Strip):
     """
-        Pimoroni Plasma 2040 board
+        Pimoroni Plasma 2040 p_2040
         - control WS2812 LED strip
         - hardwired GPIO pins (see schematic and constants below):
             -- CLK, DATA: LED strip clock and data
             -- LED_R, LED_G, LED_B: onboard 3-grb_ LED
             -- SW_A, SW_B, SW_U: user buttons
     """
-
+    # Plasma 2040 GPIO pins
     SW_A = const(12)
     SW_B = const(13)
     SW_U = const(23)
 
-    CLK = const(14)
+    CLK = const(14)  # not used for WS2812
     DATA = const(15)
 
     LED_R = const(16)
@@ -68,7 +68,7 @@ class Plasma2040(Ws2812Strip):
 
     def set_onboard(self, rgb_):
         """ set onboard LED to rgb_ """
-        self.led.set_rgb(*rgb_)
+        self.led.set_rgb_u8(*rgb_)
 
 
 class DayNightST:
@@ -86,19 +86,20 @@ class DayNightST:
         'clock': (0, 0, 32)
         }
 
-    def __init__(self, board, np_rgb, vt, clock_time):
-        self.board = board
+    def __init__(self, p_2040, np_rgb, vt, clock_time):
+        self.board = p_2040
         self.np_rgb = np_rgb
         self.clock_time = clock_time
         self.vt = vt
         self.step_t_ms = 200
         self.cs = ColourSpace()
-        # set gamma-corrected strip colours
-        self.np_rgb_g = {'day': self.cs.get_rgb_g(np_rgb['day']),
-                         'night': self.cs.get_rgb_g(np_rgb['night']),
-                         'off': (0, 0, 0)
+        # set gamma-corrected strip colours as 24-bit GRB value
+        self.np_grb_g = {'day': self.board.encode_grb_g(np_rgb['day']),
+                         'night': self.board.encode_grb_g(np_rgb['night']),
+                         'off': 0
                          }
         self.day_night = ''
+        # set clock_ev when in state 'clock'
         self.clock_ev = asyncio.Event()
         self.state = self.set_off()
         self.board.set_onboard(self.led_rgb['off'])
@@ -119,7 +120,7 @@ class DayNightST:
 
     def set_strip(self, state):
         """ set strip to state """
-        self.board.set_strip(self.np_rgb_g[state])
+        self.board.set_strip_grb(self.np_grb_g[state])
         self.board.write()
 
     # state-transition methods
@@ -181,8 +182,8 @@ class DayNightST:
             rgb_1 = self.np_rgb[state_1]
             fade_percent = 0
             while fade_percent < 101 and self.clock_ev.is_set():
-                self.board.set_strip(
-                    self.cs.get_rgb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
+                self.board.set_strip_grb(
+                    self.board.encode_grb_g(self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
                 self.board.write()
                 await asyncio.sleep_ms(self.step_t_ms)
                 fade_percent += 1
@@ -200,7 +201,7 @@ class DayNightST:
                 else:
                     await fade('night', 'day')
 
-            await asyncio.sleep_ms(1000)
+            await asyncio.sleep_ms(200)
 
     @staticmethod
     def get_fade_rgb(rgb_0_, rgb_1_, percent_):
@@ -223,8 +224,9 @@ async def main():
             btn.clear_state()
 
     async def show_time(vt_):
-        """ print virtual time at set intervals """
+        """ print virtual time every 1s in 'clock' state """
         while True:
+            await system.clock_ev.wait()
             print(vt_, end='\r')
             await asyncio.sleep_ms(1_000)
 
@@ -244,10 +246,10 @@ async def main():
 
     # ====== end-of-parameters
 
-    board = Plasma2040(n_pixels)
-    buttons = board.buttons  # hard-wired on Plasma 2040
+    p_2040 = Plasma2040(n_pixels)
+    buttons = p_2040.buttons  # hard-wired on Plasma 2040
     vt = VTime(s_inc=clock_speed)  # fast virtual clock
-    system = DayNightST(board, rgb, vt, clock_time)
+    system = DayNightST(p_2040, rgb, vt, clock_time)
 
     # create tasks to pass press_ev events to system
     for b in buttons:

@@ -22,7 +22,7 @@ class RGBLed:
         self.led_b = PWM(Pin(b))
         self.led_b.freq(1000)
 
-    def set_rgb(self, r, g, b):
+    def set_rgb_u8(self, r, g, b):
         if self.invert:
             r = 255 - r
             g = 255 - g
@@ -36,9 +36,12 @@ class PWMLed(PWM):
     """
     Control PWM output
         - frequency and duty cycle: no range checking
-        - preset_dc_u16() stores the set duty cycle;
-          does not change state
-        - call set_on() for output
+        - RP2040 PWM is set by 16-bit duty cycle (duty_16())
+            -- [0...65535]
+        - dc_u16 stores last-set value
+        - dc_u8 is a user alternative scaling [0...255]
+            -- 65535 / 255 = 257
+        - dc_pc is a user alternative scaling [0...100]
     """
 
     # super() does not support keyword arguments
@@ -55,19 +58,19 @@ class PWMLed(PWM):
         self.dc_u16 = dc_u16_
 
     def set_dc_u8(self, dc_u8_):
-        """ set PWM duty cycle and store value """
+        """ set PWM duty cycle by 8-bit range """
         self.set_dc_u16(dc_u8_ * 257)
 
     def set_dc_pc(self, dc_pc_):
-        """ set PWM duty cycle and store value """
+        """ set PWM duty cycle by percentage range """
         self.set_dc_u16(dc_pc_ * 65535 // 100)
 
     def turn_on(self):
-        """ set channel on at saved duty cycle """
+        """ set channel on at self.dc_u16 """
         self.duty_u16(self.dc_u16)
 
     def turn_off(self):
-        """ set channel off but save duty cycle """
+        """ set channel off; do not change self.dc_u16 """
         self.duty_u16(0)
 
 

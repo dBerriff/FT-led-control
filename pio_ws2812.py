@@ -6,10 +6,10 @@
     Encoding:
     User is expected to work with (R, G, B) tuples, range [0...255]
     For WS2812 pixels, coding is 32-bit word GRBW where W = 0.
-    Intermediate GRB 24-bit colour can be used for helper methods,
-    W byte is added by left-shift in  PIO 'put', self.write()
-    set_ methods take (R, G, B) parameter
-    encode_ methods take GRB 24-bit parameter
+    Intermediate GRB 24-bit colour is used in helper methods,
+    W byte is added by left-shift in PIO 'put', self.write()
+    - set_ methods take (R, G, B) parameter
+    - encode_ methods take GRB 24-bit parameter
 
     Classes:
 
@@ -86,11 +86,11 @@ class Ws2812Strip(PioWs2812):
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
         self.n = n_pixels  # undocumented MP library attribute
         self.set_active(True)
-        # array element type 'I': 32-bit unsigned integer
+        # typecode: 'I': 32-bit unsigned integer
         self.arr = array.array('I', [0]*n_pixels)
 
     def __len__(self):
-        """ matches NeoPixel interface """
+        """ number of pixels """
         return self.n_pixels
 
     def __setitem__(self, index, grb_):
@@ -106,33 +106,24 @@ class Ws2812Strip(PioWs2812):
         # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.GRBW_SHIFT)
 
-    def set_pixel(self, index, colour):
+    def set_pixel_grb(self, index, grb_):
         """ set pixel RGB; duplicates __setitem__() """
-        self.arr[index] = self.encode_grb(colour)
+        self.arr[index] = grb_
 
-    def set_strip(self, rgb_):
+    def set_strip_grb(self, grb_):
         """ fill pixel strip with RGB """
         arr = self.arr  # avoid repeated dict lookup
-        grb = self.encode_grb(rgb_)
         for i in range(self.n_pixels):
-            arr[i] = grb
+            arr[i] = grb_
 
-    def set_range(self, index_, count_, rgb_):
+    def set_range_grb(self, index_, count_, grb_):
         """ fill count_ pixels with RGB  """
         arr = self.arr
-        grb = self.encode_grb(rgb_)
         for _ in range(count_):
-            arr[index_] = grb
+            arr[index_] = grb_
             index_ += 1
             if index_ == self.n_pixels:
                 index_ = 0
-
-    def set_list(self, index_list_, rgb_):
-        """ fill index_list pixels with RGB """
-        arr = self.arr
-        grb = self.encode_grb(rgb_)
-        for i in index_list_:
-            arr[i] = grb
 
     def set_list_grb(self, index_list_, grb_):
         """ fill index_list pixels with RGB """
@@ -141,10 +132,29 @@ class Ws2812Strip(PioWs2812):
             arr[i] = grb_
 
     def clear_strip(self):
-        """ set all pixels to (0, 0, 0) """
+        """ set all pixels to 0 """
         arr = self.arr
         for i in range(self.n_pixels):
             arr[i] = 0
+
+    def set_pixel_rgb(self, index, colour):
+        """ set pixel RGB; duplicates __setitem__() """
+        self.arr[index] = self.encode_grb(colour)
+
+    def set_strip_rgb(self, rgb_):
+        """ fill pixel strip with RGB """
+        arr = self.arr  # avoid repeated dict lookup
+        grb = self.encode_grb(rgb_)
+        for i in range(self.n_pixels):
+            arr[i] = grb
+
+    def set_range_rgb(self, index_, count_, rgb_):
+        """ fill count_ pixels with RGB  """
+        self.set_range_grb(index_, count_, self.encode_grb(rgb_))
+
+    def set_list_rgb(self, index_list_, rgb_):
+        """ fill index_list pixels with RGB """
+        self.set_list_grb(index_list_, self.encode_grb(rgb_))
 
     @staticmethod
     def encode_grb(rgb_):
@@ -159,7 +169,7 @@ class Ws2812Strip(PioWs2812):
     # alternative GRB direct encoding
 
     def encode_grb_lg(self, rgb_, level_=255):
-        """ encode rgb as single 24-bit GRB word, level and gamma corrected """
+        """ encode rgb as 24-bit GRB word, level and gamma corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = self.cs.colours[rgb_]
@@ -167,31 +177,31 @@ class Ws2812Strip(PioWs2812):
                 return 0
         level_ = max(level_, 0)
         level_ = min(level_, 255)
-        r = self.cs.RGB_GAMMA[rgb_[0] * level_ // 255],
-        g = self.cs.RGB_GAMMA[rgb_[1] * level_ // 255],
+        r = self.cs.RGB_GAMMA[rgb_[0] * level_ // 255]
+        g = self.cs.RGB_GAMMA[rgb_[1] * level_ // 255]
         b = self.cs.RGB_GAMMA[rgb_[2] * level_ // 255]
         return (g << 16) + (r << 8) + b
 
     def encode_grb_g(self, rgb_):
-        """ encode rgb as single 24-bit GRB word, gamma corrected """
+        """ encode rgb as 24-bit GRB word, gamma corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = self.cs.colours[rgb_]
             except KeyError:
                 return 0
-        r = self.cs.RGB_GAMMA[rgb_[0]],
-        g = self.cs.RGB_GAMMA[rgb_[1]],
+        r = self.cs.RGB_GAMMA[rgb_[0]]
+        g = self.cs.RGB_GAMMA[rgb_[1]]
         b = self.cs.RGB_GAMMA[rgb_[2]]
         return (g << 16) + (r << 8) + b
 
     def encode_grb_l(self, rgb_, level_):
-        """ encode rgb as single 24-bit GRB word, level corrected """
+        """ encode rgb as 24-bit GRB word, level corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = self.cs.colours[rgb_]
             except KeyError:
                 return 0
-        r = rgb_[0] * level_ // 255,
-        g = rgb_[0] * level_ // 255,
-        b = rgb_[0] * level_ // 255
+        r = rgb_[0] * level_ // 255
+        g = rgb_[1] * level_ // 255
+        b = rgb_[2] * level_ // 255
         return (g << 16) + (r << 8) + b

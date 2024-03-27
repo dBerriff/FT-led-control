@@ -4,7 +4,6 @@
 from collections import namedtuple
 import asyncio
 from pio_ws2812 import Ws2812Strip
-from colour_space import ColourSpace
 
 Lights = namedtuple('Lights', ('r', 'y1', 'g', 'y2'))
 
@@ -15,28 +14,21 @@ class ColourSignal:
         - level_ is required
     """
 
-    aspect_codes = {
-        'stop': 0,
-        'danger': 0,
-        'red': 0,
-        'caution': 1,
-        'yellow': 1,
-        'single yellow': 1,
-        'preliminary caution': 2,
-        'double yellow': 2,
-        'clear': 3,
-        'green': 3
-    }
     # change keys to match layout terminology
+    aspect_codes = {
+        'stop': 0, 'danger': 0, 'red': 0,
+        'caution': 1, 'yellow': 1, 'single yellow': 1,
+        'preliminary caution': 2, 'double yellow': 2,
+        'clear': 3, 'green': 3
+        }
 
     def __init__(self, nps_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
-        self.cs = ColourSpace()
-        self.clrs = {'red': self.cs.get_rgb_lg('red', level_),
-                     'yellow': self.cs.get_rgb_lg('yellow', level_),
-                     'green': self.cs.get_rgb_lg('green', level_),
-                     'off': (0, 0, 0)
+        self.clrs = {'red': self.nps.encode_grb_lg('red', level_),
+                     'yellow': self.nps.encode_grb_lg('yellow', level_),
+                     'green': self.nps.encode_grb_lg('green', level_),
+                     'off': 0
                      }
         
 
