@@ -108,10 +108,10 @@ class ColourSpace:
             r, g, b
             
         """
-
+        v_8 = v_ * 255.0
         if s_ == 0.0:
-            v_8 = int(v_ * 255.0)
-            return v_8, v_8, v_8
+            v_8_int = int(v_8)
+            return v_8_int, v_8_int, v_8_int
 
         # keep i in range(6)
         if h_ == 1.0:
@@ -121,28 +121,28 @@ class ColourSpace:
         f = h_6 - i
 
         if i == 0:
-            r = v_
-            g = v_ * (1.0 - s_ * (1.0 - f))
-            b = v_ * (1.0 - s_)
+            r = v_8
+            g = v_8 * (1.0 - s_ * (1.0 - f))
+            b = v_8 * (1.0 - s_)
         elif i == 1:
-            r = v_ * (1.0 - s_ * f)
-            g = v_
-            b = v_ * (1.0 - s_)
+            r = v_8 * (1.0 - s_ * f)
+            g = v_8
+            b = v_8 * (1.0 - s_)
         elif i == 2:
-            r = v_ * (1.0 - s_)
-            g = v_
-            b = v_ * (1.0 - s_ * (1.0 - f))
+            r = v_8 * (1.0 - s_)
+            g = v_8
+            b = v_8 * (1.0 - s_ * (1.0 - f))
         elif i == 3:
-            r = v_ * (1.0 - s_)
-            g = v_ * (1.0 - s_ * f)
-            b = v_
+            r = v_8 * (1.0 - s_)
+            g = v_8 * (1.0 - s_ * f)
+            b = v_8
         elif i == 4:
-            r = v_ * (1.0 - s_ * (1.0 - f))
-            g = v_ * (1.0 - s_)
-            b = v_
+            r = v_8 * (1.0 - s_ * (1.0 - f))
+            g = v_8 * (1.0 - s_)
+            b = v_8
         elif i == 5:
-            r = v_
-            g = v_ * (1.0 - s_)
-            b = v_ * (1.0 - s_ * f)
+            r = v_8 
+            g = v_8 * (1.0 - s_)
+            b = v_8 * (1.0 - s_ * f)
 
-        return int(r * 255), int(g * 255), int(b * 255)
+        return int(r), int(g), int(b)
