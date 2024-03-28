@@ -15,8 +15,8 @@ class VTime:
     def __init__(self, s_inc):
         self.s_inc = s_inc
         self._vt_s = 0
-        self._sunrise = 0
-        self._sunset = 0
+        self._dawn = 0
+        self._dusk = 0
         self.state = None
         self.run_ev = asyncio.Event()
         self.change_state_ev = asyncio.Event()
@@ -30,10 +30,10 @@ class VTime:
         return f'{self._vt_s // 3600:02d}:{self._vt_s // 60 % 60:02d}'
 
     async def track_transitions(self):
-        """ check time against _sunrise and _sunset """
+        """ check time against _dawn and _dusk """
         while self.run_ev.is_set():
             t = self._vt_s
-            if self._sunrise <= t < self._sunset:
+            if self._dawn <= t < self._dusk:
                 state = 'day'
             else:
                 state = 'night'
@@ -53,8 +53,8 @@ class VTime:
     def start_clock(self, time_hm, sunrise, sunset):
         """ create tasks to run virtual time """
         self._vt_s = self.calc_day_s(time_hm)
-        self._sunrise = self.calc_day_s(sunrise)
-        self._sunset = self.calc_day_s(sunset)
+        self._dawn = self.calc_day_s(sunrise)
+        self._dusk = self.calc_day_s(sunset)
         self.run_ev.set()
         asyncio.create_task(self.tick())
         asyncio.create_task(self.track_transitions())
@@ -86,8 +86,8 @@ async def main():
             print(f'Change state to: {vt_.state}')
             vt_.change_state_ev.clear()
 
-    vt = VTime(s_inc=3600)
-    await asyncio.sleep(5)
+    vt = VTime(s_inc=720)
+    await asyncio.sleep_ms(200)
     vt.start_clock(time_hm='12:00', sunrise='06:00', sunset='20:00')
     await asyncio.sleep_ms(20)
     asyncio.create_task(show_state(vt))

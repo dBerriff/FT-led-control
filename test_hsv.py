@@ -42,7 +42,7 @@ async def main():
         print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
         nps.set_strip_rgb(rgb_g)
         nps.write()
-        await asyncio.sleep_ms(200)
+        await asyncio.sleep_ms(50)
 
     # hold hue, reduce saturation and value
     s_init = s
@@ -58,7 +58,7 @@ async def main():
         print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
         nps.set_strip_rgb(rgb_g)
         nps.write()
-        await asyncio.sleep_ms(200)
+        await asyncio.sleep_ms(50)
 
     await asyncio.sleep_ms(10_000)
     nps.clear_strip()

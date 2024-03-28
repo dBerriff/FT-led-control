@@ -26,7 +26,7 @@ async def np_arc_weld(nps, cs, pixel_, play_ev):
         await asyncio.sleep_ms(randrange(1_000, 5_000))
 
 
-async def np_twinkler(nps, cs, pixel_, play_ev):
+async def np_twinkler(nps, pixel_, play_ev):
     """ coro: single pixel:
         simulate gas-lamp twinkle
     """
@@ -66,7 +66,7 @@ async def colour_chase(nps, rgb_list, play_ev, pause=20):
     grb_list = []
     # convert (R, G, B) encoding to WS2812 GRB
     for c in rgb_list:
-        grb_list.append(nps.encode_grb(c))
+        grb_list.append(nps.encode(c))
     n_colours = len(grb_list)
     index = 0
     # <% n_pixels> arithmetic is slow but straightforward
@@ -77,6 +77,7 @@ async def colour_chase(nps, rgb_list, play_ev, pause=20):
         await asyncio.sleep_ms(pause)
         nps[index] = 0
         index = (index + 1) % n_pixels
+
 
 async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
     """ flash 2 pixels alternatively
@@ -89,7 +90,7 @@ async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
         nps[bi_1] = grb_1
         nps.write()
         
-    grb = nps.encode_grb(rgb)
+    grb = nps.encode(rgb)
     off = 0
     hold = period // 2
     bi_1 = base_index + 1

@@ -2,21 +2,17 @@
 """ implement press and hold buttons
     class Button implements a click button
     class HoldButton extends Button to include a hold event
-
-    button methods are coroutines and include self-polling methods
+    - button methods are coroutines and include self-polling methods
 """
 
 import asyncio
-from machine import Pin
+from machine import Pin, Signal
 from micropython import const
 from time import ticks_ms, ticks_diff
 
 
 class Button:
     """ button with click state"""
-    # pull-up logic
-    BTN_ON = const(0)
-    BTN_OFF = const(1)
     # button states
     WAITING = const('0')
     CLICK = const('1')
@@ -24,11 +20,13 @@ class Button:
     POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
-        self._hw_in = Pin(pin, Pin.IN, Pin.PULL_UP)
+        # Signal wraps pull-up logic with invert
+        self._hw_in = Signal(
+            pin, Pin.IN, Pin.PULL_UP, invert=True)
         if name:
             self.name = name
         else:
-            self.name = str(pin)
+            self.name = str(pin)        
         self.states = {'waiting': self.name + self.WAITING,
                        'click': self.name + self.CLICK
                        }
@@ -40,11 +38,11 @@ class Button:
             - event is set on button release
             - event handler must call clear_state
         """
-        prev_pin_state = self.BTN_OFF
+        prev_pin_state = self._hw_in.value()
         while True:
             pin_state = self._hw_in.value()
             if pin_state != prev_pin_state:
-                if pin_state == self.BTN_OFF:
+                if not pin_state:
                     self.state = self.states['click']
                     self.press_ev.set()
                 prev_pin_state = pin_state
@@ -72,12 +70,12 @@ class HoldButton(Button):
             - elapsed time measured in ms
         """
         on_time = None
-        prev_pin_state = self.BTN_OFF
+        prev_pin_state = self._hw_in.value()
         while True:
             pin_state = self._hw_in.value()
             if pin_state != prev_pin_state:
                 time_stamp = ticks_ms()
-                if pin_state == self.BTN_ON:
+                if pin_state:
                     on_time = time_stamp
                 else:
                     if ticks_diff(time_stamp, on_time) < self.T_HOLD:

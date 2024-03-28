@@ -25,9 +25,9 @@ class ColourSignal:
     def __init__(self, nps_, pixel_, level_):
         self.nps = nps_
         self.pixel = pixel_
-        self.clrs = {'red': self.nps.encode_grb_lg('red', level_),
-                     'yellow': self.nps.encode_grb_lg('yellow', level_),
-                     'green': self.nps.encode_grb_lg('green', level_),
+        self.clrs = {'red': self.nps.encode_lg('red', level_),
+                     'yellow': self.nps.encode_lg('yellow', level_),
+                     'green': self.nps.encode_lg('green', level_),
                      'off': 0
                      }
         

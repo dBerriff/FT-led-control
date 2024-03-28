@@ -41,7 +41,7 @@ async def main():
     
     nps.clear_strip()
     nps.write()
-    await asyncio.sleep_ms(2000)
+    await asyncio.sleep_ms(200)
 
 
 if __name__ == '__main__':

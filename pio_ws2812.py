@@ -4,28 +4,23 @@
     Thanks to MERG member Paul Redhead for information on PIO.
 
     Encoding:
-    User is expected to work with (R, G, B) tuples, range [0...255]
-    For WS2812 pixels, coding is 32-bit word GRBW where W = 0.
-    Intermediate GRB 24-bit colour is used in helper methods,
-    W byte is added by left-shift in PIO 'put', self.write()
-    - set_ methods take (R, G, B) parameter
-    - encode_ methods take GRB 24-bit parameter
+    User is expected to work with (R, G, B) 8-bit values
+    WS2812 pixel words are coded as 32-bit GRBW with W = 0
+    W (white) byte is added by left-shift in PIO 'put'
 
     Classes:
 
     PioWs2812
     Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
-    - there should be a 50µs pause between strip writes: not usually a problem
+    - there should be a 50µs pause between strip writes: normal awaits exceed this
     
     Ws2812Strip(PioWs2812)
-    This extends the PioWs2812 class by adding attributes and methods intended to
-    match the NeoPixel interface, and to simplify user coding.
-    See 'helper' functions for application-specific code.
+    This extends the PioWs2812 class by adding general application-related
+    attributes and methods. Helper methods support specific use-cases.
 
     Notes:
-    - methods do not implicitly write() pixels to allow for overlays
-    - namedtuple RGB values are handled transparently
-
+    - set and encode methods do not write to pixels to allow for overlays
+        -- write() must be called to display the output
 """
 
 import rp2
@@ -45,8 +40,7 @@ class PioWs2812:
             for simplified PIO code
     """
 
-    GRBW_SHIFT = const(8)  # shift 24-bit grb_ to MSBytes in 32-bit word
-    # RGBW_SHIFT = const(0)  # future use
+    GRBW_SHIFT = const(8)  # shift 24-bit GRB to MSBytes in 32-bit word
 
     @rp2.asm_pio(set_init=rp2.PIO.OUT_LOW,
                  out_init=rp2.PIO.OUT_LOW,
@@ -65,7 +59,6 @@ class PioWs2812:
         self.pin = pin  # for trace/debug
         self.sm = rp2.StateMachine(0, PioWs2812.ws2812,  freq=f_,
                                    set_base=Pin(pin), out_base=Pin(pin))
-        self.cs = ColourSpace()
 
     def set_active(self, state_):
         """ set StateMachine active-_state, True or False """
@@ -84,6 +77,7 @@ class Ws2812Strip(PioWs2812):
         super().__init__(pin)
         self.n_pixels = n_pixels
         self.bpp = bpp  # 3 is RGB, 4 is RGBW; currently ignored
+        self.cs = ColourSpace()
         self.n = n_pixels  # undocumented MP library attribute
         self.set_active(True)
         # typecode: 'I': 32-bit unsigned integer
@@ -106,18 +100,18 @@ class Ws2812Strip(PioWs2812):
         # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.GRBW_SHIFT)
 
-    def set_pixel_grb(self, index, grb_):
+    def set_pixel(self, index, grb_):
         """ set pixel RGB; duplicates __setitem__() """
         self.arr[index] = grb_
 
-    def set_strip_grb(self, grb_):
-        """ fill pixel strip with RGB """
+    def set_strip(self, grb_):
+        """ fill pixel strip with GRB """
         arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
             arr[i] = grb_
 
-    def set_range_grb(self, index_, count_, grb_):
-        """ fill count_ pixels with RGB  """
+    def set_range(self, index_, count_, grb_):
+        """ fill count_ pixels with GRB  """
         arr = self.arr
         for _ in range(count_):
             arr[index_] = grb_
@@ -125,8 +119,8 @@ class Ws2812Strip(PioWs2812):
             if index_ == self.n_pixels:
                 index_ = 0
 
-    def set_list_grb(self, index_list_, grb_):
-        """ fill index_list pixels with RGB """
+    def set_list(self, index_list_, grb_):
+        """ fill index_list pixels with GRB """
         arr = self.arr
         for i in index_list_:
             arr[i] = grb_
@@ -139,36 +133,36 @@ class Ws2812Strip(PioWs2812):
 
     def set_pixel_rgb(self, index, colour):
         """ set pixel RGB; duplicates __setitem__() """
-        self.arr[index] = self.encode_grb(colour)
+        self.arr[index] = self.encode(colour)
 
     def set_strip_rgb(self, rgb_):
         """ fill pixel strip with RGB """
-        arr = self.arr  # avoid repeated dict lookup
-        grb = self.encode_grb(rgb_)
+        arr = self.arr
+        grb = self.encode(rgb_)
         for i in range(self.n_pixels):
             arr[i] = grb
 
     def set_range_rgb(self, index_, count_, rgb_):
         """ fill count_ pixels with RGB  """
-        self.set_range_grb(index_, count_, self.encode_grb(rgb_))
+        self.set_range(index_, count_, self.encode(rgb_))
 
     def set_list_rgb(self, index_list_, rgb_):
         """ fill index_list pixels with RGB """
-        self.set_list_grb(index_list_, self.encode_grb(rgb_))
+        self.set_list(index_list_, self.encode(rgb_))
 
     @staticmethod
-    def encode_grb(rgb_):
+    def encode(rgb_):
         """ encode rgb as single 24-bit GRB word """
         return (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
 
     @staticmethod
-    def decode_grb(grb_):
+    def decode(grb_):
         """ decode GRB word to RGB tuple """
         return (grb_ >> 8) & 0xff, (grb_ >> 16) & 0xff, grb_ & 0xff
 
     # alternative GRB direct encoding
 
-    def encode_grb_lg(self, rgb_, level_=255):
+    def encode_lg(self, rgb_, level_=255):
         """ encode rgb as 24-bit GRB word, level and gamma corrected """
         if isinstance(rgb_, str):
             try:
@@ -182,7 +176,7 @@ class Ws2812Strip(PioWs2812):
         b = self.cs.RGB_GAMMA[rgb_[2] * level_ // 255]
         return (g << 16) + (r << 8) + b
 
-    def encode_grb_g(self, rgb_):
+    def encode_g(self, rgb_):
         """ encode rgb as 24-bit GRB word, gamma corrected """
         if isinstance(rgb_, str):
             try:
@@ -194,7 +188,7 @@ class Ws2812Strip(PioWs2812):
         b = self.cs.RGB_GAMMA[rgb_[2]]
         return (g << 16) + (r << 8) + b
 
-    def encode_grb_l(self, rgb_, level_):
+    def encode_l(self, rgb_, level_):
         """ encode rgb as 24-bit GRB word, level corrected """
         if isinstance(rgb_, str):
             try:

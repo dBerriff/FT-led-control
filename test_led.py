@@ -1,6 +1,6 @@
 # led_test.py
 
-""" test LED- and NeoPixel-related classes """
+""" test LED- and NeoPixel-related classes on Pi Pico """
 
 import asyncio
 from led_pwm import PWMLed

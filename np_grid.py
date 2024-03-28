@@ -14,6 +14,7 @@ class Ws2812Grid(Ws2812Strip):
         - a block is an 8x8 area, intended for character display
         - implicit conversion of grb_-keys to RGB has been removed
         - helper methods are examples or work-in-progress
+        - avoid, where straightforward, modulo (%) arithmetic for performance
     """
 
     @staticmethod
@@ -56,44 +57,33 @@ class Ws2812Grid(Ws2812Strip):
                     c_i_dict[col, row] = base + max_row - row
         return c_i_dict
 
-    def coord_inc(self, coord):
-        """ increment (col, row) coordinate """
-        c, r = coord
-        c += 1
-        if c > self.max_col:
-            c = 0
-            r += 1
-            r %= self.n_rows
-        return c, r
-
-    def coord_dec(self, coord):
-        """ decrement (col, row) coordinate """
-        c, r = coord
-        c -= 1
-        if c < 0:
-            c = self.max_col
-            r -= 1
-            r %= self.n_rows
-        return c, r
-
     def set_grid(self, rgb_):
-        """ fill all grid pixels with rgb grb_ """
-        grb = self.encode_grb(rgb_)
+        """ fill all grid pixels with rgb_ """
+        grb = self.encode(rgb_)
         for index in range(self.n_pixels):
             self[index] = grb
 
+    def set_grid_grb(self, grb_):
+        """ fill all grid pixels with grb_ """
+        for index in range(self.n_pixels):
+            self[index] = grb_
+
     def set_col(self, col, rgb_):
         """ fill col with rgb_ """
-        self.set_col_grb(col, self.encode_grb(rgb_))
+        grb = self.encode(rgb_)
+        for row in range(self.n_rows):
+            self[self.coord_index[col, row]] = grb
 
     def set_col_grb(self, col, grb_):
-        """ fill col with rgb_ """
+        """ fill col with grb_ """
         for row in range(self.n_rows):
             self[self.coord_index[col, row]] = grb_
 
     def set_row(self, row, rgb_):
         """ fill row with rgb_ grb_ """
-        self.set_row_grb(row, self.encode_grb(rgb_))
+        grb = self.encode(rgb_)
+        for col in range(self.n_cols):
+            self[self.coord_index[col, row]] = grb
 
     def set_row_grb(self, row, grb_):
         """ fill row with rgb_ grb_ """
@@ -102,7 +92,7 @@ class Ws2812Grid(Ws2812Strip):
 
     def set_coord_list(self, coord_list_, rgb_):
         """ set a list of pixels by coords """
-        grb = self.encode_grb(rgb_)
+        grb = self.encode(rgb_)
         if coord_list_:  # could be empty
             for c in coord_list_:
                 self[self.coord_index[c]] = grb
@@ -111,13 +101,14 @@ class Ws2812Grid(Ws2812Strip):
 
     async def fill_grid(self, rgb_, pause_ms=20):
         """ coro: fill grid and display """
-        self.set_grid(rgb_)
+        grb = self.encode(rgb_)
+        self.set_grid_grb(grb)
         self.write()
         await asyncio.sleep_ms(pause_ms)
 
     async def traverse_strip(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in strip order """
-        grb = self.encode_grb(rgb_)
+        grb = self.encode(rgb_)
         for index in range(self.n_pixels):
             self[index] = grb
             self.write()
@@ -125,7 +116,7 @@ class Ws2812Grid(Ws2812Strip):
 
     async def traverse_grid(self, rgb_, pause_ms=20):
         """ coro: fill each pixel in grid coord order """
-        grb = self.encode_grb(rgb_)
+        grb = self.encode(rgb_)
         for row in range(self.n_rows):
             for col in range(self.n_cols):
                 self[self.coord_index[col, row]] = grb
@@ -136,7 +127,7 @@ class Ws2812Grid(Ws2812Strip):
         """ coro: fill cols in order, cycling colours """
         grb_set = []
         for c in rgb_set:
-            grb_set.append(self.encode_grb(c))
+            grb_set.append(self.encode(c))
         n_colours = len(grb_set)
         for col in range(self.n_cols):
             self.set_col_grb(col, grb_set[col % n_colours])
@@ -147,7 +138,7 @@ class Ws2812Grid(Ws2812Strip):
         """ coro: fill rows in order, cycling colours """
         grb_set = []
         for c in rgb_set:
-            grb_set.append(self.encode_grb(c))
+            grb_set.append(self.encode(c))
         n_colours = len(grb_set)
         for row in range(self.n_rows):
             self.set_row_grb(row, grb_set[row % n_colours])
@@ -158,7 +149,7 @@ class Ws2812Grid(Ws2812Strip):
         """ fill diagonal with rgb_ grb_
             - assumes n_cols >= n_rows
         """
-        grb = self.encode_grb(rgb_)
+        grb = self.encode(rgb_)
         if mirror:
             for col in range(self.n_rows):
                 self[self.coord_index[self.max_row - col, col]] = grb
@@ -170,13 +161,13 @@ class Ws2812Grid(Ws2812Strip):
         """ coro: display the letters in a string
             - set_char() overlays background
         """
-        grb = self.encode_grb(rgb_)
-        # rgb is set for the whole string
+        grb = self.encode(rgb_)
+        # grb is set for the whole string
         for char in str_:
-            self.set_list_grb(self.charset[char], grb)
+            self.set_list(self.charset[char], grb)
             self.write()
             await asyncio.sleep_ms(pause_ms)
-            self.set_list_grb(self.charset[char], 0)
+            self.set_list(self.charset[char], 0)
             self.write()
 
 
@@ -225,7 +216,7 @@ class BlockGrid(Ws2812Grid):
             coro: display letters in a string, shifting in from right
             - block 1 is usually a virtual block
         """
-        grb = self.encode_grb(rgb_)
+        grb = self.encode(rgb_)
         for i in range(len(string_) - 1):
             self.set_block_list(0, self.charset[string_[i]], grb)
             self.set_block_list(1, self.charset[string_[i + 1]], grb)

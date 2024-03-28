@@ -6,14 +6,14 @@ from micropython import const
 
 class ColourSpace:
     """ 
-        implement 24-bit RGB grb_: 3-element tuple (R, G, B)
-        - gamma-correction is applied by a lookup list
+        implement 24-bit, 3-element tuple (R, G, B)
+        - gamma-correction is explicitly applied by a lookup list
         - methods are all class methods
         - get_rgb_lg(), get_rgb_l(), get_rgb_g():
-            suffix denotes transform: level and or gamma
+            -- suffix denotes transform(s): l: level,  g: gamma
     """
 
-    # full brightness grb_ "templates"
+    # commonly used RGB colour "templates"
     colours = {
         'amber': (255, 100, 0),
         'aqua': (50, 255, 255),
@@ -39,7 +39,7 @@ class ColourSpace:
     }
 
     # build gamma-correction lookup list
-    GAMMA = const(2.6)  # Adafruit uses this value?
+    GAMMA = const(2.6)  # Adafruit value - see GitHub
     # faster than list comprehension
     RGB_GAMMA = []
     for x in range(256):
@@ -68,8 +68,7 @@ class ColourSpace:
 
     @classmethod
     def get_rgb_g(cls, rgb_):
-        """
-            return a gamma-corrected rgb value """
+        """ return a gamma-corrected rgb value """
         if isinstance(rgb_, str):
             try:
                 rgb_ = cls.colours[rgb_]
@@ -102,13 +101,12 @@ class ColourSpace:
         """
             see:
             https://github.com/python/cpython/blob/3.12/Lib/colorsys.py
-            inputs: float [0.0...1.0]
+            inputs: float [0.0...1.0]; calling method must check for range
             h_: hue, s_: saturation, v_: value
-            returns: int [0...255]
-            r, g, b
-            
+            returns:  r, g, b: int [0...255]
+            - intermediate calculations are eliminated in this version
         """
-        v_8 = v_ * 255.0  # int is 8-bit value
+        v_8 = v_ * 255.0  # 8-bit final value
         if s_ == 0.0:
             v_8_int = int(v_8)
             return v_8_int, v_8_int, v_8_int
@@ -116,10 +114,10 @@ class ColourSpace:
         # keep i in range(6)
         if h_ == 1.0:
             h_ = 0.0
-        h_6 = h_ * 6.0
+        h_6 = h_ * 6.0  # 6 colour sectors
         i = int(h_6)
         f = h_6 - i
-
+        # select colour sector
         if i == 0:
             r = v_8
             g = v_8 * (1.0 - s_ * (1.0 - f))
@@ -144,5 +142,4 @@ class ColourSpace:
             r = v_8 
             g = v_8 * (1.0 - s_)
             b = v_8 * (1.0 - s_ * f)
-
         return int(r), int(g), int(b)

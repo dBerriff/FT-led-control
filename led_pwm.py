@@ -10,23 +10,23 @@
 from machine import Pin, PWM
 
 
-class RGBLed:
+class PimoroniRGB:
     """ Pimoroni class to set Plasma 2040 RGB LED """
 
-    def __init__(self, r=16, g=17, b=18, invert=True):
-        self.invert = invert
-        self.led_r = PWM(Pin(r))
-        self.led_r.freq(1000)
-        self.led_g = PWM(Pin(g))
-        self.led_g.freq(1000)
-        self.led_b = PWM(Pin(b))
-        self.led_b.freq(1000)
+    def __init__(self, r_gp=16, g_gp=17, b_gp=18):
+        self.led_r = PWM(Pin(r_gp), freq=1000)
+        self.led_g = PWM(Pin(g_gp), freq=1000)
+        self.led_b = PWM(Pin(b_gp), freq=1000)
 
     def set_rgb_u8(self, r, g, b):
-        if self.invert:
-            r = 255 - r
-            g = 255 - g
-            b = 255 - b
+        """
+            set 16-bit duty cycle from 8-bit RGB
+            - Pimoroni Plasma RGB LEDs duty inversion
+        """
+        #  invert
+        r = 255 - r
+        g = 255 - g
+        b = 255 - b
         self.led_r.duty_u16(r * 257)
         self.led_g.duty_u16(g * 257)
         self.led_b.duty_u16(b * 257)
@@ -34,14 +34,13 @@ class RGBLed:
 
 class PWMLed(PWM):
     """
-    Control PWM output
-        - frequency and duty cycle: no range checking
+        Control PWM output
+        - no parameter range checking
         - RP2040 PWM is set by 16-bit duty cycle (duty_16())
-            -- [0...65535]
-        - dc_u16 stores last-set value
-        - dc_u8 is a user alternative scaling [0...255]
-            -- 65535 / 255 = 257
-        - dc_pc is a user alternative scaling [0...100]
+        - freq = 1000Hz matches Pimoroni default
+        - self.dc_u16 stores last-set value
+        - dc_u8 is user scaling [0...255]
+        - dc_pc is user scaling [0...100]
     """
 
     # super() does not support keyword arguments
@@ -50,7 +49,7 @@ class PWMLed(PWM):
         self.pin = pin_  # for debug
         self.freq(1000)
         self.duty_u16(0)
-        self.dc_u16 = 0  # for off/on and other methods
+        self.dc_u16 = 0  # for off/on dc restore
 
     def set_dc_u16(self, dc_u16_):
         """ set PWM duty cycle and store value """
