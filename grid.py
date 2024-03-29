@@ -1,10 +1,10 @@
-# np_grid.py
+# grid.py
 """ Helper methods for PixelStrip with 8x8 pixel grid attributes and methods """
 
 import asyncio
 from machine import Pin
 import json
-from pio_ws2812 import Ws2812Strip
+from ws2812 import Ws2812Strip
 
 
 class Ws2812Grid(Ws2812Strip):
@@ -172,7 +172,7 @@ class Ws2812Grid(Ws2812Strip):
 
 
 class BlockGrid(Ws2812Grid):
-    """ extend Ws2812Grid to support block-to-block left shift
+    """ extend Grid to support block-to-block left shift
         - right-hand virtual block added for char shift-in
         - this version assumes horizontal blocks
     """

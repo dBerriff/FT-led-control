@@ -1,73 +1,9 @@
-# pio_day-night.py
-"""
-    Set LED strip using pio_ws2812 module (adapted from Pico docs)
-    - class Plasma2040: written for Pimoroni Plasma 2040 p_2040
-    - class LightingST: models lighting states and state-transition logic
-    
-    asyncio version
-    
-    - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
-        A, B, U (user, labelled BOOT) + RESET
-    - button-click (1) and button-hold (2) are events;
-        -- passed back as [button-name + event-number]
-        -- <click>: 'A1', 'B1', 'U1'; <hold>: 'U2'
-
-    The system has 4 states:
-
-    - 'off': all WS2812 LEDs off; this is the start state.
-        'U': button returns to state 'off'
-
-    - 'day': day illumination; 'A': button sets and toggles to night
-
-    - 'night': night illumination; 'A': button toggles to day
-
-    - 'clock_hm': day, _dusk, night, _dawn; set by virtual clock;
-        'B': button-click sets; button-hold restarts the clock
-
-"""
+""" model system state transitions """
 
 import asyncio
-from machine import Pin, freq
-from micropython import const
 import gc
-from buttons import Button, HoldButton
-from led_pwm import PimoroniRGB
-from pio_ws2812 import Ws2812Strip
+from plasma_2040 import Plasma2040
 from v_time import VTime
-
-
-class Plasma2040(Ws2812Strip):
-    """
-        Pimoroni Plasma 2040 p_2040
-        - control WS2812 LED strip
-        - hardwired GPIO pins (see schematic and constants below):
-            -- CLK, DATA: LED strip clock and data
-            -- LED_R, LED_G, LED_B: onboard 3-grb_ LED
-            -- SW_A, SW_B, SW_U: user buttons
-    """
-    # Plasma 2040 GPIO pins
-    SW_A = const(12)
-    SW_B = const(13)
-    SW_U = const(23)
-
-    CLK = const(14)  # not used for WS2812
-    DATA = const(15)
-
-    LED_R = const(16)
-    LED_G = const(17)
-    LED_B = const(18)
-
-    def __init__(self, n_pixels_):
-        super().__init__(Pin(self.DATA, Pin.OUT), n_pixels_)
-        self.buttons = {'A': Button(self.SW_A, 'A'),
-                        'B': HoldButton(self.SW_B, 'B'),
-                        'U': Button(self.SW_U, 'U')
-                        }
-        self.led = PimoroniRGB(self.LED_R, self.LED_G, self.LED_B)
-
-    def set_onboard(self, rgb_):
-        """ set onboard LED to rgb_ """
-        self.led.set_rgb_u8(*rgb_)
 
 
 class DayNightST:
@@ -83,7 +19,7 @@ class DayNightST:
         'day': (0, 32, 0),
         'night': (0, 8, 0),
         'clock': (0, 0, 32)
-        }
+    }
 
     def __init__(self, p_2040, np_rgb, vt, clock_hm_):
         self.board = p_2040
@@ -112,7 +48,7 @@ class DayNightST:
                       'B1': self.no_t, 'B2': self.set_by_clock,
                       'U1': self.set_off
                       }
-            }
+        }
 
     # set LED strip display state
 
@@ -187,7 +123,7 @@ class DayNightST:
                 self.board.write()
                 await asyncio.sleep_ms(self.step_t_ms)
                 fade_percent += 1
-                
+
         # clear any previous Event setting; initialise state
         self.vt.change_state_ev.clear()
         self.set_strip(self.vt.state)
@@ -246,7 +182,7 @@ async def main():
 
     # ====== end-of-parameters
 
-    p_2040 = Plasma2040(n_pixels)
+    p_2040 = Plasma2040()
     buttons = p_2040.buttons  # hard-wired on Plasma 2040
     vt = VTime(s_inc=clock_speed)  # fast virtual clock
     system = DayNightST(p_2040, rgb, vt, clock_hm)

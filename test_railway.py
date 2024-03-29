@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from pio_ws2812 import Ws2812Strip
+from ws2812 import Ws2812Strip
 from colour_space import ColourSpace
 from railway import ThreeAspect, FourAspect
 

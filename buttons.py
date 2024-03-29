@@ -14,7 +14,7 @@ from time import ticks_ms, ticks_diff
 class Button:
     """ button with click state"""
     # button states
-    WAITING = const('0')
+    WAIT = const('0')
     CLICK = const('1')
 
     POLL_INTERVAL = const(20)  # ms
@@ -27,11 +27,11 @@ class Button:
             self.name = name
         else:
             self.name = str(pin)        
-        self.states = {'waiting': self.name + self.WAITING,
+        self.states = {'wait': self.name + self.WAIT,
                        'click': self.name + self.CLICK
                        }
         self.press_ev = asyncio.Event()  # starts cleared
-        self.state = self.states['waiting']
+        self.state = self.states['wait']
 
     async def poll_state(self):
         """ poll self for click event
@@ -50,7 +50,7 @@ class Button:
 
     def clear_state(self):
         """ set state to 0 """
-        self.state = self.states['waiting']
+        self.state = self.states['wait']
         self.press_ev.clear()
 
 

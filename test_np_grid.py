@@ -5,10 +5,9 @@
 """
 
 import asyncio
-import gc
 import random
 from colour_space import ColourSpace
-from np_grid import BlockGrid
+from pixel_strip import BlockGrid
 
 
 async def main():
@@ -16,11 +15,10 @@ async def main():
 
     pin_number = 15
     cs = ColourSpace()
-    npg = BlockGrid(
+    pg = BlockGrid(
         pin_number, n_cols_=8, n_rows_=8, charset_file='5x7.json')
     off = (0, 0, 0)
     level = 64
-    gc.collect()
 
     colour_list = ['amber', 'aqua', 'blue', 'cyan', 'ghost_white', 'gold',
                    'green', 'jade', 'magenta', 'mint_cream', 'old_lace',
@@ -29,24 +27,26 @@ async def main():
     cl_len = len(colour_list)
 
     rgb = cs.get_rgb_lg('dark_orange', level)
+
+    # fill_ functions have implicit write; set_ functions do not
     # fill grid with single grb_
-    await npg.fill_grid(rgb, level)
+    await pg.fill_grid(rgb, level)
     await asyncio.sleep_ms(1000)
-    npg.clear_strip()
+    pg.clear_strip()
     await asyncio.sleep_ms(500)
     
     pix_pause_ms = 20
 
     print('fill pixels as strip')
-    await npg.traverse_strip(rgb, pix_pause_ms)
+    await pg.traverse_strip(rgb, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.traverse_strip(off, pix_pause_ms) 
+    await pg.traverse_strip(off, pix_pause_ms)
     await asyncio.sleep_ms(500)
 
     print('fill pixels in col, row order')
-    await npg.traverse_grid(rgb, pix_pause_ms)
+    await pg.traverse_grid(rgb, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.traverse_grid(off, pix_pause_ms) 
+    await pg.traverse_grid(off, pix_pause_ms)
     await asyncio.sleep_ms(500)
  
     # build list of rgb values at same level
@@ -54,15 +54,15 @@ async def main():
     rgb_set = [cs.get_rgb_lg(c, level) for c in colour_set]
 
     print('fill cols in sequence')
-    await npg.fill_cols(rgb_set, pix_pause_ms)
+    await pg.fill_cols(rgb_set, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.fill_cols((off,), pix_pause_ms)  # list/tuple required
+    await pg.fill_cols((off,), pix_pause_ms)  # list/tuple required
     await asyncio.sleep_ms(500)
 
     print('fill rows in sequence')
-    await npg.fill_rows(rgb_set, pix_pause_ms)
+    await pg.fill_rows(rgb_set, pix_pause_ms)
     await asyncio.sleep_ms(1000)
-    await npg.fill_rows((off,), pix_pause_ms)  # list/tuple required
+    await pg.fill_rows((off,), pix_pause_ms)  # list/tuple required
     await asyncio.sleep_ms(500)
 
     colour = colour_list[random.randrange(cl_len)]
@@ -72,35 +72,33 @@ async def main():
     print('fill diagonals')
     pause_ms = 1000
     for _ in range(12):
-        npg.set_diagonal(rgb, mirror=False)
-        npg.write()
+        pg.set_diagonal(rgb, mirror=False)
+        pg.chipset.write()
         await asyncio.sleep_ms(pause_ms)
-        npg.set_diagonal(off, mirror=False)
-        npg.write()
-        npg.set_diagonal(rgb, mirror=True)
-        npg.write()
+        pg.set_diagonal(off, mirror=False)
+        pg.chipset.write()
+        pg.set_diagonal(rgb, mirror=True)
+        pg.chipset.write()
         await asyncio.sleep_ms(pause_ms)
-        npg.set_diagonal(off, mirror=True)
-        npg.write()
+        pg.set_diagonal(off, mirror=True)
+        pg.chipset.write()
         pause_ms //= 2
-    npg.clear_strip()
+    pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
     print('display strings')
-    await npg.display_string('MERG', rgb)
-    npg.clear_strip()
-    gc.collect()
+    await pg.display_string('MERG', rgb)
+    pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
-    await npg.display_string('3210', rgb)
-    npg.clear_strip()
-    gc.collect()
+    await pg.display_string('3210', rgb)
+    pg.clear_strip()
     await asyncio.sleep_ms(200)
 
-    await npg.display_string_shift(' Famous Trains Derby ', rgb)
+    await pg.display_string_shift(' Famous Trains Derby ', rgb)
     await asyncio.sleep_ms(1000)
-    npg.clear_strip()
-    npg.write()
+    pg.clear_strip()
+    pg.chipset.write()
     await asyncio.sleep_ms(20)
 
 

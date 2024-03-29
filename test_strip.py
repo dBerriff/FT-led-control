@@ -4,9 +4,9 @@
 
 import asyncio
 import time
-from pio_ws2812 import Ws2812Strip
+from ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from np_strip_helper import colour_chase, two_flash
+from pixel_strip_helper import colour_chase, two_flash
 
 
 # helper functions

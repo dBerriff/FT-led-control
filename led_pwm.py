@@ -10,28 +10,6 @@
 from machine import Pin, PWM
 
 
-class PimoroniRGB:
-    """ Pimoroni class to set Plasma 2040 RGB LED """
-
-    def __init__(self, r_gp=16, g_gp=17, b_gp=18):
-        self.led_r = PWM(Pin(r_gp), freq=1000)
-        self.led_g = PWM(Pin(g_gp), freq=1000)
-        self.led_b = PWM(Pin(b_gp), freq=1000)
-
-    def set_rgb_u8(self, r, g, b):
-        """
-            set 16-bit duty cycle from 8-bit RGB
-            - Pimoroni Plasma RGB LEDs duty inversion
-        """
-        #  invert
-        r = 255 - r
-        g = 255 - g
-        b = 255 - b
-        self.led_r.duty_u16(r * 257)
-        self.led_g.duty_u16(g * 257)
-        self.led_b.duty_u16(b * 257)
-
-
 class PWMLed(PWM):
     """
         Control PWM output

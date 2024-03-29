@@ -1,5 +1,5 @@
-# np_strip_helper.py
-# helper methods for Ws2812Strip
+# pixel_strip_helper.py
+# helper methods for PixelStrip
 
 import asyncio
 from random import randrange
