@@ -6,23 +6,25 @@ import asyncio
 from pixel_strip import PixelStrip
 from colour_space import ColourSpace
 from plasma_2040 import Plasma2040
+from ws2812 import Ws2812
 
 
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    # Pimoroni Plasma 2040 is hardwired to GPIO 15
+
     n_pixels = 30
+    # set board and strip chipset methods
     board = Plasma2040()
-    ps = PixelStrip(board.DATA, n_pixels)
+    driver = Ws2812(board.DATA)
     cs = ColourSpace()
+    nps = PixelStrip(driver, n_pixels)
 
     level = 128
-    rgb_u28 = ps.chipset.encode_rgb(
-        cs.get_rgb_lg('orange', level))
+    rgb_u28 = nps.encode_rgb(cs.get_rgb_lg('orange', level))
     print(rgb_u28)
-    ps.set_strip(rgb_u28)
-    ps.chipset.write()
+    nps.set_strip(rgb_u28)
+    nps.write()
     await asyncio.sleep_ms(1000)
 
     # shift RGB to red and darken
@@ -42,8 +44,8 @@ async def main():
         rgb = cs.hsv_rgb_u8(h / 360.0, s, v)
         rgb_g = cs.get_rgb_g(rgb)
         print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
-        ps.set_strip_rgb(rgb_g)
-        ps.chipset.write()
+        nps.set_strip_rgb(rgb_g)
+        nps.write()
         await asyncio.sleep_ms(50)
 
     # hold hue, reduce saturation and value
@@ -58,13 +60,13 @@ async def main():
         rgb = cs.hsv_rgb_u8(h / 360.0, s, v)
         rgb_g = cs.get_rgb_g(rgb)
         print(f'h: {h} s: {s} v: {v} rgb: {rgb}')
-        ps.set_strip_rgb(rgb_g)
-        ps.chipset.write()
+        nps.set_strip_rgb(rgb_g)
+        nps.write()
         await asyncio.sleep_ms(50)
 
-    await asyncio.sleep_ms(10_000)
-    ps.clear_strip()
-    ps.chipset.write()
+    await asyncio.sleep_ms(5_000)
+    nps.clear_strip()
+    nps.write()
     await asyncio.sleep_ms(200)
 
 

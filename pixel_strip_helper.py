@@ -62,17 +62,16 @@ async def colour_chase(nps, rgb_list, play_ev, pause=20):
         fill count_ pixels with list of rgb values
         - n_rgb does not have to equal count_
     """
-    n_pixels = nps.n
+    n_pixels = nps.n_pixels
     grb_list = []
     # convert (R, G, B) encoding to WS2812 GRB
     for c in rgb_list:
-        grb_list.append(nps.encode(c))
+        grb_list.append(nps.encode_rgb(c))
     n_colours = len(grb_list)
     index = 0
     # <% n_pixels> arithmetic is slow but straightforward
     while play_ev.is_set():
-        for i in range(n_colours):
-            nps[(index + i) % n_pixels] = grb_list[i]
+        for i in range(n_colours): nps[(index + i) % n_pixels] = grb_list[i]
         nps.write()
         await asyncio.sleep_ms(pause)
         nps[index] = 0
@@ -90,7 +89,7 @@ async def two_flash(nps, base_index, rgb, flash_ev, period=1000):
         nps[bi_1] = grb_1
         nps.write()
         
-    grb = nps.encode(rgb)
+    grb = nps.encode_rgb(rgb)
     off = 0
     hold = period // 2
     bi_1 = base_index + 1

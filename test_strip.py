@@ -4,8 +4,10 @@
 
 import asyncio
 import time
-from ws2812 import Ws2812Strip
 from colour_space import ColourSpace
+from plasma_2040 import Plasma2040
+from ws2812 import Ws2812
+from pixel_strip import PixelStrip
 from pixel_strip_helper import colour_chase, two_flash
 
 
@@ -24,11 +26,13 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    # Pimoroni Plasma 2040 is hardwired to GPIO 15
-    pin_number = 15
     n_pixels = 30
-    nps = Ws2812Strip(pin_number, n_pixels)
+    # set board and strip chipset methods
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    # ps = PixelStrip(driver, n_pixels)
     cs = ColourSpace()
+    nps = PixelStrip(driver, n_pixels)
 
     test_rgb = cs.get_rgb_lg('orange', 100)
     list_rgb = [cs.get_rgb_lg('blue', 192),

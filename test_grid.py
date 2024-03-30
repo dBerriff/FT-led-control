@@ -1,4 +1,4 @@
-# test_np_grid.py
+# test_grid.py
 
 """ test WS1802-related classes
     - test for 8x8 pixel grid
@@ -7,16 +7,22 @@
 import asyncio
 import random
 from colour_space import ColourSpace
-from pixel_strip import BlockGrid
+from plasma_2040 import Plasma2040
+from ws2812 import Ws2812
+from pixel_strip import Grid, BlockGrid
 
 
 async def main():
     """ coro: test WS1802 grid methods """
-
-    pin_number = 15
+    n_cols = 8
+    n_rows = 8
+    # set board and strip chipset methods
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    # ps = PixelStrip(driver, n_pixels)
     cs = ColourSpace()
-    pg = BlockGrid(
-        pin_number, n_cols_=8, n_rows_=8, charset_file='5x7.json')
+    pg = Grid(
+        driver, n_cols, n_rows, charset_file='5x7.json')
     off = (0, 0, 0)
     level = 64
 
@@ -30,10 +36,6 @@ async def main():
 
     # fill_ functions have implicit write; set_ functions do not
     # fill grid with single grb_
-    await pg.fill_grid(rgb, level)
-    await asyncio.sleep_ms(1000)
-    pg.clear_strip()
-    await asyncio.sleep_ms(500)
     
     pix_pause_ms = 20
 
@@ -73,15 +75,15 @@ async def main():
     pause_ms = 1000
     for _ in range(12):
         pg.set_diagonal(rgb, mirror=False)
-        pg.chipset.write()
+        pg.write()
         await asyncio.sleep_ms(pause_ms)
         pg.set_diagonal(off, mirror=False)
-        pg.chipset.write()
+        pg.write()
         pg.set_diagonal(rgb, mirror=True)
-        pg.chipset.write()
+        pg.write()
         await asyncio.sleep_ms(pause_ms)
         pg.set_diagonal(off, mirror=True)
-        pg.chipset.write()
+        pg.write()
         pause_ms //= 2
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
@@ -93,12 +95,21 @@ async def main():
 
     await pg.display_string('3210', rgb)
     pg.clear_strip()
-    await asyncio.sleep_ms(200)
+    await asyncio.sleep_ms(1000)
 
+    # re-initialise as BlockGrid
+    n_cols = 8
+    n_rows = 8
+    # set board and strip chipset methods
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    # ps = PixelStrip(driver, n_pixels)
+    pg = BlockGrid(
+        driver, n_cols, n_rows, charset_file='5x7.json')
     await pg.display_string_shift(' Famous Trains Derby ', rgb)
     await asyncio.sleep_ms(1000)
     pg.clear_strip()
-    pg.chipset.write()
+    pg.write()
     await asyncio.sleep_ms(20)
 
 

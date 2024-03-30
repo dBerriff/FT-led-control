@@ -40,17 +40,21 @@ class Ws2812:
         set(pins, 0)
         wrap()
 
-    def __init__(self, pin, n_pixels_):
+    def __init__(self, pin):
         f_ = 5_000_000  # this version
         self.pin = pin  # for trace/debug
-        self.n_pixels = n_pixels_
-        self.n = n_pixels_
+        self.n_pixels = 0  # set by calling method
         self.sm = rp2.StateMachine(0, Ws2812.ws2812, freq=f_,
                                    set_base=Pin(pin), out_base=Pin(pin))
-        self.arr = array.array('I', [0]*n_pixels_)
+        self.arr = None
         self.cs = ColourSpace()
         # start state machine
         self.sm.active(True)
+
+    def set_pixels(self, n_pixels_):
+        """ allow for dynamic allocation of pixels """
+        self.n_pixels = n_pixels_
+        self.arr = array.array('I', [0]*n_pixels_)
 
     def write(self):
         """ 'put' GRB array into StateMachine Tx FIFO """
@@ -66,4 +70,3 @@ class Ws2812:
     def encode_f(rgb_):
         """ encode rgb[0...1.0] as single 24-bit GRB word """
         return (int(rgb_[1] * 255) << 16) + (int(rgb_[0] * 255) << 8) + int(rgb_[2] * 255)
-
