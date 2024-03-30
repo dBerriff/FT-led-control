@@ -12,7 +12,7 @@
     Helper methods support specific use-cases.
 
     Notes:
-    - set and encode methods do not write to pixels to allow for overlays
+    - set methods do not write to pixels to allow for overlays
         -- write() must be called to display the output
 """
 
@@ -22,7 +22,8 @@ from colour_space import ColourSpace
 
 
 class PixelStrip:
-    """ extend Ws2812 for NeoPixel strip
+    """ implement general pixel strip methods
+        self.driver implements pixel-specific methods
         - MicroPython NeoPixel interface is matched as per MP documentation
         - RGBW (bpp) not currently implemented
         - __setitem__, set_pixel() and set_strip() implicitly set GRB grb_ order
@@ -35,8 +36,8 @@ class PixelStrip:
         # must initialise driver to match n_pixels
         self.driver.set_pixels(n_pixels_)
         self.arr = self.driver.arr
-        self.encode_rgb = driver_.encode_rgb
-        self.write = driver_.write
+        self.encode_rgb = self.driver.encode_rgb
+        self.write = self.driver.write
         self.cs = ColourSpace()
 
     # match MP NeoPixel interface
@@ -45,26 +46,27 @@ class PixelStrip:
         """ number of pixels """
         return self.n_pixels
 
-    def __setitem__(self, index, value):
+    def __setitem__(self, index, rgb_word):
         """ set array item """
-        self.arr[index] = value
+        self.arr[index] = rgb_word
 
     def __getitem__(self, index):
         """ get array item """
         return self.arr[index]
 
     def set_pixel(self, index, rgb_word):
-        """ set pixel RGB; duplicates __setitem__() """
+        """ set single pixel to 24-bit RGB
+            - duplicates __setitem__() """
         self.arr[index] = rgb_word
 
     def set_strip(self, rgb_word):
-        """ fill pixel strip with GRB """
+        """ fill pixel with RGB """
         arr = self.arr  # avoid repeated dict lookup
         for i in range(self.n_pixels):
             arr[i] = rgb_word
 
     def set_range(self, index_, count_, rgb_word):
-        """ fill count_ pixels with GRB  """
+        """ fill count_ pixels """
         arr = self.arr
         i = index_ % self.n_pixels
         for _ in range(count_):
@@ -74,31 +76,31 @@ class PixelStrip:
                 i = 0
 
     def set_list(self, index_list_, rgb_word):
-        """ fill index_list pixels with GRB """
+        """ fill index_list pixels """
         arr = self.arr
         for i in index_list_:
             arr[i] = rgb_word
 
     def clear_strip(self):
-        """ set all pixels to 0 """
+        """ set all pixels off """
         arr = self.arr
         for i in range(self.n_pixels):
             arr[i] = 0
 
     def set_pixel_rgb(self, index, rgb_):
-        """ set pixel RGB """
+        """ set pixel by RGB tuple """
         self.set_pixel(index, self.encode_rgb(rgb_))
 
     def set_strip_rgb(self, rgb_):
-        """ fill pixel strip with RGB """
+        """ fill pixel strip with RGB tuple """
         self.set_strip(self.encode_rgb(rgb_))
 
     def set_range_rgb(self, index_, count_, rgb_):
-        """ fill count_ pixels with RGB  """
+        """ fill count_ pixels with RGB tuple  """
         self.set_range(index_, count_, self.encode_rgb(rgb_))
 
     def set_list_rgb(self, index_list_, rgb_):
-        """ fill index_list pixels with RGB """
+        """ fill index_list pixels with RGB tuple """
         self.set_list(index_list_, self.encode_rgb(rgb_))
 
 
@@ -106,10 +108,6 @@ class Grid(PixelStrip):
     """ extend NeoPixel to support BTF-Lighting 8x8 grid
         - grid is wired 'snake' style;
             coord_index dict corrects by lookup
-        - a block is an 8x8 area, intended for character display
-        - implicit conversion of grb_-keys to RGB has been removed
-        - helper methods are examples or work-in-progress
-        - avoid, where straightforward, modulo (%) arithmetic for performance
     """
 
     @staticmethod
@@ -159,7 +157,7 @@ class Grid(PixelStrip):
             self.arr[index] = grb
 
     def set_grid_grb(self, grb_):
-        """ fill all grid pixels with grb_ """
+        """ fill all grid pixels with grb_ TODO """
         for index in range(self.n_pixels):
             self.arr[index] = grb_
 
@@ -170,7 +168,7 @@ class Grid(PixelStrip):
             self.arr[self.coord_index[col, row]] = grb
 
     def set_col_grb(self, col, grb_):
-        """ fill col with grb_ """
+        """ fill col with grb_ TODO """
         for row in range(self.n_rows):
             self.arr[self.coord_index[col, row]] = grb_
 
@@ -181,12 +179,12 @@ class Grid(PixelStrip):
             self.arr[self.coord_index[col, row]] = grb
 
     def set_row_grb(self, row, grb_):
-        """ fill row with rgb_ grb_ """
+        """ fill row with rgb_ grb_ TODO """
         for col in range(self.n_cols):
             self.arr[self.coord_index[col, row]] = grb_
 
     def set_coord_list(self, coord_list_, rgb_):
-        """ set a list of pixels by coords """
+        """ set a list of pixels by coords TODO """
         grb = self.encode_rgb(rgb_)
         if coord_list_:  # could be empty
             for c in coord_list_:
@@ -195,14 +193,14 @@ class Grid(PixelStrip):
 # helper methods
 
     async def fill_grid(self, rgb_, pause_ms=20):
-        """ coro: fill grid and display """
+        """ coro: fill grid and display TODO """
         grb = self.encode_rgb(rgb_)
         self.set_grid_grb(grb)
         self.write()
         await asyncio.sleep_ms(pause_ms)
 
     async def traverse_strip(self, rgb_, pause_ms=20):
-        """ coro: fill each pixel in strip order """
+        """ coro: fill each pixel in strip order TODO """
         grb = self.encode_rgb(rgb_)
         for index in range(self.n_pixels):
             self.arr[index] = grb
@@ -210,7 +208,7 @@ class Grid(PixelStrip):
             await asyncio.sleep_ms(pause_ms)
 
     async def traverse_grid(self, rgb_, pause_ms=20):
-        """ coro: fill each pixel in grid coord order """
+        """ coro: fill each pixel in grid coord order TODO """
         grb = self.encode_rgb(rgb_)
         for row in range(self.n_rows):
             for col in range(self.n_cols):
@@ -219,7 +217,7 @@ class Grid(PixelStrip):
                 await asyncio.sleep_ms(pause_ms)
 
     async def fill_cols(self, rgb_set, pause_ms=20):
-        """ coro: fill cols in order, cycling colours """
+        """ coro: fill cols in order, cycling colours TODO """
         grb_set = []
         for c in rgb_set:
             grb_set.append(self.encode_rgb(c))
@@ -230,7 +228,7 @@ class Grid(PixelStrip):
             await asyncio.sleep_ms(pause_ms)
 
     async def fill_rows(self, rgb_set, pause_ms=20):
-        """ coro: fill rows in order, cycling colours """
+        """ coro: fill rows in order, cycling colours TODO """
         grb_set = []
         for c in rgb_set:
             grb_set.append(self.encode_rgb(c))
@@ -241,7 +239,7 @@ class Grid(PixelStrip):
             await asyncio.sleep_ms(pause_ms)
 
     def set_diagonal(self, rgb_, mirror=False):
-        """ fill diagonal with rgb_ grb_
+        """ fill diagonal with rgb_ grb_ TODO
             - assumes n_cols >= n_rows
         """
         grb = self.encode_rgb(rgb_)
@@ -254,7 +252,7 @@ class Grid(PixelStrip):
 
     async def display_string(self, str_, rgb_, pause_ms=1000):
         """ coro: display the letters in a string
-            - set_char() overlays background
+            - set_char() overlays background TODO
         """
         grb = self.encode_rgb(rgb_)
         # grb is set for the whole string
@@ -285,7 +283,7 @@ class BlockGrid(Grid):
         self.shift_offset = 2 * self.n_rows - 1
 
     def set_block_list(self, block_n, index_list_, grb_):
-        """ fill block_n index_list with rgb_ """
+        """ fill block_n index_list with rgb_ TODO """
         offset = block_n * self.block_pixels
         for index in index_list_:
             self.arr[index + offset] = grb_
@@ -309,7 +307,7 @@ class BlockGrid(Grid):
     async def display_string_shift(self, string_, rgb_, pause_ms=1000):
         """
             coro: display letters in a string, shifting in from right
-            - block 1 is usually a virtual block
+            - block 1 is usually a virtual block TODO
         """
         grb = self.encode_rgb(rgb_)
         for i in range(len(string_) - 1):
