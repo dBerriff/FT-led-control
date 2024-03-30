@@ -10,7 +10,7 @@ Lights = namedtuple('Lights', ('r', 'y1', 'g', 'y2'))
 
 class ColourSignal:
     """
-        model railway grb_ signals
+        model railway clr signals
         - level_ is required
     """
 
@@ -33,7 +33,7 @@ class ColourSignal:
         
 
 class FourAspect(ColourSignal):
-    """ model UK 4-aspect grb_ signal
+    """ model UK 4-aspect clr signal
         - bottom to top: red-yellow-green-yellow
     """
 
@@ -80,7 +80,7 @@ class FourAspect(ColourSignal):
 
 
 class ThreeAspect(ColourSignal):
-    """ model UK 3-aspect grb_ signal
+    """ model UK 3-aspect clr signal
         - bottom to top: red-yellow-green
     """
 

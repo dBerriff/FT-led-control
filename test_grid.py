@@ -35,7 +35,7 @@ async def main():
     rgb = cs.get_rgb_lg('dark_orange', level)
 
     # fill_ functions have implicit write; set_ functions do not
-    # fill grid with single grb_
+    # fill grid with single clr
     
     pix_pause_ms = 20
 

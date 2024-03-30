@@ -1,5 +1,5 @@
 # rgb.py
-""" RGB grb_ data and functions """
+""" RGB clr data and functions """
 
 from micropython import const
 

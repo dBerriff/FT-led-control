@@ -15,8 +15,9 @@ from pixel_strip_helper import colour_chase, two_flash
 
 def time_set_strip(nps_, rgb_):
     """ test and time fill-strip method """
+    rgb = rgb_
     c_time = time.ticks_us()
-    nps_.set_strip_rgb(rgb_)
+    nps_.set_strip_rgb(rgb)
     print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
     c_time = time.ticks_us()
     nps_.write()
@@ -84,7 +85,7 @@ async def main():
     ev.set()
     asyncio.create_task(colour_chase(nps, list_rgb, ev, 20))
     await asyncio.sleep_ms(10_000)
-    print('Clear ev')
+    print('Clear colour chase ev')
     ev.clear()
     await asyncio.sleep_ms(20)
     nps.clear_strip()
@@ -95,23 +96,22 @@ async def main():
     test_rgb = cs.get_rgb_lg('red', level)
     # asyncio Event controls flashing
     do_flash = asyncio.Event()
-    # create the task, adding to scheduler
     asyncio.create_task(two_flash(nps, 0, test_rgb, do_flash))
     print('Wait for it...')
-    await asyncio.sleep_ms(1_000)
+    await asyncio.sleep_ms(2_000)
     print('Now!')
     
     # set the flag
     do_flash.set()
-    await asyncio.sleep_ms(10_000)
+    await asyncio.sleep_ms(5_000)
     do_flash.clear()
     print('Wait for more...')
-    await asyncio.sleep_ms(5_000)
+    await asyncio.sleep_ms(3_000)
     print('Now!')
     
     # set the flag
     do_flash.set()
-    await asyncio.sleep_ms(10_000)
+    await asyncio.sleep_ms(5_000)
     do_flash.clear()
     await asyncio.sleep_ms(200)
 

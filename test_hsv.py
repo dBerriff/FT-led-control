@@ -12,7 +12,6 @@ from ws2812 import Ws2812
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-
     n_pixels = 30
     # set board and strip chipset methods
     board = Plasma2040()
@@ -21,9 +20,9 @@ async def main():
     nps = PixelStrip(driver, n_pixels)
 
     level = 128
-    rgb_u28 = nps.encode_rgb(cs.get_rgb_lg('orange', level))
-    print(rgb_u28)
-    nps.set_strip(rgb_u28)
+    clr_u24 = nps.encode_rgb(cs.get_rgb_lg('orange', level))
+    print(clr_u24)
+    nps.set_strip(clr_u24)
     nps.write()
     await asyncio.sleep_ms(1000)
 
@@ -54,9 +53,9 @@ async def main():
     s_delta = -s_init
     v_delta = -0.35
     # work in RGB for analysis
-    for p in range(101):
-        s = s_init + p * s_delta / 100
-        v = v_init + p * v_delta / 100
+    for p in range(100):
+        s = s_init + p * s_delta / 99.0
+        v = v_init + p * v_delta / 99.0
         rgb = cs.hsv_rgb_u8(h / 360.0, s, v)
         rgb_g = cs.get_rgb_g(rgb)
         print(f'h: {h} s: {s} v: {v} rgb: {rgb}')

@@ -6,7 +6,7 @@
     Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
     WS2812 pixel words are coded as 32-bit GRBW with W = 0
     W (white) byte is added by left-shift in PIO 'put'
-    - 50µs pause between strip writes
+    - >= 50µs pause required between strip writes
 """
 
 import rp2
@@ -60,6 +60,7 @@ class Ws2812:
         """ 'put' colour array into StateMachine Tx FIFO """
         # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.GRB_SHIFT)
+
 
     @staticmethod
     def encode_rgb(rgb_):
