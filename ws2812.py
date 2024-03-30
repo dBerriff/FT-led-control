@@ -6,8 +6,7 @@
     Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
     WS2812 pixel words are coded as 32-bit GRBW with W = 0
     W (white) byte is added by left-shift in PIO 'put'
-    - there should be a 50µs pause between strip writes: normal awaits exceed this
-    - thanks to MERG member Paul Redhead for information on PIO.
+    - 50µs pause between strip writes
 """
 
 import rp2
@@ -19,14 +18,14 @@ from colour_space import ColourSpace
 
 class Ws2812:
     """
-        Implement WS2812 driver using RP2040 programmable i/o
+        Implement WS2812 driver using RP2040 PIO
         See:
         - R Pi Pico C SDK: section 3.2.2
         - R Pi [Micro]Python SDK: section 3.9.2
-        - https://tutoduino.fr/en/pio-rp2040-en/ for PIO code
+        - https://tutoduino.fr/en/pio-rp2040-en/ for pioasm code
     """
 
-    GRBW_SHIFT = const(8)  # shift GRB to MSBytes in 32-bit word
+    GRB_SHIFT = const(8)  # shift 24-bit colour into 32-bit word
 
     @rp2.asm_pio(set_init=rp2.PIO.OUT_LOW,
                  out_init=rp2.PIO.OUT_LOW,
@@ -41,25 +40,26 @@ class Ws2812:
         wrap()
 
     def __init__(self, pin):
-        f_ = 5_000_000  # this version
+        f_ = 5_000_000  # Hz
         self.pin = pin  # for trace/debug
-        self.n_pixels = 0  # set by calling method
         self.sm = rp2.StateMachine(0, Ws2812.ws2812, freq=f_,
                                    set_base=Pin(pin), out_base=Pin(pin))
+        self.n_pixels = 0  # set by calling method
         self.arr = None
         self.cs = ColourSpace()
-        # start state machine
-        self.sm.active(True)
 
     def set_pixels(self, n_pixels_):
-        """ allow for dynamic allocation of pixels """
+        """ allow for dynamic allocation of pixels
+            - start state machine once arr is initialised
+        """
         self.n_pixels = n_pixels_
         self.arr = array.array('I', [0]*n_pixels_)
+        self.sm.active(True)
 
     def write(self):
-        """ 'put' GRB array into StateMachine Tx FIFO """
+        """ 'put' colour array into StateMachine Tx FIFO """
         # shift moves rgb bits to MSB position
-        self.sm.put(self.arr, self.GRBW_SHIFT)
+        self.sm.put(self.arr, self.GRB_SHIFT)
 
     @staticmethod
     def encode_rgb(rgb_):
