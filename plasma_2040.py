@@ -23,11 +23,11 @@ class PimoroniRGB:
         self.led_g = PWM(Pin(g_gp), freq=1000)
         self.led_b = PWM(Pin(b_gp), freq=1000)
 
-    def set_rgb_u8(self, r, g, b):
+    def set_rgb_u8(self, rgb):
         """ Pimoroni RGB LEDs require dc inversion """
-        r = 255 - r
-        g = 255 - g
-        b = 255 - b
+        r = 255 - rgb[0]
+        g = 255 - rgb[1]
+        b = 255 - rgb[2]
         self.led_r.duty_u16(r * 257)
         self.led_g.duty_u16(g * 257)
         self.led_b.duty_u16(b * 257)
