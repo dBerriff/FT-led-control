@@ -20,7 +20,7 @@ async def np_arc_weld(nps, cs, pixel_, play_ev):
             await asyncio.sleep_ms(20)
         # fade out glow
         for level in range(128, -1, -1):
-            nps[pixel_] = cs.get_rgb_lg(glow_rgb_, level)
+            nps[pixel_] = cs.rgb_lg(glow_rgb_, level)
             nps.write()
             await asyncio.sleep_ms(10)
         await asyncio.sleep_ms(randrange(1_000, 5_000))

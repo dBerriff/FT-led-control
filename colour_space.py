@@ -1,16 +1,17 @@
 # rgb.py
-""" RGB clr data and functions """
+""" RGB values and methods """
 
 from micropython import const
 
 
 class ColourSpace:
     """ 
-        implement 24-bit, 3-element tuple (R, G, B)
-        - gamma-correction is explicitly applied by a lookup list
+        values and methods return 3 x 8-bit RGB tuple
+        - gamma-correction is set from a lookup list
         - methods are all class methods
-        - get_rgb_lg(), get_rgb_l(), get_rgb_g():
-            -- suffix denotes transform(s): l: level,  g: gamma
+        - _lg, _l, _g:
+            -- suffix denotes: l: level,  g: gamma
+        -
     """
 
     # commonly used RGB colour "templates"
@@ -40,15 +41,14 @@ class ColourSpace:
 
     # build gamma-correction lookup list
     GAMMA = const(2.6)  # Adafruit value - see GitHub
-    # faster than list comprehension
-    RGB_GAMMA = []
+    RGB_GAMMA = []  # list comprehension is slower
     for x in range(256):
         RGB_GAMMA.append(round(pow(x / 255, GAMMA) * 255))
     RGB_GAMMA = tuple(RGB_GAMMA)
 
     @classmethod
-    def get_rgb_lg(cls, rgb_, level_=255):
-        """ encode rgb as 24-bit GRB word, level and gamma corrected """
+    def rgb_lg(cls, rgb_, level_=255):
+        """ return RGB, level and gamma corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = cls.colours[rgb_]
@@ -62,8 +62,8 @@ class ColourSpace:
         return r, g, b
 
     @classmethod
-    def get_rgb_l(cls, rgb_, level_=255):
-        """ encode rgb as 24-bit GRB word, level and gamma corrected """
+    def rgb_l(cls, rgb_, level_=255):
+        """ return RGB, level corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = cls.colours[rgb_]
@@ -77,8 +77,8 @@ class ColourSpace:
         return r, g, b
 
     @classmethod
-    def get_rgb_g(cls, rgb_):
-        """ encode rgb as 24-bit GRB word, level and gamma corrected """
+    def rgb_g(cls, rgb_):
+        """ return RGB, gamma corrected """
         if isinstance(rgb_, str):
             try:
                 rgb_ = cls.colours[rgb_]
@@ -90,46 +90,47 @@ class ColourSpace:
         return r, g, b
 
     @staticmethod
-    def hsv_rgb_u8(h_, s_, v_):
+    def hsv_rgb(hsv_):
         """
-            inputs: float [0.0...1.0]; calling method must check for range
-            returns: r, g, b: float [0.0...1.0]
+            input: HSV: 3 x float [0.0...1.0]
+            return: RGB
         """
-        v_u8 = v_ * 255
-        if s_ == 0.0:
+        h, s = hsv_[0], hsv_[1]
+        v_u8 = hsv_[2] * 255
+        if s == 0.0:
             v = int(v_u8)
             return v, v, v
 
         # keep i in range(6)
-        if h_ == 1.0:
-            h_ = 0.0
-        h_6 = h_ * 6.0  # 6 colour sectors
+        if h == 1.0:
+            h = 0.0
+        h_6 = h * 6.0  # 6 colour sectors
         i = int(h_6)
         f = h_6 - i
         # select colour sector
         if i == 0:
             r = v_u8
-            g = v_u8 * (1.0 - s_ * (1.0 - f))
-            b = v_u8 * (1.0 - s_)
+            g = v_u8 * (1.0 - s * (1.0 - f))
+            b = v_u8 * (1.0 - s)
         elif i == 1:
-            r = v_u8 * (1.0 - s_ * f)
+            r = v_u8 * (1.0 - s * f)
             g = v_u8
-            b = v_u8 * (1.0 - s_)
+            b = v_u8 * (1.0 - s)
         elif i == 2:
-            r = v_u8 * (1.0 - s_)
+            r = v_u8 * (1.0 - s)
             g = v_u8
-            b = v_u8 * (1.0 - s_ * (1.0 - f))
+            b = v_u8 * (1.0 - s * (1.0 - f))
         elif i == 3:
-            r = v_u8 * (1.0 - s_)
-            g = v_u8 * (1.0 - s_ * f)
+            r = v_u8 * (1.0 - s)
+            g = v_u8 * (1.0 - s * f)
             b = v_u8
         elif i == 4:
-            r = v_u8 * (1.0 - s_ * (1.0 - f))
-            g = v_u8 * (1.0 - s_)
+            r = v_u8 * (1.0 - s * (1.0 - f))
+            g = v_u8 * (1.0 - s)
             b = v_u8
         else:  # i == 5:
             r = v_u8
-            g = v_u8 * (1.0 - s_)
-            b = v_u8 * (1.0 - s_ * f)
+            g = v_u8 * (1.0 - s)
+            b = v_u8 * (1.0 - s * f)
 
         return int(r), int(g), int(b)

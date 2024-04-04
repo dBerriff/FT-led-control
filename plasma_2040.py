@@ -39,7 +39,7 @@ class Plasma2040:
         - control WS2812 LED strip
         - hardwired GPIO pins (see schematic and constants below):
             -- CLK, DATA: LED strip clock and data
-            -- LED_R, LED_G, LED_B: onboard 3-clr LED
+            -- LED_R, LED_G, LED_B: onboard 3-clr_word LED
             -- SW_A, SW_B, SW_U: user buttons
     """
     # Plasma 2040 GPIO pins
@@ -63,4 +63,4 @@ class Plasma2040:
 
     def set_onboard(self, rgb_):
         """ set onboard LED to rgb_ """
-        self.led.set_rgb_u8(*rgb_)
+        self.led.set_rgb_u8(rgb_)

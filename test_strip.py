@@ -35,10 +35,10 @@ async def main():
     cs = ColourSpace()
     nps = PixelStrip(driver, n_pixels)
 
-    test_rgb = cs.get_rgb_lg('orange', 100)
-    list_rgb = [cs.get_rgb_lg('blue', 192),
-                cs.get_rgb_lg('red', 96),
-                cs.get_rgb_lg('green', 32)]
+    test_rgb = cs.rgb_lg('orange', 100)
+    list_rgb = [cs.rgb_lg('blue', 192),
+                cs.rgb_lg('red', 96),
+                cs.rgb_lg('green', 32)]
     level = 128
 
     print('Time strip fill and write')
@@ -93,7 +93,7 @@ async def main():
     await asyncio.sleep_ms(5_000)
 
     print('Set twin pixel flash: red')
-    test_rgb = cs.get_rgb_lg('red', level)
+    test_rgb = cs.rgb_lg('red', level)
     # asyncio Event controls flashing
     do_flash = asyncio.Event()
     asyncio.create_task(two_flash(nps, 0, test_rgb, do_flash))

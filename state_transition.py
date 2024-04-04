@@ -2,8 +2,12 @@
 
 import asyncio
 import gc
+from colour_space import ColourSpace
 from plasma_2040 import Plasma2040
+from ws2812 import Ws2812
+from pixel_strip import PixelStrip
 from v_time import VTime
+from lcd_1602 import Lcd1602
 
 
 class DayNightST:
@@ -21,17 +25,22 @@ class DayNightST:
         'clock': (0, 0, 32)
     }
 
-    def __init__(self, p_2040, np_rgb, vt, clock_hm_):
-        self.board = p_2040
-        self.np_rgb = np_rgb
-        self.clock_hm = clock_hm_
+    def __init__(self, board_, cs, nps, hsv_, vt, clock_hm_):
+        self.board = board_
+        self.cs = cs
+        self.nps = nps
+        self.hsv = hsv_
         self.vt = vt
+        self.clock_hm = clock_hm_
+        self.encode_rgb = nps.encode_rgb
+
         self.step_t_ms = 20
-        # set gamma-corrected strip colours as 24-bit GRB value
-        self.state_colour = {'day': self.board.encode_g(np_rgb['day']),
-                             'night': self.board.encode_g(np_rgb['night']),
-                             'off': 0
+        # get gamma-corrected strip colours as 24-bit GRB value
+        self.state_colour = {'day': cs.rgb_g(cs.hsv_rgb(hsv_['day'])),
+                             'night': cs.rgb_g(cs.hsv_rgb(hsv_['night'])),
+                             'off': (0, 0, 0)
                              }
+        print(self.state_colour)
         self.day_night = ''
         # set clock_ev when in state 'clock'
         self.clock_ev = asyncio.Event()
@@ -54,8 +63,8 @@ class DayNightST:
 
     def set_strip(self, state):
         """ set strip to state colour, gamma corrected """
-        self.board.set_strip(self.state_colour[state])
-        self.board.write()
+        self.nps.set_strip_rgb(self.state_colour[state])
+        self.nps.write()
 
     # state-transition methods
 
@@ -111,18 +120,40 @@ class DayNightST:
                 coro: fade-and-hold single transition
                 - linear fade with each result gamma corrected
                 *** Convert to HSV transition
+                
+                self.state_colour = {'day': cs.rgb_g(cs.hsv_rgb(hsv_['day'])),
+                     'night': cs.rgb_g(cs.hsv_rgb(hsv_['night'])),
+                     'off': (0, 0, 0)
+                     }
+
             """
+            hsv_0 = self.hsv[state_0]
+            hsv_1 = self.hsv[state_1]
             print(f'Fade {state_0} to {state_1} at {self.vt}')
-            rgb_0 = self.np_rgb[state_0]
-            rgb_1 = self.np_rgb[state_1]
-            fade_percent = 0
-            while fade_percent < 101 and self.clock_ev.is_set():
-                self.board.set_strip(
-                    self.board.encode_g(
-                        self.get_fade_rgb(rgb_0, rgb_1, fade_percent)))
-                self.board.write()
-                await asyncio.sleep_ms(self.step_t_ms)
-                fade_percent += 1
+            print(f'Fade {hsv_0} to {hsv_1}')
+            delta_h = (hsv_1[0] - hsv_0[0]) / 100
+            delta_s = (1.0 - hsv_0[1]) / 100
+            delta_v = (hsv_1[2] - hsv_0[2]) / 100
+            h_0 = hsv_0[0]
+            s_0 = hsv_0[1]
+            v_0 = hsv_0[2]
+            h_inc = 0
+            s_inc = 0
+            v_inc = 0
+            for i in range(101):
+                h = h_0 + h_inc
+                s = s_0 + s_inc
+                v = v_0 + v_inc
+                rgb = self.cs.rgb_g(self.cs.hsv_rgb((h, s, v)))
+                self.nps.set_strip_rgb(rgb)
+                self.nps.write()
+                print(i, rgb)
+                await asyncio.sleep_ms(20)
+                h_inc += delta_h
+                s_inc += delta_s
+                v_inc += delta_v
+                
+            await asyncio.sleep_ms(1)
 
         # clear any previous Event setting; initialise state
         self.vt.change_state_ev.clear()
@@ -136,16 +167,7 @@ class DayNightST:
                     await fade('day', 'night')
                 else:
                     await fade('night', 'day')
-
             await asyncio.sleep_ms(20)
-
-    @staticmethod
-    def get_fade_rgb(rgb_0_, rgb_1_, percent_):
-        """ return percentage rgb value """
-        r = rgb_0_[0] + (rgb_1_[0] - rgb_0_[0]) * percent_ // 100
-        g = rgb_0_[1] + (rgb_1_[1] - rgb_0_[1]) * percent_ // 100
-        b = rgb_0_[2] + (rgb_1_[2] - rgb_0_[2]) * percent_ // 100
-        return r, g, b
 
 
 async def main():
@@ -159,11 +181,11 @@ async def main():
             await system_.state_transition_logic(btn.state)
             btn.clear_state()
 
-    async def show_time(vt_):
+    async def show_time(vt_, lcd_):
         """ print virtual time every 1s in 'clock' state """
         while True:
             await system.clock_ev.wait()
-            print(vt_, end='\r')
+            lcd_.write_line(0, vt_.get_time_hm())
             await asyncio.sleep_ms(1_000)
 
     # ====== parameters
@@ -171,10 +193,10 @@ async def main():
     n_pixels = 30
 
     # system colours (no gamma correction)
-    rgb = {
-        'day': (128, 128, 128),
-        'night': (32, 32, 36),
-        'off': (0, 0, 0)
+    hsv = {
+        'day': (240/360, 0.1, 0.95),
+        'night': (359/360, 0.0, 0.3),
+        'off': (0.0, 0.0, 0.0)
         }
 
     clock_hm = {'hm': '18:00', 'dawn': '06:00', 'dusk': '20:00'}
@@ -182,17 +204,24 @@ async def main():
 
     # ====== end-of-parameters
 
-    p_2040 = Plasma2040()
-    buttons = p_2040.buttons  # hard-wired on Plasma 2040
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    buttons = board.buttons
+    nps = PixelStrip(driver, n_pixels)
+    cs = ColourSpace()
     vt = VTime(s_inc=clock_speed)  # fast virtual clock
-    system = DayNightST(p_2040, rgb, vt, clock_hm)
+    lcd = Lcd1602(20, 21)
+    lcd.write_line(0, 'Hello')
+    print('Hello')
+    
+    system = DayNightST(board, cs, nps, hsv, vt, clock_hm)
 
     # create tasks to pass press_ev events to system
     for b in buttons:
         asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
     print('System initialised')
-    asyncio.create_task(show_time(system.vt))
+    asyncio.create_task(show_time(system.vt, lcd))
     await asyncio.sleep(600)
     system.set_off()
     await asyncio.sleep_ms(200)

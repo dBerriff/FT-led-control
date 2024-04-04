@@ -61,7 +61,6 @@ class Ws2812:
         # shift moves rgb bits to MSB position
         self.sm.put(self.arr, self.GRB_SHIFT)
 
-
     @staticmethod
     def encode_rgb(rgb_):
         """ encode rgb as single 24-bit GRB word """
