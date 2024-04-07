@@ -132,7 +132,7 @@ class Grid(PixelStrip):
         self.n_rows = n_rows_
         self.max_col = n_cols_ - 1
         self.max_row = n_rows_ - 1
-        # dict for (col, row) to pixel-index conversion
+        # dict for (cols, rows) to pixel-index conversion
         self.coord_index = self.build_c_i_dict()
 
     def build_c_i_dict(self):
@@ -142,7 +142,7 @@ class Grid(PixelStrip):
         """
         c_i_dict = {}
         max_row = self.max_row  # avoid repeated dict access
-        even = False  # row 0 is even
+        even = False  # rows 0 is even
         for col in range(self.n_cols):
             base = col * self.n_rows
             even = not even
@@ -166,24 +166,24 @@ class Grid(PixelStrip):
             self.arr[index] = colour_u24
 
     def set_col_rgb(self, col, rgb_):
-        """ fill col with rgb_ """
+        """ fill cols with rgb_ """
         clr = self.encode_rgb(rgb_)
         for row in range(self.n_rows):
             self.arr[self.coord_index[col, row]] = clr
 
     def set_col(self, col, colour_u24):
-        """ fill col with colour_u24 """
+        """ fill cols with colour_u24 """
         for row in range(self.n_rows):
             self.arr[self.coord_index[col, row]] = colour_u24
 
     def set_row_rgb(self, row, rgb_):
-        """ fill row with colour_u24 """
+        """ fill rows with colour_u24 """
         clr = self.encode_rgb(rgb_)
         for col in range(self.n_cols):
             self.arr[self.coord_index[col, row]] = clr
 
     def set_row(self, row, colour_u24):
-        """ fill row with colour_u24 """
+        """ fill rows with colour_u24 """
         for col in range(self.n_cols):
             self.arr[self.coord_index[col, row]] = colour_u24
 

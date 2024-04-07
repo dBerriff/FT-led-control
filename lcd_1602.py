@@ -27,30 +27,34 @@ class Lcd1602:
 
     # flags for function set
     MODE_4BIT = const(0x00)
-    LINES_2 = const(0x08)
-    LINES_1 = const(0x00)
+    ROWS_2 = const(0x08)
+    ROW_1 = const(0x00)
     DOTS_5x8 = const(0x00)
 
-    def __init__(self, sda_, scl_, col=16, row=2):
+    def __init__(self, sda_, scl_, cols=16, rows=2):
         i = 0 if sda_ in (0, 4, 8, 12, 16, 20) else 1
         self.i2c = I2C(i, sda=Pin(sda_), scl=Pin(scl_), freq=400_000)
-        self._col = col
-        self._row = row
-        self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
-        try:
-            # self.address info only; ADDRESS used in code
-            self.address = self.i2c.scan()[0]
-            print(self.address)
-            self.lcd_mode = True
-        except IndexError:
-            self.lcd_mode = False
-            print('I2C address not found: print mode instead.')
-        if self.lcd_mode:
-            self._start(row)
-        self._n_lines = None
+        self._cols = cols
+        self._rows = rows
+        self.active = False
+        self.address = None
+        self._show_fn = self.MODE_4BIT | self.ROW_1 | self.DOTS_5x8
         self._curr_line = None
         self._show_ctrl = None
         self._show_mode = None
+
+    def initialise(self):
+        """ attempt to initialise the display """
+        try:
+            # self.address info only; I2C_ADDR used in code
+            self.address = self.i2c.scan()[0]
+            self.active = True
+        except IndexError:
+            self.active = False
+            print('LCD display I2C address not found')
+        if self.active:
+            self._start()
+        return self.active
 
     def _command(self, cmd):
         """ invoke command """
@@ -75,11 +79,10 @@ class Lcd1602:
         self._show_ctrl |= self.DISP_ON
         self._command(self.DISP_CONTROL | self._show_ctrl)
 
-    def _start(self, lines):
+    def _start(self):
         """ start routine as per Waveshare docs """
-        self._n_lines = lines
         self._curr_line = 0
-        self._show_fn |= self.LINES_2 if lines > 1 else self.LINES_1
+        self._show_fn |= self.ROWS_2 if self._rows > 1 else self.ROW_1
         time.sleep_ms(50)
 
         # Send function set command 3 times (apparently required)
@@ -97,16 +100,11 @@ class Lcd1602:
     # interface functions
 
     def clear(self):
-        if self.lcd_mode:
-            self._command(self.CLR_DISP)
-            time.sleep_ms(2)
+        """ clear the whole display """
+        self._command(self.CLR_DISP)
+        time.sleep_ms(2)
 
     def write_line(self, row, text):
-        """ write text to display row """
-
-        if self.lcd_mode:
-            self._set_cursor(0, row)
-            self._write_out(text)
-        else:
-            print(f'{row}: {text}')
-
+        """ write text to display rows """
+        self._set_cursor(0, row)
+        self._write_out(text)

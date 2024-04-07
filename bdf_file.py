@@ -18,7 +18,7 @@ import array  # for explicit element type (I: unsigned int)
 def get_font_bitmaps(filename):
     """
         read BDF file and return char bitmaps as dict:
-            key: char, value: list of bitmaps by row
+            key: char, value: list of bitmaps by rows
         - restricted to range of ASCII values
     """
 
@@ -81,8 +81,8 @@ def get_font_bitmaps(filename):
 
 def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
     """
-        convert char (col, row) coords to strip indices
-        - bdf fonts store byte arrays by row
+        convert char (cols, rows) coords to strip indices
+        - bdf fonts store byte arrays by rows
         - grid is wired in snake order
         - explicit value comparisons for clarity
     """
@@ -92,8 +92,8 @@ def get_8x8_char_indices(char_grid, col_offset=0, row_offset=0):
         ba = char_grid[row]
         even = False
         for col in range(8):
-            even = not even  # first col is 0
-            # ms bit is left-most col
+            even = not even  # first cols is 0
+            # ms bit is left-most cols
             # select bit and test
             if ba & (1 << (7 - col)) > 0:
                 c = col + col_offset

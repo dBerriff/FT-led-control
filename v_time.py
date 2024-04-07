@@ -50,21 +50,14 @@ class VTime:
             self._vt_s += inc
             self._vt_s %= self.S_IN_DAY
 
-    def start_clock(self, time_hm, sunrise, sunset):
+    def start_ticks(self, start_time_s, sunrise_s, sunset_s):
         """ create tasks to run virtual time """
-        self._vt_s = self.calc_day_s(time_hm)
-        self._dawn = self.calc_day_s(sunrise)
-        self._dusk = self.calc_day_s(sunset)
+        self._vt_s = start_time_s
+        self._dawn = sunrise_s
+        self._dusk = sunset_s
         self.run_ev.set()
         asyncio.create_task(self.tick())
         asyncio.create_task(self.track_transitions())
-
-    @staticmethod
-    def calc_day_s(h_m):
-        """ calculate seconds since midnight from hh:mm string """
-        h_m = h_m.strip()
-        h_m = h_m.split(':')
-        return int(h_m[0]) * 3600 + int(h_m[1]) * 60
 
     def __str__(self):
         return f'{self.get_time_hm()} {self.state}  '
@@ -72,6 +65,12 @@ class VTime:
 
 async def main():
     """ test VTime class """
+    
+    def get_day_s(h_m):
+        """ calculate seconds since midnight from hh:mm string """
+        h_m = h_m.strip()
+        h_m = h_m.split(':')
+        return int(h_m[0]) * 3600 + int(h_m[1]) * 60
 
     async def show_time(vt_):
         """ print virtual time at set intervals """
@@ -88,7 +87,7 @@ async def main():
 
     vt = VTime(s_inc=720)
     await asyncio.sleep_ms(200)
-    vt.start_clock(time_hm='12:00', sunrise='06:00', sunset='20:00')
+    vt.start_ticks(get_day_s('12:00'), get_day_s('06:00'), get_day_s('20:00'))
     await asyncio.sleep_ms(20)
     asyncio.create_task(show_state(vt))
     await asyncio.sleep_ms(20)

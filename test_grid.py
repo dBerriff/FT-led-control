@@ -45,7 +45,7 @@ async def main():
     await pg.traverse_strip_rgb(off, pix_pause_ms)
     await asyncio.sleep_ms(500)
 
-    print('fill pixels in col, row order')
+    print('fill pixels in cols, rows order')
     await pg.traverse_grid_rgb(rgb, pix_pause_ms)
     await asyncio.sleep_ms(1000)
     await pg.traverse_grid_rgb(off, pix_pause_ms)
