@@ -38,7 +38,7 @@ class PixelStrip:
         self.driver = driver_
         self.n_pixels = n_pixels_
         # must initialise driver to match n_pixels
-        self.driver.set_pixels(n_pixels_)
+        self.driver.set_n_pixels(n_pixels_)
         self.arr = self.driver.arr
         self.encode_rgb = self.driver.encode_rgb
         self.write = self.driver.write

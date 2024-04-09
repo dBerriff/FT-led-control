@@ -5,8 +5,9 @@
     Ws2812
     Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
     WS2812 pixel words are coded as 32-bit GRBW with W = 0
-    W (white) byte is added by left-shift in PIO 'put'
+    W byte is added by left-shift in PIO 'put'
     - >= 50µs pause required between strip writes
+        -- suggest include asyncio.sleep_ms(1) as a minimum
 """
 
 import rp2
@@ -22,10 +23,10 @@ class Ws2812:
         See:
         - R Pi Pico C SDK: section 3.2.2
         - R Pi [Micro]Python SDK: section 3.9.2
-        - https://tutoduino.fr/en/pio-rp2040-en/ for pioasm code
+        - https://tutoduino.fr/en/pio-rp2040-en/ for PIO code
     """
 
-    GRB_SHIFT = const(8)  # shift 24-bit colour into 32-bit word
+    GRB_SHIFT = const(8)  # shift 24-bit GRB colour into 32-bit word
 
     @rp2.asm_pio(set_init=rp2.PIO.OUT_LOW,
                  out_init=rp2.PIO.OUT_LOW,
@@ -48,25 +49,24 @@ class Ws2812:
         self.arr = None
         self.cs = ColourSpace()
 
-    def set_pixels(self, n_pixels_):
-        """ allow for dynamic allocation of pixels
-            - start state machine once arr is initialised
+    def set_n_pixels(self, n_pixels_):
+        """
+            set number of strip-pixels
+            - set state machine active
         """
         self.n_pixels = n_pixels_
         self.arr = array.array('I', [0]*n_pixels_)
         self.sm.active(True)
 
     def write(self):
-        """ 'put' colour array into StateMachine Tx FIFO """
-        # shift moves rgb bits to MSB position
+        """
+            'put' colour array into StateMachine's Tx FIFO
+            - ws2812() has autopull set True
+        """
+        # shift moves GRB bytes to MSB position
         self.sm.put(self.arr, self.GRB_SHIFT)
 
     @staticmethod
     def encode_rgb(rgb_):
-        """ encode rgb as single 24-bit GRB word """
+        """ encode R,G,B as 24-bit GRB word """
         return (rgb_[1] << 16) + (rgb_[0] << 8) + rgb_[2]
-
-    @staticmethod
-    def encode_f(rgb_):
-        """ encode rgb[0...1.0] as single 24-bit GRB word """
-        return (int(rgb_[1] * 255) << 16) + (int(rgb_[0] * 255) << 8) + int(rgb_[2] * 255)

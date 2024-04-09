@@ -1,4 +1,3 @@
-
 # state_transition.py
 """ model ambient light state transitions """
 
@@ -17,10 +16,12 @@ class DayNightST:
         lighting State-Transition logic
         - dict stores event: transitions
         - add await to fade transitions for event to propagate
+        - vt instantiates [clock_]run_ev
+        - vt instantiates and sets change_state_ev
     """
 
     lcd_str = {
-        'blank': '  '.center(16),
+        'blank': ''.center(16),
         'state': 'State'.center(16),
         'off': 'off'.center(16),
         'day': 'day'.center(16),
@@ -28,30 +29,46 @@ class DayNightST:
         'clock': 'clock'.center(16)
     }
 
-    def __init__(self, cs, nps, vt, lcd_):
+    def __init__(self, cs, nps, vt, lcd_, **kwargs):
         self.cs = cs
         self.nps = nps
         self.vt = vt
         self.lcd = lcd_
         self.state = None
+        self.do_fade = asyncio.Event()
         # methods build dicts from user parameters 
         self.state_hsv = {}
         self.state_rgb = {}
         self.clock_s = {}
-        # clock_ev is set when in state 'clock'
-        self.clock_ev = asyncio.Event()
+
+        for arg in kwargs:
+            if arg == 'hsv':
+                self.build_state_colour_dicts(kwargs[arg])
+            elif arg == 'hm':
+                self.hm_dict = kwargs[arg]
 
         # state-transition logic
         # button-event: as key within a state; value is the transition method name
         self.transitions = {
-            'off': {'A1': self.set_day, 'B1': self.set_by_clock, 'U1': self.no_t},
-            'day': {'A1': self.set_night, 'B1': self.no_t, 'U1': self.set_off},
-            'night': {'A1': self.set_day, 'B1': self.no_t, 'U1': self.set_off},
+            'off': {'A1': self.set_day,
+                    'B1': self.set_by_clock,
+                    'U1': self.no_t},
+            'day': {'A1': self.set_night,
+                    'B1': self.no_t,
+                    'U1': self.set_off},
+            'night': {'A1': self.set_day,
+                      'B1': self.no_t,
+                      'U1': self.set_off},
             'clock': {'A1': self.no_t,
-                      'B1': self.no_t, 'B2': self.set_by_clock,
+                      'B1': self.no_t,
+                      'B2': self.set_by_clock,
                       'U1': self.set_off
                       }
         }
+
+        self.vt.init_clock(
+            self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
+        self.vt.run_ev.set()  # start the clock
 
     # set LED strip display state
     def build_state_colour_dicts(self, state_hsv_):
@@ -64,12 +81,6 @@ class DayNightST:
             self.state_hsv[key] = state_hsv_[key]
             self.state_rgb[key] = self.cs.rgb_g(self.cs.hsv_rgb(state_hsv_[key]))
 
-    def set_clock_s(self, clock_hm_):
-        """ set state RGB values from HSV values """
-        for hm in clock_hm_:
-            h_m_tokens = clock_hm_[hm].split(':')
-            self.clock_s[hm] = int(h_m_tokens[0]) * 3600 + int(h_m_tokens[1]) * 60
-
     def write_strip_by_state(self, state):
         """ set strip to state colour """
         self.nps.set_strip_rgb(self.state_rgb[state])
@@ -77,42 +88,45 @@ class DayNightST:
 
     # state-transition methods
 
-    def set_off(self):
-        """ set state """
-        self.clock_ev.clear()  # end fade task if running
-        self.vt.run_ev.clear()  # stop clock if running
+    async def set_off(self):
+        """ coro: set state 'off' """
         self.write_strip_by_state('off')
+        self.do_fade.clear()  # stop fade if running
+        await asyncio.sleep_ms(20)
         self.lcd.write_line(0, self.lcd_str['state'])
         self.lcd.write_line(1, self.lcd_str['off'])
         self.state = 'off'
 
-    def set_day(self):
-        """ set state """
+    async def set_day(self):
+        """ coro: set state 'day' """
         self.write_strip_by_state('day')
+        await asyncio.sleep_ms(20)
         self.lcd.write_line(0, self.lcd_str['state'])
         self.lcd.write_line(1, self.lcd_str['day'])
         self.state = 'day'
 
-    def set_night(self):
-        """ set state """
+    async def set_night(self):
+        """ coro: set state 'night' """
         self.write_strip_by_state('night')
+        await asyncio.sleep_ms(20)
         self.lcd.write_line(0, self.lcd_str['state'])
         self.lcd.write_line(1, self.lcd_str['night'])
         self.state = 'night'
 
-    def set_by_clock(self):
-        """ set state """
-        self.vt.start_ticks(self.clock_s['hm'],
-                            self.clock_s['dawn'],
-                            self.clock_s['dusk'])
+    async def set_by_clock(self):
+        """ coro: set state 'clock' """
+        # end possible existing task
+        self.do_fade.clear()
+        await asyncio.sleep_ms(200)
+        self.vt.init_clock(
+            self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
+        self.do_fade.set()
         asyncio.create_task(self.clock_transitions())
-        self.clock_ev.set()
-        self.lcd.write_line(0, self.lcd_str['blank'])
-        self.lcd.write_line(1, self.lcd_str['clock'])
         self.state = 'clock'
 
-    def no_t(self):
-        """ no transition """
+    async def no_t(self):
+        """ coro: no transition """
+        await asyncio.sleep_ms(20)
         return self.state
 
     # transition methods
@@ -121,22 +135,23 @@ class DayNightST:
         """ coro: invoke transition for state & button-press event """
         transitions = self.transitions[self.state]
         if btn_state in transitions:
-            transitions[btn_state]()  # invoke transition method
+            await transitions[btn_state]()  # invoke transition method
         await asyncio.sleep_ms(20)  # allow scheduler to run tasks
 
     async def clock_transitions(self):
         """ coro: set output by virtual clock time """
 
         async def fade(state_0, state_1):
-            """ coro: fade-and-hold single transition """
+            """ coro: fade transition """
 
             async def do_fade(state_0_, state_1_):
-                """ do the fade """
+                """ coro: do the fade """
                 h_0, s_0, v_0 = self.state_hsv[state_0_]
                 d_h = (self.state_hsv[state_1_][0] - h_0) / 100
                 d_s = (self.state_hsv[state_1_][1] - s_0) / 100
                 d_v = (self.state_hsv[state_1_][2] - v_0) / 100
-                for i in range(100):
+                i = 0
+                while i < 100 and self.do_fade.is_set():
                     rgb = self.cs.rgb_g(self.cs.hsv_rgb((h_0, s_0, v_0)))
                     self.nps.set_strip_rgb(rgb)
                     self.nps.write()
@@ -144,32 +159,44 @@ class DayNightST:
                     h_0 += d_h
                     s_0 += d_s
                     v_0 += d_v
+                    i += 1
                 # ensure target state is set
                 self.write_strip_by_state(state_1_)
                 await asyncio.sleep_ms(1)
 
+            # fade in 2 steps via red sunset/sunrise
+            print(f'Start fade from {state_0}')
             await do_fade(state_0, 'mid')
             await do_fade('mid', state_1)
+            print(f'End   fade from {state_0}')
 
+        # clock_transitions
         # clear any previous Event setting; initialise state
         self.vt.change_state_ev.clear()
-        self.write_strip_by_state(self.vt.state)
+        day_night_state = self.vt.state
+        self.write_strip_by_state(day_night_state)
+        await asyncio.sleep_ms(1)
         # fade rgb between states
-        while self.clock_ev.is_set():  # cleared if OFF pressed
-            initial_state = self.vt.state
+        while self.do_fade.is_set():  # cleared if OFF or restart pressed
             await self.vt.change_state_ev.wait()
-            if initial_state == 'day':
+            if day_night_state == 'day':
                 target_state = 'night'
             else:
                 target_state = 'day'
             # consumer must clear Event
             self.vt.change_state_ev.clear()
-            await fade(initial_state, target_state)
+            await fade(day_night_state, target_state)
             await asyncio.sleep_ms(20)
+            day_night_state = target_state
 
 
 async def main():
     """ coro: initialise then run tasks under asyncio scheduler """
+
+    async def holding_task():
+        """ coro: run forever """
+        while True:
+            await asyncio.sleep_ms(1_000)
 
     async def process_event(btn, system_):
         """ coro: passes button events to the system """
@@ -178,24 +205,24 @@ async def main():
             await system_.state_transition_logic(btn.state)
             btn.clear_state()
 
-    async def show_time(vt_, lcd_, clock_s_):
-        """ print virtual time every 1s in 'clock' state """
+    async def show_time(vt_, lcd_):
+        """ coro: print virtual time every 1s in 'clock' state """
         day_str = 'day'.center(16)
         night_str = 'night'.center(16)
-        day_s = clock_s_['dawn']
-        night_s = clock_s_['dusk']
+        day_marker = vt_.get_day_marker()
+        night_marker = vt_.get_night_marker()
         while True:
-            await system.clock_ev.wait()
-            s = vt_.get_day_s()
-            time_str = vt_.get_time_hm().center(16)
-            if day_s <= s < night_s:
-                p_str = day_str
-            else:
-                p_str = night_str
+            if system.state == 'clock':
+                s = vt_.get_clock_s()
+                time_str = vt_.get_time_hm().center(16)
+                if day_marker <= s < night_marker:
+                    p_str = day_str
+                else:
+                    p_str = night_str
 
-            lcd_.write_line(0, time_str)
-            lcd_.write_line(1, p_str)
-            gc.collect()
+                lcd_.write_line(0, time_str)
+                lcd_.write_line(1, p_str)
+                gc.collect()
             await asyncio.sleep_ms(1_000)
 
     # ====== parameters
@@ -204,11 +231,11 @@ async def main():
 
     # state colours as HSV
     state_hsv = {
-        'day': (240/360, 0.1, 0.95),
-        'night': (359/360, 0.0, 0.15),
-        'mid': (359/360, 1.0, 0.5),
+        'day': (240 / 360, 0.1, 0.95),
+        'night': (359 / 360, 0.0, 0.15),
+        'mid': (359 / 360, 1.0, 0.5),
         'off': (0.0, 0.0, 0.0)
-        }
+    }
 
     clock_hm = {'hm': '18:00', 'dawn': '06:00', 'dusk': '20:00'}
     clock_speed = 1200
@@ -223,21 +250,20 @@ async def main():
     buttons = board.buttons
     lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
     vt = VTime(s_inc=clock_speed)  # fast virtual clock
-    system = DayNightST(cs, nps, vt, lcd)
+    system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm)
     # initialise
     board.set_onboard((0, 15, 0))  # on
-    system.build_state_colour_dicts(state_hsv)
-    system.set_clock_s(clock_hm)
     lcd.initialise()  # show state when set
-    system.set_off()
+    await system.set_off()
     print('System initialised')
 
-    # create tasks to pass press_ev events to system
+    # create tasks respond to events
     for b in buttons:
         asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
-
-    await show_time(system.vt, lcd, system.clock_s)
+    asyncio.create_task(show_time(system.vt, lcd))
+    
+    await holding_task()
 
     system.set_off()
     await asyncio.sleep_ms(200)
