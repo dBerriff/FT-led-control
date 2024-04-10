@@ -11,21 +11,22 @@ class VTime:
         - include methods to handle day-night change of state
         - Event change_state_ev flags dawn or dusk
     """
-    S_IN_DAY = const(3600 * 24)
+    M_IN_DAY = const(60 * 24)
 
-    def __init__(self, s_inc):
-        self.s_inc = s_inc
-        self._vt_s = 0
+    def __init__(self, t_mpy):
+        self.m_interval = int(60_000 / t_mpy)
+        self._vt_m = 0
         self._dawn = 0
         self._dusk = 0
         self.state = None
         self.run_ev = asyncio.Event()
+        self.minute_ev = asyncio.Event()
         self.change_state_ev = asyncio.Event()
         asyncio.create_task(self.tick())
 
-    def get_clock_s(self):
+    def get_clock_m(self):
         """ return virtual seconds since midnight """
-        return self._vt_s
+        return self._vt_m
 
     def get_day_marker(self):
         """ return start of day """
@@ -37,31 +38,31 @@ class VTime:
 
     def get_time_hm(self):
         """ return virtual time as str 'hh:mm' """
-        return f'{self._vt_s // 3600:02d}:{self._vt_s // 60 % 60:02d}'
+        return f'{self._vt_m // 60:02d}:{self._vt_m % 60:02d}'
 
     async def tick(self):
         """ run virtual clock; update every RTC s """
-        inc = self.s_inc  # avoid repeated dict lookup
+        wait = self.m_interval  # avoid repeated dict lookup
         while True:
-            await asyncio.sleep_ms(1000)
-            await self.run_ev.wait()
-            self._vt_s += inc
-            self._vt_s %= self.S_IN_DAY
-            t = self._vt_s
-            if self._dawn <= t < self._dusk:
+            self.minute_ev.set()
+            if self._dawn <= self._vt_m < self._dusk:
                 state = 'day'
             else:
                 state = 'night'
             if state != self.state:
                 self.change_state_ev.set()
                 self.state = state
+            await asyncio.sleep_ms(wait)
+            await self.run_ev.wait()
+            self._vt_m += 1
+            self._vt_m %= self.M_IN_DAY
 
     def init_clock(self, start_time_hm_, sunrise_hm_, sunset_hm_):
         """ virtual clock """
-        self._vt_s = self.get_hm_s(start_time_hm_)
-        self._dawn = self.get_hm_s(sunrise_hm_)
-        self._dusk = self.get_hm_s(sunset_hm_)
-        if self._dawn <= self._vt_s < self._dusk:
+        self._vt_m = self.get_hm_m(start_time_hm_)
+        self._dawn = self.get_hm_m(sunrise_hm_)
+        self._dusk = self.get_hm_m(sunset_hm_)
+        if self._dawn <= self._vt_m < self._dusk:
             self.state = 'day'
         else:
             self.state = 'night'
@@ -70,10 +71,10 @@ class VTime:
         return f'{self.get_time_hm()} {self.state}  '
 
     @staticmethod
-    def get_hm_s(hm_):
-        """ convert time in hh:mm to seconds-since-midnight """
+    def get_hm_m(hm_):
+        """ convert time in hh:mm to minutes-since-midnight """
         h_m_tokens = hm_.split(':')
-        return int(h_m_tokens[0]) * 3600 + int(h_m_tokens[1]) * 60
+        return int(h_m_tokens[0]) * 60 + int(h_m_tokens[1])
 
 
 async def main():
@@ -82,8 +83,10 @@ async def main():
     async def show_time(vt_):
         """ print virtual time at set intervals """
         while True:
+            await vt_.minute_ev.wait()
+            vt_.minute_ev.clear()
             print(vt_, end='\r')
-            await asyncio.sleep_ms(1_000)
+            
 
     async def show_state(vt_):
         """ respond to and clear change-of-state Event """
@@ -92,7 +95,7 @@ async def main():
             print(f'Change state to: {vt_.state}')
             vt_.change_state_ev.clear()
 
-    vt = VTime(s_inc=720)
+    vt = VTime(t_mpy=1200)
     vt.init_clock('12:00', '06:00', '20:00')
     vt.run_ev.set()  # start the clock
     asyncio.create_task(show_time(vt))

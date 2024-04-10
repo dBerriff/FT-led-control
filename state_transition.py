@@ -35,12 +35,11 @@ class DayNightST:
         self.vt = vt
         self.lcd = lcd_
         self.state = None
-        self.do_fade = asyncio.Event()
+        self.fade_flag = False
+
         # methods build dicts from user parameters 
         self.state_hsv = {}
         self.state_rgb = {}
-        self.clock_s = {}
-
         for arg in kwargs:
             if arg == 'hsv':
                 self.build_state_colour_dicts(kwargs[arg])
@@ -66,6 +65,7 @@ class DayNightST:
                       }
         }
 
+        self.fade_pause = 40  # ms
         self.vt.init_clock(
             self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
         self.vt.run_ev.set()  # start the clock
@@ -91,8 +91,8 @@ class DayNightST:
     async def set_off(self):
         """ coro: set state 'off' """
         self.write_strip_by_state('off')
-        self.do_fade.clear()  # stop fade if running
-        await asyncio.sleep_ms(20)
+        self.fade_flag = False  # stop fade if running
+        await asyncio.sleep_ms(self.fade_pause + 10)
         self.lcd.write_line(0, self.lcd_str['state'])
         self.lcd.write_line(1, self.lcd_str['off'])
         self.state = 'off'
@@ -116,11 +116,11 @@ class DayNightST:
     async def set_by_clock(self):
         """ coro: set state 'clock' """
         # end possible existing task
-        self.do_fade.clear()
+        self.fade_flag = False
         await asyncio.sleep_ms(200)
         self.vt.init_clock(
             self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
-        self.do_fade.set()
+        self.fade_flag = True
         asyncio.create_task(self.clock_transitions())
         self.state = 'clock'
 
@@ -151,18 +151,19 @@ class DayNightST:
                 d_s = (self.state_hsv[state_1_][1] - s_0) / 100
                 d_v = (self.state_hsv[state_1_][2] - v_0) / 100
                 i = 0
-                while i < 100 and self.do_fade.is_set():
+                while i < 100 and self.fade_flag:
                     rgb = self.cs.rgb_g(self.cs.hsv_rgb((h_0, s_0, v_0)))
                     self.nps.set_strip_rgb(rgb)
                     self.nps.write()
-                    await asyncio.sleep_ms(40)
+                    await asyncio.sleep_ms(self.fade_pause)
                     h_0 += d_h
                     s_0 += d_s
                     v_0 += d_v
                     i += 1
                 # ensure target state is set
-                self.write_strip_by_state(state_1_)
-                await asyncio.sleep_ms(1)
+                if self.fade_flag:
+                    self.write_strip_by_state(state_1_)
+                    await asyncio.sleep_ms(1)
 
             # fade in 2 steps via red sunset/sunrise
             print(f'Start fade from {state_0}')
@@ -177,7 +178,7 @@ class DayNightST:
         self.write_strip_by_state(day_night_state)
         await asyncio.sleep_ms(1)
         # fade rgb between states
-        while self.do_fade.is_set():  # cleared if OFF or restart pressed
+        while self.fade_flag:  # cleared if OFF or restart pressed
             await self.vt.change_state_ev.wait()
             if day_night_state == 'day':
                 target_state = 'night'
@@ -212,10 +213,12 @@ async def main():
         day_marker = vt_.get_day_marker()
         night_marker = vt_.get_night_marker()
         while True:
+            await vt_.minute_ev.wait()
+            vt_.minute_ev.clear()
             if system.state == 'clock':
-                s = vt_.get_clock_s()
+                m = vt_.get_clock_m()
                 time_str = vt_.get_time_hm().center(16)
-                if day_marker <= s < night_marker:
+                if day_marker <= m < night_marker:
                     p_str = day_str
                 else:
                     p_str = night_str
@@ -223,7 +226,6 @@ async def main():
                 lcd_.write_line(0, time_str)
                 lcd_.write_line(1, p_str)
                 gc.collect()
-            await asyncio.sleep_ms(1_000)
 
     # ====== parameters
 
@@ -249,7 +251,7 @@ async def main():
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
     lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
-    vt = VTime(s_inc=clock_speed)  # fast virtual clock
+    vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm)
     # initialise
     board.set_onboard((0, 15, 0))  # on
