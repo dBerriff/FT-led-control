@@ -92,7 +92,7 @@ class ColourSpace:
     @staticmethod
     def hsv_rgb(hsv_):
         """
-            input: HSV: 3 x float [0.0...1.0]
+            input: H: float 0.0...360.0º; SV: float 0.0...1.0
             return: RGB
         """
         h, s = hsv_[0], hsv_[1]
@@ -102,7 +102,8 @@ class ColourSpace:
             return v, v, v
 
         # keep i in range(6)
-        if h == 1.0:
+        h = h / 360.0  # angle to 0.0 ... 1.0
+        if h >= 1.0:
             h = 0.0
         h_6 = h * 6.0  # 6 colour sectors
         i = int(h_6)
