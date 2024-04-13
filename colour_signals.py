@@ -1,4 +1,4 @@
-# railway.py
+# colour_signals.py
 """ model-railway related classes """
 
 from collections import namedtuple

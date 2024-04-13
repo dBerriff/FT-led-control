@@ -4,7 +4,7 @@ import asyncio
 import time
 from ws2812 import Ws2812Strip
 from colour_space import ColourSpace
-from railway import ThreeAspect, FourAspect
+from colour_signals import ThreeAspect, FourAspect
 
 
 async def set_4_aspect(nps_, pixel_, level_, delay):

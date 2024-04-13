@@ -1,4 +1,4 @@
-# bdf_file.py
+# parse_bdf.py
 """
     parse BDF font file and build pixel-lists for 8x8 grid
     - can be run as CPython or MicroPython script

@@ -4,11 +4,11 @@
 import asyncio
 import gc
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
-from ws2812 import Ws2812
-from pixel_strip import PixelStrip
-from v_time import VTime
 from lcd_1602 import Lcd1602
+from pixel_strip import PixelStrip
+from plasma_2040 import Plasma2040
+from v_time import VTime
+from ws2812 import Ws2812
 
 
 class DayNightST:
@@ -229,7 +229,7 @@ async def main():
 
     # ====== parameters
 
-    n_pixels = 30
+    n_pixels = 64
 
     # state colours as HSV
     state_hsv = {
