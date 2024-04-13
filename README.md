@@ -40,16 +40,18 @@ parse_bdf.py:
 - Will run on a desktop or the Pi Pico.
 
 pixel_strip.py: 
-- Core methods and values for setting a pixel strip. Imports the methods and values for specific strip microcontrollers.
+- Core methods and values for setting a pixel strip.
+Imports the methods and values for specific strip microcontrollers.
 
 pixel_strip_helper.py: 
 - Domain-specific methods for setting a pixel strip. Example: arc-welding effect.
 
 plasma_2040.py: 
-- Pimoroni Plasma 2040 board-specific method (set onboard LED) and values. This supports the specific on-board pin connections and the required method for setting the on-board tri-colour LED.
+- Pimoroni Plasma 2040 board-specific method and values.
+Supports on-board pin connections and the method for setting the on-board tri-colour LED.
 
 state_transition.py: 
-- The main pplication to set layout ambient lighting.
+- The main application to set layout ambient lighting.
 
 test scripts:
 - test_colour_signals.py
@@ -59,7 +61,8 @@ test scripts:
 - test_strip.py
 
 v_time.py: 
-- Methods and values to implement an independent time-of-day clock, usually sped up. Speed increase is achieved by dividing the number of virtual microseconds per actual second.
+- Methods and values to implement an independent time-of-day clock, usually sped up.
+Speed increase is achieved by dividing the number of virtual milliseconds per actual second.
 
 ws2812.py: 
 - Pixel-strip microcontroller-specific methods and values.
