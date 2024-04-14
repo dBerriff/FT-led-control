@@ -84,10 +84,12 @@ class DayNightST:
 
     async def set_off(self):
         """ coro: set state 'off' """
-        # end possible existing task
+        # end possible existing tasks
         self.end_fade = True
-        self.vt.change_state_ev.set()  # end any wait-for-event
-        await asyncio.sleep_ms(self.fade_pause * 2)
+        self.vt.change_state_ev.set()
+        await asyncio.sleep_ms(self.fade_pause)
+
+        self.vt.change_state_ev.clear()
         await self.write_strip_by_state('off')
         self.lcd.write_line(0, self.lcd_str_dict['state'])
         self.lcd.write_line(1, self.lcd_str_dict['off'])
@@ -109,10 +111,11 @@ class DayNightST:
 
     async def set_by_clock(self):
         """ coro: set state 'clock' """
-        # end possible existing task
+        # end possible existing tasks
         self.end_fade = True
-        self.vt.change_state_ev.set()  # end any wait-for-event
-        await asyncio.sleep_ms(self.fade_pause * 2)
+        self.vt.change_state_ev.set()
+        await asyncio.sleep_ms(self.fade_pause)
+
         self.vt.change_state_ev.clear()
         self.vt.init_clock(
             self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
@@ -122,7 +125,7 @@ class DayNightST:
 
     async def no_t(self):
         """ coro: no transition """
-        await asyncio.sleep_ms(20)
+        await asyncio.sleep_ms(1)
         return self.state
 
     # transition methods
@@ -132,7 +135,6 @@ class DayNightST:
         transitions = self.transitions[self.state]
         if btn_state in transitions:
             await transitions[btn_state]()  # invoke transition method
-        await asyncio.sleep_ms(20)  # allow scheduler to run tasks
 
     async def clock_transitions(self):
         """ coro: set output by virtual clock time """
@@ -201,6 +203,7 @@ async def main():
 
     async def show_time(vt_, lcd_, lcd_s):
         """ coro: print virtual time every 1s in 'clock' state """
+        line_len = const(16)
         day_marker = vt_.get_day_marker()
         night_marker = vt_.get_night_marker()
         while True:
@@ -208,7 +211,7 @@ async def main():
             vt_.minute_ev.clear()
             if system.state == 'clock':
                 m = vt_.get_clock_m()
-                time_str = vt_.get_time_hm().center(16)
+                time_str = vt_.get_time_hm().center(line_len)
                 if day_marker <= m < night_marker:
                     p_str = lcd_s['day']
                 else:
