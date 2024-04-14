@@ -17,16 +17,6 @@ class DayNightST:
         - dict stores: event: transitions
     """
 
-    # for 16-char lines
-    lcd_strings = {
-        'blank': ''.center(16),
-        'state': 'State'.center(16),
-        'off': 'off'.center(16),
-        'day': 'day'.center(16),
-        'night': 'night'.center(16),
-        'clock': 'clock'.center(16)
-    }
-
     def __init__(self, cs, nps, vt, lcd_, **kwargs):
         self.cs = cs
         self.nps = nps
@@ -34,15 +24,18 @@ class DayNightST:
         self.lcd = lcd_
         self.state = None
         self.end_fade = True
-
-        # methods build dicts from user parameters 
         self.state_hsv = {}
         self.state_rgb = {}
-        for arg in kwargs:
-            if arg == 'hsv':
-                self.build_state_colour_dicts(kwargs[arg])
-            elif arg == 'hm':
-                self.hm_dict = kwargs[arg]
+        if 'hsv' in kwargs:
+            self.build_state_colour_dicts(kwargs['hsv'])
+        if 'hm' in kwargs:
+            self.hm_dict = kwargs['hm']
+        else:
+            self.hm_dict = {}
+        if 'lcd_s' in kwargs:
+            self.lcd_str_dict = kwargs['lcd_s']
+        else:
+            self.lcd_str_dict = {}
 
         # state-transition logic
         # outer key: current state
@@ -96,22 +89,22 @@ class DayNightST:
         self.vt.change_state_ev.set()  # end any wait-for-event
         await asyncio.sleep_ms(self.fade_pause * 2)
         await self.write_strip_by_state('off')
-        self.lcd.write_line(0, self.lcd_strings['state'])
-        self.lcd.write_line(1, self.lcd_strings['off'])
+        self.lcd.write_line(0, self.lcd_str_dict['state'])
+        self.lcd.write_line(1, self.lcd_str_dict['off'])
         self.state = 'off'
 
     async def set_day(self):
         """ coro: set state 'day' """
         await self.write_strip_by_state('day')
-        self.lcd.write_line(0, self.lcd_strings['state'])
-        self.lcd.write_line(1, self.lcd_strings['day'])
+        self.lcd.write_line(0, self.lcd_str_dict['state'])
+        self.lcd.write_line(1, self.lcd_str_dict['day'])
         self.state = 'day'
 
     async def set_night(self):
         """ coro: set state 'night' """
         await self.write_strip_by_state('night')
-        self.lcd.write_line(0, self.lcd_strings['state'])
-        self.lcd.write_line(1, self.lcd_strings['night'])
+        self.lcd.write_line(0, self.lcd_str_dict['state'])
+        self.lcd.write_line(1, self.lcd_str_dict['night'])
         self.state = 'night'
 
     async def set_by_clock(self):
@@ -206,10 +199,8 @@ async def main():
             await system_.state_transition_logic(btn.state)
             btn.clear_state()
 
-    async def show_time(vt_, lcd_):
+    async def show_time(vt_, lcd_, lcd_s):
         """ coro: print virtual time every 1s in 'clock' state """
-        day_str = 'day'.center(16)
-        night_str = 'night'.center(16)
         day_marker = vt_.get_day_marker()
         night_marker = vt_.get_night_marker()
         while True:
@@ -219,9 +210,9 @@ async def main():
                 m = vt_.get_clock_m()
                 time_str = vt_.get_time_hm().center(16)
                 if day_marker <= m < night_marker:
-                    p_str = day_str
+                    p_str = lcd_s['day']
                 else:
-                    p_str = night_str
+                    p_str = lcd_s['night']
 
                 lcd_.write_line(0, time_str)
                 lcd_.write_line(1, p_str)
@@ -242,6 +233,16 @@ async def main():
     clock_hm = {'hm': '19:30', 'dawn': '06:00', 'dusk': '20:00'}
     clock_speed = 72
 
+    # for 16-char lines
+    lcd_strings = {
+        'blank': ''.center(16),
+        'state': 'State'.center(16),
+        'off': 'off'.center(16),
+        'day': 'day'.center(16),
+        'night': 'night'.center(16),
+        'clock': 'clock'.center(16)
+    }
+
     # ====== end-of-parameters
 
     # instantiate system objects
@@ -252,7 +253,7 @@ async def main():
     buttons = board.buttons
     lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
-    system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm)
+    system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
     # initialise
     board.set_onboard((0, 15, 0))  # on
     lcd.initialise()  # show state when set
@@ -263,7 +264,7 @@ async def main():
     for b in buttons:
         asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
         asyncio.create_task(process_event(buttons[b], system))  # respond to event
-    asyncio.create_task(show_time(system.vt, lcd))
+    asyncio.create_task(show_time(system.vt, lcd, lcd_strings))
     
     await holding_task()
 
