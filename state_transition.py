@@ -61,7 +61,6 @@ class DayNightST:
         self.fade_pause = 20 * vt.m_interval // self.fade_steps  # over 20 v min
         self.vt.init_clock(
             self.hm_dict['hm'], self.hm_dict['dawn'],  self.hm_dict['dusk'])
-        self.vt.run_ev.set()  # start the clock
 
     # set LED strip display state
     def build_state_colour_dicts(self, state_hsv_):
@@ -251,8 +250,8 @@ async def main():
     # instantiate system objects
     cs = ColourSpace()
     board = Plasma2040()
-    driver = Ws2812(board.DATA)
-    nps = PixelStrip(driver, n_pixels)
+    driver = Ws2812(board.DATA, n_pixels)
+    nps = PixelStrip(driver)
     buttons = board.buttons
     lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock

@@ -3,7 +3,7 @@
 
 from collections import namedtuple
 import asyncio
-from ws2812 import Ws2812Strip
+from ws2812 import Ws2812
 
 Lights = namedtuple('Lights', ('r', 'y1', 'g', 'y2'))
 

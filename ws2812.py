@@ -14,7 +14,6 @@ import rp2
 from machine import Pin
 import array
 from micropython import const
-from colour_space import ColourSpace
 
 
 class Ws2812:
@@ -24,6 +23,7 @@ class Ws2812:
         - R Pi Pico C SDK: section 3.2.2
         - R Pi [Micro]Python SDK: section 3.9.2
         - https://tutoduino.fr/en/pio-rp2040-en/ for PIO code
+        - n_pixels is set here so arr can be instantiated
     """
 
     GRB_SHIFT = const(8)  # shift 24-bit GRB colour into 32-bit word
@@ -43,28 +43,27 @@ class Ws2812:
     def __init__(self, pin):
         f_ = 5_000_000  # Hz
         self.pin = pin  # for trace/debug
-        self.sm = rp2.StateMachine(0, Ws2812.ws2812, freq=f_,
-                                   set_base=Pin(pin), out_base=Pin(pin))
-        self.n_pixels = 0  # set by calling method ???
+        self.n_pixels = None
         self.arr = None
-        self.cs = ColourSpace()  # ??? no longer used
+        self.sm = rp2.StateMachine(
+            0, Ws2812.ws2812, freq=f_, set_base=Pin(pin), out_base=Pin(pin))
 
-    def set_n_pixels(self, n_pixels_):  # start function instead?
-        """
-            set number of strip-pixels
-            - set state machine active
-        """
-        self.n_pixels = n_pixels_
-        self.arr = array.array('I', [0]*n_pixels_)
-        self.sm.active(True)  # ??? use start function?
+    def set_active(self, active=True):
+        """ set sm active """
+        self.sm.active(active)
 
     def write(self):
         """
             'put' colour array into StateMachine's Tx FIFO
-            - ws2812() has autopull set True
+            - shift moves GRB bytes to MSB position
+            - sm autopull set True
         """
-        # shift moves GRB bytes to MSB position
         self.sm.put(self.arr, self.GRB_SHIFT)
+
+    def set_n_pixels(self, n_pixels_):
+        """ set n_pixels and arr size """
+        self.n_pixels = n_pixels_
+        self.arr = array.array('I', [0]*n_pixels_)
 
     @staticmethod
     def encode_rgb(rgb_):

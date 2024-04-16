@@ -37,8 +37,8 @@ class PixelStrip:
     def __init__(self, driver_, n_pixels_):
         self.driver = driver_
         self.n_pixels = n_pixels_
-        # must initialise driver to match n_pixels
         self.driver.set_n_pixels(n_pixels_)
+        self.driver.set_active()
         self.arr = self.driver.arr
         self.encode_rgb = self.driver.encode_rgb
         self.write = self.driver.write
@@ -57,6 +57,13 @@ class PixelStrip:
     def __getitem__(self, index):
         """ get array item """
         return self.arr[index]
+
+    def clear_strip(self):
+        """ set all pixels off """
+        arr = self.arr
+        for i in range(self.n_pixels):
+            arr[i] = 0
+        self.write()
 
     def set_pixel(self, index, colour_u24):
         """ set single pixel to 24-bit RGB
@@ -84,12 +91,6 @@ class PixelStrip:
         arr = self.arr
         for i in index_list_:
             arr[i] = colour_u24
-
-    def clear_strip(self):
-        """ set all pixels off """
-        arr = self.arr
-        for i in range(self.n_pixels):
-            arr[i] = 0
 
     def set_pixel_rgb(self, index, rgb_):
         """ set pixel by RGB tuple """
@@ -124,14 +125,13 @@ class Grid(PixelStrip):
         return retrieved
 
     def __init__(self, driver_, n_cols_, n_rows_, charset_file):
-        self.n_pixels = n_cols_ * n_rows_
-        super().__init__(driver_, self.n_pixels)
-        # character set as pixel-index lists
-        self.charset = self.get_char_indices(charset_file)
+        super().__init__(driver_, n_cols_ * n_rows_)
+        self.driver = driver_
         self.n_cols = n_cols_
         self.n_rows = n_rows_
-        self.max_col = n_cols_ - 1
-        self.max_row = n_rows_ - 1
+        self.charset = self.get_char_indices(charset_file)
+        self.max_col = self.n_cols - 1
+        self.max_row = self.n_rows - 1
         # dict for (cols, rows) to pixel-index conversion
         self.coord_index = self.build_c_i_dict()
 
@@ -270,19 +270,20 @@ class Grid(PixelStrip):
 
 
 class BlockGrid(Grid):
-    """ extend Grid to support block-to-block left shift
-        - right-hand virtual block added for char shift-in
+    """ !!! not yet functional
+        extend Grid to support block-to-block left shift
         - this version assumes horizontal blocks
+        - optional: include a virtual right-hand block for char shift-in
     """
 
-    BLOCK_SIZE = 8
-
-    def __init__(self, driver_, n_cols_, n_rows_, charset_file):
-        # add virtual block to end of grid
-        self.n_cols = n_cols_ + self.BLOCK_SIZE
-        super().__init__(driver_, self.n_cols, n_rows_, charset_file)
+    def __init__(self, driver_, n_b_cols, n_b_rows, n_blocks, charset_file):
+        self.block_cols = n_b_cols
+        self.n_cols = n_b_cols * n_blocks
+        self.n_rows = n_b_rows
+        self.n_blocks = n_blocks
+        super().__init__(driver_, self.n_cols, self.n_rows, charset_file)
         # attributes for block-shift algorithm
-        self.block_pixels = self.BLOCK_SIZE * self.BLOCK_SIZE
+        self.block_pixels = n_b_cols * n_b_rows
         self.seg_len = self.n_rows
         self.max_seg_index = (self.n_cols - 1) * self.seg_len
         self.shift_offset = 2 * self.n_rows - 1
@@ -299,7 +300,7 @@ class BlockGrid(Grid):
             - shift_offset is for adjacent block-cols segments
             - shift array values direct: avoid decode/encode
         """
-        for _ in range(self.BLOCK_SIZE):  # shift left by block columns
+        for _ in range(self.block_cols):  # shift left by block columns
             for col_index in range(0, self.max_seg_index, self.n_rows):
                 offset = self.shift_offset
                 while offset > 0:

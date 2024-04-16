@@ -2,7 +2,7 @@
 
 import asyncio
 import time
-from ws2812 import Ws2812Strip
+from ws2812 import Ws2812
 from colour_space import ColourSpace
 from colour_signals import ThreeAspect, FourAspect
 
@@ -33,7 +33,7 @@ async def main():
 
     pin_number = 15
     n_pixels = 30
-    nps = Ws2812Strip(pin_number, n_pixels)
+    nps = Ws2812(pin_number, n_pixels)
     cs = ColourSpace()
 
     asyncio.create_task(set_4_aspect(nps, 0, 128, 4_000))

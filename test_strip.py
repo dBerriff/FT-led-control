@@ -16,12 +16,14 @@ from pixel_strip_helper import colour_chase, two_flash
 def time_set_strip(nps_, rgb_):
     """ test and time fill-strip method """
     rgb = rgb_
-    c_time = time.ticks_us()
+    t_0 = time.ticks_us()
     nps_.set_strip_rgb(rgb)
-    print(f'Time to fill: {time.ticks_diff(time.ticks_us(), c_time):,}us')
-    c_time = time.ticks_us()
+    t_1 = time.ticks_us()
+    print(f'Time to fill: {time.ticks_diff(t_1, t_0):,}us')
+    t_0 = time.ticks_us()
     nps_.write()
-    print(f'Time to write: {time.ticks_diff(time.ticks_us(), c_time):,}us')
+    t_1 = time.ticks_us()
+    print(f'Time to write: {time.ticks_diff(t_1, t_0):,}us')
 
 
 async def main():
@@ -29,10 +31,9 @@ async def main():
 
     n_pixels = 30
     # set board and strip chipset methods
+    cs = ColourSpace()
     board = Plasma2040()
     driver = Ws2812(board.DATA)
-    # ps = PixelStrip(driver, n_pixels)
-    cs = ColourSpace()
     nps = PixelStrip(driver, n_pixels)
 
     test_rgb = cs.rgb_lg('orange', 100)
@@ -40,80 +41,40 @@ async def main():
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
     level = 128
+    cs = ColourSpace()
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    nps = PixelStrip(driver, n_pixels)
 
-    print('Time strip fill and write')
     time_set_strip(nps, test_rgb)
-    await asyncio.sleep_ms(5_000)
+    time.sleep_ms(1000)
     nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
+    time.sleep_ms(500)
 
-    print('Set single pixel')
     nps.set_pixel_rgb(0, test_rgb)
     nps.write()
-    await asyncio.sleep_ms(5_000)
+    time.sleep_ms(1000)
     nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
+    time.sleep_ms(500)
 
-    print('Set strip')
     nps.set_strip_rgb(test_rgb)
     nps.write()
-    await asyncio.sleep_ms(5_000)
+    time.sleep_ms(1000)
     nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
+    time.sleep_ms(500)
 
-    print('Set range')
-    nps.set_range_rgb(8, 8, test_rgb)
+    nps.set_range_rgb(16, 8, test_rgb)
     nps.write()
-    await asyncio.sleep_ms(5_000)
+    time.sleep_ms(1000)
     nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
+    time.sleep_ms(500)
 
-    print('Set list')
-    nps.set_list_rgb((0, 2, 4, 6), test_rgb)
+    i_list = range(0, 30, 3)
+    nps.set_list_rgb(i_list, test_rgb)
     nps.write()
-    await asyncio.sleep_ms(5_000)
+    time.sleep_ms(5000)
     nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
-
-    print('Set colour chase')
-    ev = asyncio.Event()
-    ev.set()
-    asyncio.create_task(colour_chase(nps, list_rgb, ev, 20))
-    await asyncio.sleep_ms(10_000)
-    print('Clear colour chase ev')
-    ev.clear()
-    await asyncio.sleep_ms(20)
-    nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(5_000)
-
-    print('Set twin pixel flash: red')
-    test_rgb = cs.rgb_lg('red', level)
-    # asyncio Event controls flashing
-    do_flash = asyncio.Event()
-    asyncio.create_task(two_flash(nps, 0, test_rgb, do_flash))
-    print('Wait for it...')
-    await asyncio.sleep_ms(2_000)
-    print('Now!')
-    
-    # set the flag
-    do_flash.set()
-    await asyncio.sleep_ms(5_000)
-    do_flash.clear()
-    print('Wait for more...')
-    await asyncio.sleep_ms(3_000)
-    print('Now!')
-    
-    # set the flag
-    do_flash.set()
-    await asyncio.sleep_ms(5_000)
-    do_flash.clear()
-    await asyncio.sleep_ms(200)
+    time.sleep_ms(500)
 
 
 if __name__ == '__main__':

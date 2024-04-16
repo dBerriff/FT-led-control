@@ -14,15 +14,13 @@ from pixel_strip import Grid, BlockGrid
 
 async def main():
     """ coro: test WS1802 grid methods """
-    n_cols = 8
-    n_rows = 8
+    grid_cols = 8
+    grid_rows = 8
     # set board and strip chipset methods
+    cs = ColourSpace()
     board = Plasma2040()
     driver = Ws2812(board.DATA)
-    # ps = PixelStrip(driver, n_pixels)
-    cs = ColourSpace()
-    pg = Grid(
-        driver, n_cols, n_rows, charset_file='5x7.json')
+    pg = Grid(driver, grid_cols, grid_rows, '5x7.json')
     off = (0, 0, 0)
     level = 64
 
@@ -34,10 +32,11 @@ async def main():
 
     rgb = cs.rgb_lg('dark_orange', level)
 
-    # fill_ functions have implicit write; set_ functions do not
-    # fill grid with single clr_word
-    
     pix_pause_ms = 20
+    colour = colour_list[random.randrange(cl_len)]
+    print(colour)
+    rgb = cs.rgb_lg(colour, level)
+
 
     print('fill pixels as strip')
     await pg.traverse_strip_rgb(rgb, pix_pause_ms)
@@ -96,21 +95,6 @@ async def main():
     await pg.display_string_rgb('3210', rgb)
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
-
-    # re-initialise as BlockGrid
-    n_cols = 8
-    n_rows = 8
-    # set board and strip chipset methods
-    board = Plasma2040()
-    driver = Ws2812(board.DATA)
-    # ps = PixelStrip(driver, n_pixels)
-    pg = BlockGrid(
-        driver, n_cols, n_rows, charset_file='5x7.json')
-    await pg.shift_string_rgb(' Famous Trains Derby ', rgb)
-    await asyncio.sleep_ms(1000)
-    pg.clear_strip()
-    pg.write()
-    await asyncio.sleep_ms(20)
 
 
 if __name__ == '__main__':

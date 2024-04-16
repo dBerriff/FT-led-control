@@ -22,10 +22,10 @@ async def main():
 
     n_pixels = 30
     # set board and strip chipset methods
-    board = Plasma2040()
-    driver = Ws2812(board.DATA)
-    nps = PixelStrip(driver, n_pixels)
     cs = ColourSpace()
+    board = Plasma2040()
+    driver = Ws2812(board.DATA, n_pixels)
+    nps = PixelStrip(driver)
 
     """
     for _ in range(2):
