@@ -45,18 +45,18 @@ class Ws2812:
         self.pin = pin  # for trace/debug
         self.sm = rp2.StateMachine(0, Ws2812.ws2812, freq=f_,
                                    set_base=Pin(pin), out_base=Pin(pin))
-        self.n_pixels = 0  # set by calling method
+        self.n_pixels = 0  # set by calling method ???
         self.arr = None
-        self.cs = ColourSpace()
+        self.cs = ColourSpace()  # ??? no longer used
 
-    def set_n_pixels(self, n_pixels_):
+    def set_n_pixels(self, n_pixels_):  # start function instead?
         """
             set number of strip-pixels
             - set state machine active
         """
         self.n_pixels = n_pixels_
         self.arr = array.array('I', [0]*n_pixels_)
-        self.sm.active(True)
+        self.sm.active(True)  # ??? use start function?
 
     def write(self):
         """
