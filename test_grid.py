@@ -9,7 +9,7 @@ import random
 from colour_space import ColourSpace
 from plasma_2040 import Plasma2040
 from ws2812 import Ws2812
-from pixel_strip import Grid, BlockGrid
+from pixel_strip import Grid
 
 
 async def main():
@@ -30,13 +30,10 @@ async def main():
                    'teal', 'white', 'yellow']
     cl_len = len(colour_list)
 
-    rgb = cs.rgb_lg('dark_orange', level)
-
     pix_pause_ms = 20
     colour = colour_list[random.randrange(cl_len)]
     print(colour)
     rgb = cs.rgb_lg(colour, level)
-
 
     print('fill pixels as strip')
     await pg.traverse_strip_rgb(rgb, pix_pause_ms)

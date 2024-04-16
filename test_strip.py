@@ -8,7 +8,6 @@ from colour_space import ColourSpace
 from plasma_2040 import Plasma2040
 from ws2812 import Ws2812
 from pixel_strip import PixelStrip
-from pixel_strip_helper import colour_chase, two_flash
 
 
 # helper functions
@@ -32,16 +31,11 @@ async def main():
     n_pixels = 30
     # set board and strip chipset methods
     cs = ColourSpace()
-    board = Plasma2040()
-    driver = Ws2812(board.DATA)
-    nps = PixelStrip(driver, n_pixels)
-
     test_rgb = cs.rgb_lg('orange', 100)
     list_rgb = [cs.rgb_lg('blue', 192),
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
-    level = 128
-    cs = ColourSpace()
+
     board = Plasma2040()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)

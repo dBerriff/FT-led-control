@@ -250,8 +250,8 @@ async def main():
     # instantiate system objects
     cs = ColourSpace()
     board = Plasma2040()
-    driver = Ws2812(board.DATA, n_pixels)
-    nps = PixelStrip(driver)
+    driver = Ws2812(board.DATA)
+    nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
     lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock

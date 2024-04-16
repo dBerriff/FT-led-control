@@ -24,8 +24,8 @@ async def main():
     # set board and strip chipset methods
     cs = ColourSpace()
     board = Plasma2040()
-    driver = Ws2812(board.DATA, n_pixels)
-    nps = PixelStrip(driver)
+    driver = Ws2812(board.DATA)
+    nps = PixelStrip(driver, n_pixels)
 
     """
     for _ in range(2):
@@ -57,6 +57,7 @@ async def main():
     s_delta = 0.8
     v_init = 0.95
     v_delta = -0.50
+    v = 0.0
     # work in RGB for analysis
     for p in range(101):
         h = h_init + p * h_delta / 100.0

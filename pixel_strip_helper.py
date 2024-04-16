@@ -71,7 +71,8 @@ async def colour_chase(nps, rgb_list, play_ev, pause=20):
     index = 0
     # <% n_pixels> arithmetic is slow but straightforward
     while play_ev.is_set():
-        for i in range(n_colours): nps[(index + i) % n_pixels] = grb_list[i]
+        for i in range(n_colours):
+            nps[(index + i) % n_pixels] = grb_list[i]
         nps.write()
         await asyncio.sleep_ms(pause)
         nps[index] = 0
