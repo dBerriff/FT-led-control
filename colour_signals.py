@@ -35,6 +35,10 @@ class ColourSignal:
                 aspect = self.aspect_codes['red']
         return int(aspect)
 
+    def set_aspect(self, aspect):
+        """ for sub-class methods """
+        return
+
     def set_by_blocks_clear(self, blocks_clr):
         """ set aspect by n blocks clear """
         self.set_aspect(blocks_clr)
