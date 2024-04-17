@@ -1,5 +1,5 @@
 # colour_signals.py
-""" model-railway related classes """
+""" 3- and 4-aspect colour signals """
 
 import asyncio
 from colour_space import ColourSpace
