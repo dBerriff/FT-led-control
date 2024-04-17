@@ -1,5 +1,5 @@
 # colour_signals.py
-""" 3- and 4-aspect colour signals """
+""" 3- and 4-aspect UK railway colour signals """
 
 import asyncio
 from colour_space import ColourSpace
@@ -9,7 +9,10 @@ from pixel_strip import PixelStrip
 
 
 class ColourSignal:
-    """ model railway pixel-strip signals """
+    """ model railway pixel-strip colour signals
+        - aspect-codes set by name or integer
+        - simplistic block-occupancy model
+    """
 
     aspect_codes = {
         'stop': 0, 'danger': 0, 'red': 0,
@@ -30,7 +33,7 @@ class ColourSignal:
                 aspect = self.aspect_codes[aspect]
             else:
                 aspect = self.aspect_codes['red']
-        return aspect
+        return int(aspect)
 
 
 class FourAspect(ColourSignal):
@@ -45,6 +48,8 @@ class FourAspect(ColourSignal):
         3: (0, 0, 1, 0)
         }
 
+    MAX_ASPECT = 3
+
     def __init__(self, nps_, pixel_, clrs_):
         super().__init__(nps_, pixel_, clrs_)
         self.colours = (
@@ -53,7 +58,7 @@ class FourAspect(ColourSignal):
 
     def set_aspect(self, aspect):
         """ set signal aspect by aspect key or number """
-        aspect = min(self.aspect_as_int(aspect), 3)
+        aspect = min(self.aspect_as_int(aspect), self.MAX_ASPECT)
         s_config = self.aspect_states[aspect]
         for i, state in enumerate(s_config):
             pixel = self.base_pixel + i
@@ -77,6 +82,8 @@ class ThreeAspect(ColourSignal):
         2: (0, 0, 1)
         }
 
+    MAX_ASPECT = 2
+
     def __init__(self, nps_, pixel_, clrs_):
         super().__init__(nps_, pixel_, clrs_)
         self.colours = (
@@ -85,7 +92,7 @@ class ThreeAspect(ColourSignal):
 
     def set_aspect(self, aspect):
         """ set signal aspect by aspect key or number """
-        aspect = min(self.aspect_as_int(aspect), 2)
+        aspect = min(self.aspect_as_int(aspect), self.MAX_ASPECT)
         s_config = self.aspect_states[aspect]
         for i, state in enumerate(s_config):
             pixel = self.base_pixel + i
