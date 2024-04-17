@@ -35,6 +35,10 @@ class ColourSignal:
                 aspect = self.aspect_codes['red']
         return int(aspect)
 
+    def set_by_blocks_clear(self, blocks_clr):
+        """ set aspect by n blocks clear """
+        self.set_aspect(blocks_clr)
+
 
 class FourAspect(ColourSignal):
     """ model UK 4-aspect colour signal
@@ -66,11 +70,6 @@ class FourAspect(ColourSignal):
             self.nps[pixel] = self.colours[i] if p_state else 0
         self.nps.write()
 
-    def set_by_blocks_clear(self, blocks_clr):
-        """ set aspect by n blocks clear """
-        self.set_aspect(blocks_clr)
-
-
 class ThreeAspect(ColourSignal):
     """ model UK 3-aspect colour signal
         - bottom to top: red-yellow-green-yellow
@@ -99,10 +98,6 @@ class ThreeAspect(ColourSignal):
             p_state = s_config[i]
             self.nps[pixel] = self.colours[i] if p_state else 0
         self.nps.write()
-
-    def set_by_blocks_clear(self, blocks_clr):
-        """ set aspect by n blocks clear """
-        self.set_aspect(blocks_clr)
 
 
 async def main():
