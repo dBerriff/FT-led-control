@@ -1,48 +1,54 @@
 # test_4_aspect.py
 
 import asyncio
-import time
-from ws2812 import Ws2812
 from colour_space import ColourSpace
-from colour_signals import ThreeAspect, FourAspect
+from plasma_2040 import Plasma2040
+from ws2812 import Ws2812
+from pixel_strip import PixelStrip
+from colour_signals import ThreeAspect, FourAspect, encode_sig_colours
 
-
-async def set_4_aspect(nps_, pixel_, level_, delay):
-    """ """
-    f_aspect = FourAspect(nps_, pixel_, level_)
-    print(f_aspect)
-    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
-        print(f'at pixel: {pixel_}; blocks clear: {bc}')
-        f_aspect.set_by_blocks_clear(bc)
-        await asyncio.sleep_ms(delay)
-    await asyncio.sleep_ms(2_000)
-    
-
-async def set_3_aspect(nps_, pixel_, level_, delay):
-    """ """
-    f_aspect = ThreeAspect(nps_, pixel_, level_)
-    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
-        print(f'at pixel: {pixel_}; blocks clear: {bc}')
-        f_aspect.set_by_blocks_clear(bc)
-        await asyncio.sleep_ms(delay)
-    await asyncio.sleep_ms(2_000)
-    
 
 async def main():
-    """ coro: test NeoPixel strip helper functions """
-
-    pin_number = 15
-    n_pixels = 30
-    nps = Ws2812(pin_number, n_pixels)
-    cs = ColourSpace()
-
-    asyncio.create_task(set_4_aspect(nps, 0, 128, 4_000))
-    await set_3_aspect(nps, 8, 128, 5_000)
+    """ coro: test NeoPixel strip helper functions
+        - ColourSignal classes do not include coros
+    """
     
-    nps.clear_strip()
-    nps.write()
-    await asyncio.sleep_ms(200)
+    async def signal_4_aspect(pixel):
+        """ test 4-aspect signal """
+        four_aspect = FourAspect(nps, pixel, sig_colours)
+        print(four_aspect)
+        for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
+            print(f'pixel: {pixel}; blocks clear: {bc}')
+            four_aspect.set_by_blocks_clear(bc)
+            await asyncio.sleep_ms(5000)  # arbitrary
+        nps.clear_strip()
+        await asyncio.sleep_ms(1)
 
+    async def signal_3_aspect(pixel):
+        """ test 3-aspect signal """
+        three_aspect = ThreeAspect(nps, pixel, sig_colours)
+        print(three_aspect)
+        for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
+            print(f'pixel: {pixel}; blocks clear: {bc}')
+            three_aspect.set_by_blocks_clear(bc)
+            await asyncio.sleep_ms(5000)  # arbitrary
+        nps.clear_strip()
+        await asyncio.sleep_ms(1)
+
+    n_pixels = 30
+    cs = ColourSpace()
+    board = Plasma2040()
+    driver = Ws2812(board.DATA)
+    nps = PixelStrip(driver, n_pixels)
+
+    level = 128
+    signal_ryg = ((255, 0, 0), (207, 191, 0), (0, 255, 0))
+    sig_colours = encode_sig_colours(signal_ryg, cs, driver, level)
+
+    asyncio.create_task(signal_4_aspect(0))
+    asyncio.create_task(signal_3_aspect(5))
+    
+    await asyncio.sleep(60)
 
 if __name__ == '__main__':
     try:

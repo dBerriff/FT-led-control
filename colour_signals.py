@@ -2,14 +2,20 @@
 """ 3- and 4-aspect UK railway colour signals """
 
 import asyncio
-from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
-from ws2812 import Ws2812
-from pixel_strip import PixelStrip
+
+
+def encode_sig_colours(r_y_g, cs_, driver_, level_):
+    """"""
+    # encode signal colours for driver_
+    r = driver_.encode_rgb(cs_.rgb_lg(r_y_g[0], level_))
+    y = driver_.encode_rgb(cs_.rgb_lg(r_y_g[1], level_))
+    g = driver_.encode_rgb(cs_.rgb_lg(r_y_g[2], level_))
+    return {'red': r, 'yellow': y, 'green': g}
 
 
 class ColourSignal:
     """ model railway pixel-strip colour signals
+        abstract base class
         - aspect-codes set by name or integer
         - simplistic block-occupancy model
     """
@@ -36,12 +42,12 @@ class ColourSignal:
         return int(aspect)
 
     def set_aspect(self, aspect):
-        """ for sub-class methods """
+        """ for subclass methods """
         return
 
-    def set_by_blocks_clear(self, blocks_clr):
-        """ set aspect by n blocks clear """
-        self.set_aspect(blocks_clr)
+    def set_by_blocks_clear(self, n_blocks_clr):
+        """ set aspect by number of blocks clear """
+        self.set_aspect(n_blocks_clr)
 
 
 class FourAspect(ColourSignal):
@@ -69,10 +75,9 @@ class FourAspect(ColourSignal):
         aspect = min(self.aspect_as_int(aspect), self.MAX_ASPECT)
         s_config = self.aspect_states[aspect]
         for i, state in enumerate(s_config):
-            pixel = self.base_pixel + i
-            p_state = s_config[i]
-            self.nps[pixel] = self.colours[i] if p_state else 0
+            self.nps[self.base_pixel + i] = self.colours[i] if s_config[i] else 0
         self.nps.write()
+
 
 class ThreeAspect(ColourSignal):
     """ model UK 3-aspect colour signal
@@ -98,49 +103,13 @@ class ThreeAspect(ColourSignal):
         aspect = min(self.aspect_as_int(aspect), self.MAX_ASPECT)
         s_config = self.aspect_states[aspect]
         for i, state in enumerate(s_config):
-            pixel = self.base_pixel + i
-            p_state = s_config[i]
-            self.nps[pixel] = self.colours[i] if p_state else 0
+            self.nps[self.base_pixel + i] = self.colours[i] if s_config[i] else 0
         self.nps.write()
 
 
 async def main():
-    """ coro: test NeoPixel strip helper functions
-        - ColourSignal classes do not include coros
-    """
-    n_pixels = 30
-    cs = ColourSpace()
-    board = Plasma2040()
-    driver = Ws2812(board.DATA)
-    nps = PixelStrip(driver, n_pixels)
-
-    level = 128
-    # encode colours as 24-bit word
-    red = driver.encode_rgb(cs.rgb_lg((255, 0, 0), level))
-    yellow = driver.encode_rgb(cs.rgb_lg((255, 255, 0), level))
-    green = driver.encode_rgb(cs.rgb_lg((0, 255, 0), level))
-    colours = {'red': red, 'yellow': yellow, 'green': green}
-
-    pixel = 0
-    four_aspect = FourAspect(nps, pixel, colours)
-    print(four_aspect)
-    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
-        print(f'at pixel: {pixel}; blocks clear: {bc}')
-        four_aspect.set_by_blocks_clear(bc)
-        await asyncio.sleep_ms(1000)
-    nps.clear_strip()
-    await asyncio.sleep_ms(1000)
-
-    pixel = 5
-    three_aspect = ThreeAspect(nps, pixel, colours)
-    print(three_aspect)
-    for bc in [0, 1, 2, 3, 4, 3, 2, 1, 0]:
-        print(f'at pixel: {pixel}; blocks clear: {bc}')
-        three_aspect.set_by_blocks_clear(bc)
-        await asyncio.sleep_ms(1000)
-    nps.clear_strip()
-    await asyncio.sleep_ms(500)
-
+    """ """
+    return
 
 if __name__ == '__main__':
     try:
