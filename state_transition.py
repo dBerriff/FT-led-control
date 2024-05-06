@@ -151,7 +151,7 @@ class DayNightST:
                 i = 0
                 while i < steps:
                     if self.end_fade:
-                        return
+                        break
                     rgb = self.cs.rgb_g(self.cs.hsv_rgb((h_0, s_0, v_0)))
                     self.nps.set_strip_rgb(rgb)
                     self.nps.write()
@@ -176,7 +176,7 @@ class DayNightST:
             await self.vt.change_state_ev.wait()
             self.vt.change_state_ev.clear()
             if self.end_fade:
-                return
+                break
             if day_night == 'day':
                 target_state = 'night'
             else:
@@ -218,7 +218,7 @@ async def main():
 
                 lcd_.write_line(0, time_str)
                 lcd_.write_line(1, p_str)
-                gc.collect()
+                gc.collect()  # garbage collection
 
     # ====== parameters
 
