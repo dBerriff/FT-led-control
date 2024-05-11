@@ -6,7 +6,7 @@ import gc
 from colour_space import ColourSpace
 from lcd_1602 import Lcd1602
 from pixel_strip import PixelStrip
-from plasma_2040 import Plasma2040
+from dh_2040 import Plasma2040
 from v_time import VTime
 from ws2812 import Ws2812
 
@@ -125,7 +125,7 @@ class DayNightST:
     async def no_t(self):
         """ coro: no transition """
         await asyncio.sleep_ms(1)
-        return self.state
+        # no change in state
 
     # transition methods
 
@@ -253,11 +253,11 @@ async def main():
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = Lcd1602(20, 21)  # Plasma 2040 I2C pin-outs
+    lcd = Lcd1602(sda_=20, scl_=21)  # Plasma 2040 I2C pin-outs
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
     # initialise
-    board.set_onboard((0, 15, 0))  # on
+    # board.set_onboard((0, 15, 0))  # on
     lcd.initialise()  # show state when set
     await system.set_off()
     print('System initialised')
