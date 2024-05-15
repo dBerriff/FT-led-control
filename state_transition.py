@@ -122,7 +122,8 @@ class DayNightST:
         asyncio.create_task(self.clock_transitions())
         self.state = 'clock'
 
-    async def no_t(self):
+    @staticmethod
+    async def no_t():
         """ coro: no transition """
         await asyncio.sleep_ms(1)
         # no change in state
@@ -222,7 +223,7 @@ async def main():
 
     # ====== parameters
 
-    n_pixels = 30
+    n_pixels = 64
 
     # state colours as HSV
     state_hsv = {
@@ -253,7 +254,7 @@ async def main():
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=10000,
+    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=board.FREQ,
                  num_rows=2, num_cols=16)
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)

@@ -22,7 +22,7 @@ class Dh2040:
         - hardwired GPIO pins (see schematic and constants below):
             -- SW_A, SW_B, SW_U: user buttons
             -- CLK, DATA: LED strip (WS2812) (clock) and data
-            -- LCD_SCL, LCD_SDA: LCD display I2C clock and data
+            -- LCD_SCL, LCD_SDA: LCD for I2C clock and data
     """
     # Plasma 2040 GPIO pins
     SW_A = const(10)  # 10
@@ -36,6 +36,7 @@ class Dh2040:
     # LCD pins
     LCD_SDA = const(2)
     LCD_SCL = const(3)
+    FREQ = 10_000
 
     def __init__(self):
         self.buttons = {'A': Button(self.SW_A, 'A'),

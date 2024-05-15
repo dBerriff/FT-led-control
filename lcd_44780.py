@@ -2,7 +2,7 @@
 
 from micropython import const
 from machine import Pin, I2C
-import time
+from time import sleep, sleep_ms
 
 
 class LcdApi:
@@ -45,6 +45,8 @@ class LcdApi:
     LCD_RW_READ = const(1)
 
 # ===
+
+    i2c_addr = const(39)  # I2C Address
     # PCF8574 pin definitions
     MASK_RS = const(0x01)  # P0
     MASK_RW = const(0x02)  # P1
@@ -56,19 +58,24 @@ class LcdApi:
     def __init__(self, scl, sda, f, num_rows, num_cols):
         i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
         self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=f)
-        self.i2c_addr = self.i2c.scan()[0]
-        self.i2c.writeto(self.i2c_addr, bytes([0]))
-        time.sleep_ms(20)   # Allow LCD time to powerup
+        try:
+            self.address = self.i2c.scan()[0]
+            self.active = True
+        except IndexError:
+            self.active = False
+            print('LCD display I2C address not found')
+            return
+        sleep_ms(20)   # Allow LCD time to powerup
         # Send reset 3 times
         self.write_nibble(self.LCD_FUNCTION_RESET)
-        time.sleep_ms(5)    # Need to delay at least 4.1 msec
+        sleep_ms(5)    # Need to delay at least 4.1 msec
         self.write_nibble(self.LCD_FUNCTION_RESET)
-        time.sleep_ms(1)
+        sleep_ms(1)
         self.write_nibble(self.LCD_FUNCTION_RESET)
-        time.sleep_ms(1)
+        sleep_ms(1)
         # Put LCD into 4-bit mode
         self.write_nibble(self.LCD_FUNCTION)
-        time.sleep_ms(1)
+        sleep_ms(1)
 
         # ===
         self.num_lines = num_rows
@@ -167,7 +174,7 @@ class LcdApi:
         self.i2c.writeto(self.i2c_addr, bytes([byte]))
         if cmd <= 3:
             # home and clear commands require delay of 4.1 msec
-            time.sleep_ms(5)
+            sleep_ms(5)
 
     def write_data(self, data):
         """ write data to the device """
@@ -190,3 +197,33 @@ class LcdApi:
         """ write text to display rows """
         self.move_to(0, row)
         self.put_str(text)
+
+
+def main():
+    from dh_2040 import Dh2040
+
+    board = Dh2040()
+    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=board.FREQ,
+                 num_rows=2, num_cols=16)
+    if not lcd.active:
+        return
+    print('lcd active')
+    
+    blank_line = " " * 16
+    lcd.write_line(0, "I2C LCD Tutorial")
+    sleep(2)
+    lcd.clear()
+    lcd.write_line(0, "Lets count 0-10")
+    sleep(2)
+    for i in range(11):
+        lcd.write_line(1, str(i))
+        sleep(1)
+        lcd.write_line(1, blank_line)
+    lcd.clear()
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    finally:
+        print('execution complete')
