@@ -270,7 +270,7 @@ class Grid(PixelStrip):
 
 
 class BlockGrid(Grid):
-    """ !!! not yet functional
+    """ !!! not yet fully functional
         extend Grid to support block-to-block left shift
         - this version assumes horizontal blocks
         - optional: include a virtual right-hand block for char shift-in

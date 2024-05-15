@@ -6,7 +6,7 @@ from micropython import const
 import time
 
 
-class Lcd1602:
+class LcdApi:
     """ drive LCD1602 display """
     # not all constants are used
     I2C_ADDR = const(62)  # I2C Address
@@ -101,10 +101,12 @@ class Lcd1602:
 
     def clear(self):
         """ clear the whole display """
-        self._command(self.CLR_DISP)
-        time.sleep_ms(2)
+        if self.active:
+            self._command(self.CLR_DISP)
+            time.sleep_ms(2)
 
     def write_line(self, row, text):
         """ write text to display rows """
-        self._set_cursor(0, row)
-        self._write_out(text)
+        if self.active:
+            self._set_cursor(0, row)
+            self._write_out(text)

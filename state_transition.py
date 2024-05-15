@@ -4,9 +4,9 @@
 import asyncio
 import gc
 from colour_space import ColourSpace
-from lcd_1602 import Lcd1602
+from lcd_44780 import LcdApi
 from pixel_strip import PixelStrip
-from dh_2040 import Plasma2040
+from dh_2040 import Dh2040
 from v_time import VTime
 from ws2812 import Ws2812
 
@@ -249,16 +249,16 @@ async def main():
 
     # instantiate system objects
     cs = ColourSpace()
-    board = Plasma2040()
+    board = Dh2040()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = Lcd1602(sda_=20, scl_=21)  # Plasma 2040 I2C pin-outs
+    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=10000,
+                 num_rows=2, num_cols=16)
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
     # initialise
     # board.set_onboard((0, 15, 0))  # on
-    lcd.initialise()  # show state when set
     await system.set_off()
     print('System initialised')
 

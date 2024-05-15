@@ -2,7 +2,7 @@
 """
     Classes:
     PimoroniRGB: set onboard tri-colour LED
-    Plasma2040: written for Pimoroni Plasma 2040 p_2040
+    Dh2040: written for Pimoroni Plasma 2040 p_2040
 
     asyncio version
     
@@ -47,9 +47,11 @@ class Plasma2040:
     SW_B = const(13)
     SW_U = const(23)
 
+    # WS2812 pins
     CLK = const(14)  # not used for WS2812
     DATA = const(15)
 
+    # onboard LED pins
     LED_R = const(16)
     LED_G = const(17)
     LED_B = const(18)

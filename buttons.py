@@ -92,9 +92,10 @@ async def main():
 
     # Plasma 2040 buttons
     buttons = {
-        'A': Button(12, 'A'),
-        'B': HoldButton(13, 'B'),
-        'U': HoldButton(23, 'U')
+        'A': HoldButton(10, 'A'),
+        'B': HoldButton(11, 'B'),
+        'C': HoldButton(12, 'C'),
+        'D': HoldButton(13, 'D')
     }
 
     async def keep_alive():

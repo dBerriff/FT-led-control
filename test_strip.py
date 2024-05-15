@@ -5,7 +5,8 @@
 import asyncio
 import time
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
+# from plasma_2040 import Plasma2040
+from dh_2040 import Dh2040
 from ws2812 import Ws2812
 from pixel_strip import PixelStrip
 
@@ -36,9 +37,10 @@ async def main():
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
 
-    board = Plasma2040()
+    board = Dh2040()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
+    print(nps.driver.pin)
 
     time_set_strip(nps, test_rgb)
     time.sleep_ms(1000)
