@@ -7,44 +7,47 @@ from time import sleep, sleep_ms
 
 class LcdApi:
     """
-        Implements the API for HD44780 compatible character LCDs.
+        API for generic HD44780-compatible character LCDs
+        - these devices typically have a seperate I2C I/O board
+        - see: https://microcontrollerslab.com/
+               i2c-lcd-esp32-esp8266-micropython-tutorial/#
     """
 
-    # from the avrlib lcd.h
+    # from avrlib lcd.h
     # HD44780 LCD controller command set
 
-    LCD_CLR = const(0x01)              # DB0: clear display
-    LCD_HOME = const(0x02)             # DB1: return to home position
+    CLR = const(0x01)  # DB0: clear display
+    HOME = const(0x02)  # DB1: return to home position
 
-    LCD_ENTRY_MODE = const(0x04)       # DB2: set entry mode
-    LCD_ENTRY_INC = const(0x02)        # --DB1: increment
-    LCD_ENTRY_SHIFT = const(0x01)      # --DB0: shift
+    ENTRY_MODE = const(0x04)  # DB2: set entry mode
+    ENTRY_INC = const(0x02)  # DB1: increment
+    ENTRY_SHIFT = const(0x01)  # DB0: shift
 
-    LCD_ON_CTRL = const(0x08)          # DB3: turn lcd/cursor on
-    LCD_ON_DISPLAY = const(0x04)       # --DB2: turn display on
-    LCD_ON_CURSOR = const(0x02)        # --DB1: turn cursor on
-    LCD_ON_BLINK = const(0x01)         # --DB0: blinking cursor
+    ON_CTRL = const(0x08)  # DB3: turn lcd/cursor on
+    ON_DISPLAY = const(0x04)  # DB2: turn display on
+    ON_CURSOR = const(0x02)  # DB1: turn cursor on
+    ON_BLINK = const(0x01)  # DB0: blinking cursor
 
-    LCD_MOVE = const(0x10)             # DB4: move cursor/display
-    LCD_MOVE_DISP = const(0x08)        # --DB3: move display (0-> move cursor)
-    LCD_MOVE_RIGHT = const(0x04)       # --DB2: move right (0-> left)
+    MOVE = const(0x10)  # DB4: move cursor/display
+    MOVE_DISP = const(0x08)  # DB3: move display (0-> move cursor)
+    MOVE_RIGHT = const(0x04)  # DB2: move right (0-> left)
 
-    LCD_FUNCTION = const(0x20)         # DB5: function set
-    LCD_FUNCTION_8BIT = const(0x10)    # --DB4: set 8BIT mode (0->4BIT mode)
-    LCD_FUNCTION_2LINES = const(0x08)  # --DB3: two lines (0->one line)
-    LCD_FUNCTION_10DOTS = const(0x04)  # --DB2: 5x10 font (0->5x7 font)
-    LCD_FUNCTION_RESET = const(0x30)   # See "Initializing by Instruction" section
+    FUNCTION = const(0x20)  # DB5: function set
+    FUNCTION_8BIT = const(0x10)  # DB4: set 8BIT mode (0->4BIT mode)
+    FUNCTION_2LINES = const(0x08)  # DB3: two lines (0->one line)
+    FUNCTION_10DOTS = const(0x04)  # DB2: 5x10 font (0->5x7 font)
+    FUNCTION_RESET = const(0x30)  # See "Initializing by Instruction" section
 
-    LCD_CGRAM = const(0x40)            # DB6: set CG RAM address
-    LCD_DDRAM = const(0x80)            # DB7: set DD RAM address
+    CGRAM = const(0x40)  # DB6: set CG RAM address
+    DDRAM = const(0x80)  # DB7: set DD RAM address
 
-    LCD_RS_CMD = const(0)
-    LCD_RS_DATA = const(1)
+    RS_CMD = const(0)
+    RS_DATA = const(1)
 
-    LCD_RW_WRITE = const(0)
-    LCD_RW_READ = const(1)
+    RW_WRITE = const(0)
+    RW_READ = const(1)
 
-# ===
+    # ===
 
     i2c_addr = const(39)  # I2C Address
     # PCF8574 pin definitions
@@ -55,7 +58,7 @@ class LcdApi:
     SHIFT_BACKLIGHT = const(3)  # P3
     SHIFT_DATA = const(4)  # P4-P7
 
-    def __init__(self, scl, sda, f, num_rows, num_cols):
+    def __init__(self, scl, sda, f, num_rows=2, num_cols=16):
         i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
         self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=f)
         try:
@@ -65,25 +68,20 @@ class LcdApi:
             self.active = False
             print('LCD display I2C address not found')
             return
-        sleep_ms(20)   # Allow LCD time to powerup
+        sleep_ms(20)  # Allow LCD time to powerup
         # Send reset 3 times
-        self.write_nibble(self.LCD_FUNCTION_RESET)
-        sleep_ms(5)    # Need to delay at least 4.1 msec
-        self.write_nibble(self.LCD_FUNCTION_RESET)
-        sleep_ms(1)
-        self.write_nibble(self.LCD_FUNCTION_RESET)
-        sleep_ms(1)
+        for _ in range(3):
+            self.write_nibble(self.FUNCTION_RESET)
+            sleep_ms(5)  # Need to delay at least 4.1 msec
         # Put LCD into 4-bit mode
-        self.write_nibble(self.LCD_FUNCTION)
+        self.write_nibble(self.FUNCTION)
         sleep_ms(1)
 
         # ===
-        self.num_lines = num_rows
-        if self.num_lines > 4:
-            self.num_lines = 4
-        self.num_columns = num_cols
-        if self.num_columns > 40:
-            self.num_columns = 40
+        if num_rows > 4:
+            num_rows = 4
+        if num_cols > 40:
+            num_cols = 40
         self.cursor_x = 0
         self.cursor_y = 0
         self.implied_newline = False
@@ -91,28 +89,30 @@ class LcdApi:
         self.display_off()
         self.backlight_on()
         self.clear()
-        self.write_command(self.LCD_ENTRY_MODE | self.LCD_ENTRY_INC)
+        self.write_command(self.ENTRY_MODE | self.ENTRY_INC)
         # self.hide_cursor()
         self.display_on()
-        cmd = self.LCD_FUNCTION
+        cmd = self.FUNCTION
         if num_rows == 2:
-            cmd |= self.LCD_FUNCTION_2LINES
+            cmd |= self.FUNCTION_2LINES
         self.write_command(cmd)
+        self.num_rows = num_rows
+        self.num_cols = num_cols
 
     def clear(self):
-        """ Clears the LCD """
-        self.write_command(self.LCD_CLR)
-        self.write_command(self.LCD_HOME)
+        """ clear display """
+        self.write_command(self.CLR)
+        self.write_command(self.HOME)
         self.cursor_x = 0
         self.cursor_y = 0
 
     def display_on(self):
         """ turn on display """
-        self.write_command(self.LCD_ON_CTRL | self.LCD_ON_DISPLAY)
+        self.write_command(self.ON_CTRL | self.ON_DISPLAY)
 
     def display_off(self):
         """ turn off display """
-        self.write_command(self.LCD_ON_CTRL)
+        self.write_command(self.ON_CTRL)
 
     def move_to(self, cursor_x, cursor_y):
         """ move cursor to (x, y) """
@@ -120,10 +120,10 @@ class LcdApi:
         self.cursor_y = cursor_y
         addr = cursor_x & 0x3f
         if cursor_y & 1:
-            addr += 0x40    # Lines 1 & 3 add 0x40
-        if cursor_y & 2:    # Lines 2 & 3 add number of columns
-            addr += self.num_columns
-        self.write_command(self.LCD_DDRAM | addr)
+            addr += 0x40  # Lines 1 & 3 add 0x40
+        if cursor_y & 2:  # Lines 2 & 3 add number of columns
+            addr += self.num_cols
+        self.write_command(self.DDRAM | addr)
 
     def put_char(self, char):
         """ write char and advance cursor """
@@ -131,15 +131,15 @@ class LcdApi:
             if self.implied_newline:
                 pass
             else:
-                self.cursor_x = self.num_columns
+                self.cursor_x = self.num_cols
         else:
             self.write_data(ord(char))
             self.cursor_x += 1
-        if self.cursor_x >= self.num_columns:
+        if self.cursor_x >= self.num_cols:
             self.cursor_x = 0
             self.cursor_y += 1
             self.implied_newline = (char != '\n')
-        if self.cursor_y >= self.num_lines:
+        if self.cursor_y >= self.num_rows:
             self.cursor_y = 0
         self.move_to(self.cursor_x, self.cursor_y)
 
@@ -159,11 +159,11 @@ class LcdApi:
         self.i2c.writeto(self.i2c_addr, bytes([1 << self.SHIFT_BACKLIGHT]))
 
     def backlight_off(self):
-        """ turn the backlight off """
+        """ turn backlight off """
         self.i2c.writeto(self.i2c_addr, bytes([0]))
 
     def write_command(self, cmd):
-        """ write a command to the device """
+        """ write a command """
         byte = ((self.backlight << self.SHIFT_BACKLIGHT) |
                 (((cmd >> 4) & 0x0f) << self.SHIFT_DATA))
         self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
@@ -173,11 +173,11 @@ class LcdApi:
         self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
         self.i2c.writeto(self.i2c_addr, bytes([byte]))
         if cmd <= 3:
-            # home and clear commands require delay of 4.1 msec
+            # home & clear commands require 4.1 ms delay
             sleep_ms(5)
 
     def write_data(self, data):
-        """ write data to the device """
+        """ write data """
         byte = (self.MASK_RS |
                 (self.backlight << self.SHIFT_BACKLIGHT) |
                 (((data >> 4) & 0x0f) << self.SHIFT_DATA))
@@ -191,7 +191,7 @@ class LcdApi:
 
     # interface functions
 
-    # def clear(self):
+    # def clear(self)
 
     def write_line(self, row, text):
         """ write text to display rows """
@@ -203,17 +203,18 @@ def main():
     from dh_2040 import Dh2040
 
     board = Dh2040()
-    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=board.FREQ,
-                 num_rows=2, num_cols=16)
+    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=board.FREQ)
     if not lcd.active:
         return
     print('lcd active')
-    
+
     blank_line = " " * 16
-    lcd.write_line(0, "I2C LCD Tutorial")
-    sleep(2)
+
     lcd.clear()
-    lcd.write_line(0, "Lets count 0-10")
+    lcd.write_line(0, "  I2C LCD Test  ")
+    sleep(2)
+    lcd.write_line(0, blank_line)
+    lcd.write_line(0, "Count 0-10")
     sleep(2)
     for i in range(11):
         lcd.write_line(1, str(i))
