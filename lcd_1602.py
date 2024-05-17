@@ -4,7 +4,6 @@
 from machine import Pin, I2C
 from micropython import const
 from time import sleep, sleep_ms
-from plasma_2040 import Plasma2040
 
 
 class LcdApi:
@@ -32,51 +31,51 @@ class LcdApi:
     LINES_1 = const(0x00)
     DOTS_5x8 = const(0x00)
 
-    def __init__(self, sda, scl, col=16, row=2):
-        i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
+    def __init__(self, sda, scl, cols=16, rows=2):
+        i = 0 if sda in {0, 4, 8, 12, 16, 20} else 1
         self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=400_000)
-        self._col = col
-        self._row = row
+        self._col = cols
+        self._row = rows
         self._show_fn = self.MODE_4BIT | self.LINES_1 | self.DOTS_5x8
+        self.active = False
         try:
             # self.address info only; ADDRESS used in code
             self.address = self.i2c.scan()[0]
-            self.lcd_mode = True
+            self.active = True
             print(f'I2C address: {self.address}')
         except IndexError:
-            self.lcd_mode = False
             print('I2C address not found: print mode instead.')
-        if self.lcd_mode:
-            self._start(row)
+        if self.active:
+            self.start(rows)
         self._n_lines = None
         self._curr_line = None
         self._show_ctrl = None
         self._show_mode = None
 
-    def _command(self, cmd):
+    def command(self, cmd):
         """ invoke command """
         self.i2c.writeto_mem(self.I2C_ADDR, 0x80, chr(cmd))
 
-    def _set_cursor(self, col, row):
+    def set_cursor(self, col, row):
         """ set cursor for write """
         col |= 0x80 if row == 0 else 0xc0
         self.i2c.writeto(self.I2C_ADDR, bytearray([0x80, col]))
 
-    def _write(self, data):
+    def write(self, data):
         """ write out character at cursor position """
         self.i2c.writeto_mem(self.I2C_ADDR, 0x40, chr(data))
 
-    def _write_out(self, arg):
+    def write_out(self, arg):
         """ write out bytearray at cursor position """
         for b in bytearray(str(arg), 'utf-8'):
             self.i2c.writeto_mem(self.I2C_ADDR, 0x40, chr(b))
 
-    def _display(self):
+    def display(self):
         """ set display state (on) """
         self._show_ctrl |= self.DISP_ON
-        self._command(self.DISP_CONTROL | self._show_ctrl)
+        self.command(self.DISP_CONTROL | self._show_ctrl)
 
-    def _start(self, lines):
+    def start(self, lines):
         """ start routine as per Waveshare docs """
         self._n_lines = lines
         self._curr_line = 0
@@ -85,40 +84,46 @@ class LcdApi:
 
         # Send function set command 3 times (!)
         for _ in range(3):
-            self._command(self.FN_SET | self._show_fn)
+            self.command(self.FN_SET | self._show_fn)
             sleep_ms(5)  # wait more than 4.1ms
         # turn the display on, cursor and blinking off
         self._show_ctrl = self.DISP_ON | self.CURS_OFF | self.BLINK_OFF
-        self._display()
+        self.display()
         self.clear()
         # Initialize to L > R text direction
         self._show_mode = self.ENT_LEFT | self.ENT_SHIFT_DEC
-        self._command(self.ENTRY_MODE | self._show_mode)
+        self.command(self.ENTRY_MODE | self._show_mode)
 
     # interface functions
 
     def clear(self):
-        if self.lcd_mode:
-            self._command(self.CLR_DISP)
+        if self.active:
+            self.command(self.CLR_DISP)
             sleep_ms(2)
 
     def write_line(self, row, text):
-        """ write text to display row """
-        if self.lcd_mode:
-            self._set_cursor(0, row)
-            self._write_out(text)
+        """ write text to display rows """
+        if self.active:
+            self.set_cursor(0, row)
+            self.write_out(text)
         else:
             print(f'{row}: {text}')
 
 
 def main():
-    board = Plasma2040()
-    blank_line = " " * 16
-    lcd = LcdApi(scl=board.LCD_CLK, sda=board.LCD_DATA)
+    from plasma_2040 import Plasma2040
 
+    board = Plasma2040()
+    lcd = LcdApi(scl=board.LCD_CLK, sda=board.LCD_DATA)
+    if not lcd.active:
+        return
+    print('lcd active')
+
+    blank_line = " " * 16
+    lcd.clear()
     lcd.write_line(0, "I2C LCD Tutorial")
     sleep(2)
-    lcd.clear()
+    lcd.write_line(0, blank_line)
     lcd.write_line(0, "Count 0...10")
     sleep(2)
     for i in range(11):

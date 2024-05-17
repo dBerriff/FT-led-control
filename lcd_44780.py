@@ -58,9 +58,9 @@ class LcdApi:
     SHIFT_BACKLIGHT = const(3)  # P3
     SHIFT_DATA = const(4)  # P4-P7
 
-    def __init__(self, scl, sda, f, num_rows=2, num_cols=16):
+    def __init__(self, sda, scl, cols=16, rows=2):
         i = 0 if sda in (0, 4, 8, 12, 16, 20) else 1
-        self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=f)
+        self.i2c = I2C(i, sda=Pin(sda), scl=Pin(scl), freq=10_000)
         try:
             self.address = self.i2c.scan()[0]
             self.active = True
@@ -78,10 +78,10 @@ class LcdApi:
         sleep_ms(1)
 
         # ===
-        if num_rows > 4:
-            num_rows = 4
-        if num_cols > 40:
-            num_cols = 40
+        if rows > 4:
+            rows = 4
+        if cols > 40:
+            cols = 40
         self.cursor_x = 0
         self.cursor_y = 0
         self.implied_newline = False
@@ -93,18 +93,11 @@ class LcdApi:
         # self.hide_cursor()
         self.display_on()
         cmd = self.FUNCTION
-        if num_rows == 2:
+        if rows == 2:
             cmd |= self.FUNCTION_2LINES
         self.write_command(cmd)
-        self.num_rows = num_rows
-        self.num_cols = num_cols
-
-    def clear(self):
-        """ clear display """
-        self.write_command(self.CLR)
-        self.write_command(self.HOME)
-        self.cursor_x = 0
-        self.cursor_y = 0
+        self.num_rows = rows
+        self.num_cols = cols
 
     def display_on(self):
         """ turn on display """
@@ -191,25 +184,33 @@ class LcdApi:
 
     # interface functions
 
-    # def clear(self)
+    def clear(self):
+        """ clear display """
+        if self.active:
+            self.write_command(self.CLR)
+            self.write_command(self.HOME)
+            self.cursor_x = 0
+            self.cursor_y = 0
 
     def write_line(self, row, text):
         """ write text to display rows """
-        self.move_to(0, row)
-        self.put_str(text)
+        if self.active:
+            self.move_to(0, row)
+            self.put_str(text)
+        else:
+            print(f'{row}: {text}')
 
 
 def main():
     from dh_2040 import Dh2040
 
     board = Dh2040()
-    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA, f=board.FREQ)
+    lcd = LcdApi(sda=board.LCD_SDA, scl=board.LCD_SCL)
     if not lcd.active:
         return
     print('lcd active')
 
     blank_line = " " * 16
-
     lcd.clear()
     lcd.write_line(0, "  I2C LCD Test  ")
     sleep(2)

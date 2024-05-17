@@ -296,7 +296,7 @@ class BlockGrid(Grid):
 
     async def shift_grid(self, pause_ms=20):
         """
-            coro: shift left 1 col/iteration; write() each shift
+            coro: shift left 1 cols/iteration; write() each shift
             - shift_offset is for adjacent block-cols segments
             - shift array values direct: avoid decode/encode
         """
