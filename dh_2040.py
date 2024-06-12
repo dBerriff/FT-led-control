@@ -1,5 +1,6 @@
 # dh_2040.py
 """
+    ! For specific Pico-based installation. Work-in-progress
     Classes:
     Dh2040: written for Pi Pico board
     -  asyncio version
