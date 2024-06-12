@@ -1,4 +1,4 @@
-# pio_day-night.py
+# dh_2040.py
 """
     Classes:
     Dh2040: written for Pi Pico board
