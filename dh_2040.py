@@ -1,6 +1,6 @@
 # dh_2040.py
 """
-    ! For specific Pico-based installation. Work-in-progress
+    ! For a specific Pico-based installation. Constant values reminder.
     Classes:
     Dh2040: written for Pi Pico board
     -  asyncio version
