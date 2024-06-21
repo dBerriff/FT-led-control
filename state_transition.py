@@ -222,7 +222,7 @@ async def main():
 
     # ====== parameters
 
-    n_pixels = 30
+    n_pixels = 119
 
     # state colours as HSV
     state_hsv = {
@@ -233,7 +233,7 @@ async def main():
     }
 
     clock_hm = {'hm': '19:30', 'dawn': '06:00', 'dusk': '20:00'}
-    clock_speed = 72
+    clock_speed = 720
 
     # for 16-char lines
     lcd_strings = {

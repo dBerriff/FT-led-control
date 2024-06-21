@@ -29,7 +29,7 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    n_pixels = 30
+    n_pixels = 119
     # set board and strip chipset methods
     cs = ColourSpace()
     test_rgb = cs.rgb_lg('orange', 100)

@@ -102,12 +102,12 @@ class ColourSpace:
             return v, v, v
 
         # keep i in range(6)
-        h = h / 360.0  # angle to 0.0 ... 1.0
-        if h >= 1.0:
-            h = 0.0
-        h_6 = h * 6.0  # 6 colour sectors
+        if h >= 360.0:
+            h_6 = 0.0
+        else:
+            h_6 = h / 60.0  # 6 colour sectors
         i = int(h_6)
-        f = h_6 - i
+        f = h_6 - float(i)
         # select colour sector
         if i == 0:
             r = v_u8
@@ -129,7 +129,7 @@ class ColourSpace:
             r = v_u8 * (1.0 - s * (1.0 - f))
             g = v_u8 * (1.0 - s)
             b = v_u8
-        else:  # i == 5:
+        else:
             r = v_u8
             g = v_u8 * (1.0 - s)
             b = v_u8 * (1.0 - s * f)

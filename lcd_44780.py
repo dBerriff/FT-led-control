@@ -49,7 +49,7 @@ class LcdApi:
 
     # ===
 
-    i2c_addr = const(39)  # I2C Address
+    I2C_ADDR = const(39)  # I2C Address
     # PCF8574 pin definitions
     MASK_RS = const(0x01)  # P0
     MASK_RW = const(0x02)  # P1
@@ -144,27 +144,27 @@ class LcdApi:
     def write_nibble(self, nibble):
         """ write nibble to the LCD """
         byte = ((nibble >> 4) & 0x0f) << self.SHIFT_DATA
-        self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
-        self.i2c.writeto(self.i2c_addr, bytes([byte]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte | self.MASK_E]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte]))
 
     def backlight_on(self):
         """ turn backlight on """
-        self.i2c.writeto(self.i2c_addr, bytes([1 << self.SHIFT_BACKLIGHT]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([1 << self.SHIFT_BACKLIGHT]))
 
     def backlight_off(self):
         """ turn backlight off """
-        self.i2c.writeto(self.i2c_addr, bytes([0]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([0]))
 
     def write_command(self, cmd):
         """ write a command """
         byte = ((self.backlight << self.SHIFT_BACKLIGHT) |
                 (((cmd >> 4) & 0x0f) << self.SHIFT_DATA))
-        self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
-        self.i2c.writeto(self.i2c_addr, bytes([byte]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte | self.MASK_E]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte]))
         byte = ((self.backlight << self.SHIFT_BACKLIGHT) |
                 ((cmd & 0x0f) << self.SHIFT_DATA))
-        self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
-        self.i2c.writeto(self.i2c_addr, bytes([byte]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte | self.MASK_E]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte]))
         if cmd <= 3:
             # home & clear commands require 4.1 ms delay
             sleep_ms(5)
@@ -174,13 +174,13 @@ class LcdApi:
         byte = (self.MASK_RS |
                 (self.backlight << self.SHIFT_BACKLIGHT) |
                 (((data >> 4) & 0x0f) << self.SHIFT_DATA))
-        self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
-        self.i2c.writeto(self.i2c_addr, bytes([byte]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte | self.MASK_E]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte]))
         byte = (self.MASK_RS |
                 (self.backlight << self.SHIFT_BACKLIGHT) |
                 ((data & 0x0f) << self.SHIFT_DATA))
-        self.i2c.writeto(self.i2c_addr, bytes([byte | self.MASK_E]))
-        self.i2c.writeto(self.i2c_addr, bytes([byte]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte | self.MASK_E]))
+        self.i2c.writeto(self.I2C_ADDR, bytes([byte]))
 
     # interface functions
 
