@@ -222,7 +222,7 @@ async def main():
 
     # ====== parameters
 
-    n_pixels = 119
+    n_pixels = 119 + 119
 
     # state colours as HSV
     state_hsv = {
