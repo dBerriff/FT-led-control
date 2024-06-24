@@ -1,8 +1,8 @@
 # dh_2040.py
 """
-    ! For a specific Pico-based installation. Constant values reminder.
+    ! For a specific Pico-based installation. Constant values.
     Classes:
-    Dh2040: written for Pi Pico board
+    Dh2040: written for standard Pi Pico board
     -  asyncio version
 """
 
@@ -20,9 +20,9 @@ class Dh2040:
             -- LCD_SCL, LCD_SDA: for I2C display
     """
     # switch pins
-    SW_A = const(10)
-    SW_B = const(11)
-    SW_U = const(13)
+    SW_A = const(11)
+    SW_B = const(12)
+    SW_U = const(10)
 
     # WS2812 pins
     CLK = const(0)

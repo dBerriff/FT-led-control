@@ -29,7 +29,7 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    n_pixels = 119 + 119
+    n_pixels = 5
     # set board and strip chipset methods
     cs = ColourSpace()
     test_rgb = cs.rgb_lg('orange', 100)
@@ -40,7 +40,7 @@ async def main():
     board = Dh2040()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
-    print(nps.driver.pin)
+    print(f'pixel strip driver pin: {nps.driver.pin}')
 
     time_set_strip(nps, test_rgb)
     time.sleep_ms(1000)

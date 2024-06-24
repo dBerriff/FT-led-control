@@ -7,7 +7,7 @@ I2C_ADDR = 0x27
 BLANK_LINE = " " * 16
 rows = 2
 columns = 16
-lcd = LcdApi(scl=Pin(3), sda=Pin(2), f=10000, rows=rows, cols=columns)
+lcd = LcdApi(scl=Pin(3), sda=Pin(2), rows=rows, cols=columns)
 
 lcd.put_str("I2C LCD Tutorial")
 sleep(2)
