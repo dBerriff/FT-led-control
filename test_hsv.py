@@ -42,7 +42,7 @@ async def main():
                 h = 0.0
             nps.set_pixel_rgb(p, cs.hsv_rgb((h, s, v)))
         nps.write()
-        await asyncio.sleep_ms(20)
+        await asyncio.sleep_ms(200)
     nps.clear_strip()
     await asyncio.sleep_ms(200)        
 
