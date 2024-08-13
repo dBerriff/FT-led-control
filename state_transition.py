@@ -47,14 +47,14 @@ class DayNightST:
                     'U1': self.no_t},
             'day': {'A1': self.set_night,
                     'B1': self.no_t,
-                    'U1': self.set_off},
+                    'U2': self.set_off},
             'night': {'A1': self.set_day,
                       'B1': self.no_t,
-                      'U1': self.set_off},
+                      'U2': self.set_off},
             'clock': {'A1': self.no_t,
                       'B1': self.no_t,
                       'B2': self.set_by_clock,
-                      'U1': self.set_off
+                      'U2': self.set_off
                       }
         }
         self.fade_steps = 1000

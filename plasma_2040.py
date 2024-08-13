@@ -61,9 +61,9 @@ class Plasma2040:
     LED_B = const(18)
 
     def __init__(self):
-        self.buttons = {'A': Button(self.SW_A, 'A'),
-                        'B': HoldButton(self.SW_B, 'B'),
-                        'U': Button(self.SW_U, 'U')
+        self.buttons = {'A': Button(self.SW_A, pull_up=True, name='A'),
+                        'B': HoldButton(self.SW_B, pull_up=True, name='B'),
+                        'U': Button(self.SW_U, pull_up=False, name='U')
                         }
         self.led = PimoroniRGB(self.LED_R, self.LED_G, self.LED_B)
 
