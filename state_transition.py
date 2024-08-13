@@ -6,7 +6,7 @@ import gc
 from colour_space import ColourSpace
 from lcd_1602 import LcdApi
 from pixel_strip import PixelStrip
-from plasma_2040 import Plasma2040
+from plasma_2350 import Plasma2350
 from v_time import VTime
 from ws2812 import Ws2812
 
@@ -249,7 +249,7 @@ async def main():
 
     # instantiate system objects
     cs = ColourSpace()
-    board = Plasma2040()
+    board = Plasma2350()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons

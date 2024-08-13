@@ -1,8 +1,8 @@
 # dh_2040.py
 """
-    ! For a specific Pico-based installation. Constant values reminder.
-    Classes:
-    Dh2040: written for Pi Pico board
+    Stub
+    ! For a specific Pico-based installation. Constant values reminder !
+    Dh2040: written for Pi Pico 1 board
     -  asyncio version
 """
 
@@ -34,7 +34,7 @@ class Dh2040:
     FREQ = 10_000
 
     def __init__(self):
-        self.buttons = {'A': Button(self.SW_A, 'A'),
-                        'B': HoldButton(self.SW_B, 'B'),
-                        'U': Button(self.SW_U, 'U')
+        self.buttons = {'A': Button(self.SW_A, pull_up=True, 'A'),
+                        'B': HoldButton(self.SW_B, pull_up=True, 'B'),
+                        'U': Button(self.SW_U, pull_up=True, 'U')
                         }

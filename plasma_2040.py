@@ -4,7 +4,7 @@
     PimoroniRGB: set onboard tri-colour LED
     Plasma2040: written for Pimoroni Plasma 2040 board
 
-    asyncio version
+    non-asyncio version
     
     - 3 + 1 buttons are hard-wired on the Pimoroni Plasma 2040:
         A, B, U (user, labelled BOOT) + RESET

@@ -111,10 +111,7 @@ class LcdApi:
 
 
 def main():
-    from plasma_2040 import Plasma2040
-
-    board = Plasma2040()
-    lcd = LcdApi(scl=board.LCD_CLK, sda=board.LCD_DATA)
+    lcd = LcdApi(scl=21, sda=20)
     if not lcd.active:
         return
     print('lcd active')

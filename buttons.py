@@ -2,27 +2,31 @@
 """ implement press and hold buttons
     class Button implements a click button
     class HoldButton extends Button to include a hold event
-    - button methods are coroutines and include self-polling methods
+    - button methods are coroutines
+    - create button.poll_state() as a task for a button to self-poll
 """
 
 import asyncio
-from machine import Pin, Signal
+from machine import Pin, Signal  # Signal class wraps pull-up logic
 from micropython import const
 from time import ticks_ms, ticks_diff
 
 
 class Button:
-    """ button with click state"""
+    """ button with click state """
     # button states
     WAIT = const('0')
     CLICK = const('1')
 
-    POLL_INTERVAL = const(20)  # ms
+    POLL_INTERVAL = const(20)  # ms; button self-poll period
 
-    def __init__(self, pin, name=''):
-        # Signal wraps pull-up logic with invert
-        self._hw_in = Signal(
-            pin, Pin.IN, Pin.PULL_UP, invert=True)
+    def __init__(self, pin, pull_up=True, name=''):
+        if pull_up:  # most buttons
+            self._hw_in = Signal(
+                pin, Pin.IN, Pin.PULL_UP, invert=True)
+        else:  # e.g. Pimoroni Plasma 2350 User button
+            self._hw_in = Signal(
+                pin, Pin.IN, invert=True)
         if name:
             self.name = name
         else:
@@ -55,21 +59,25 @@ class Button:
 
 
 class HoldButton(Button):
-    """ button add hold state """
+    """
+        add button 'hold' state
+        - T_HOLD sets hold time in ms
+    """
     # additional button state
     HOLD = const('2')
     T_HOLD = const(750)  # ms - adjust as required
 
-    def __init__(self, pin, name=''):
-        super().__init__(pin, name)
+    def __init__(self, pin, pull_up=True, name=''):
+        super().__init__(pin, pull_up, name)
         self.states['hold'] = self.name + self.HOLD
 
     async def poll_state(self):
-        """ poll self for click or hold events
-            - button state must be cleared by event handler
+        """
+            poll self for click or hold events
+            - ! button state must be cleared by event handler
             - elapsed time measured in ms
         """
-        on_time = None
+        on_time = ticks_ms()
         prev_pin_state = self._hw_in.value()
         while True:
             pin_state = self._hw_in.value()
@@ -90,11 +98,10 @@ class HoldButton(Button):
 async def main():
     """ coro: test Button and HoldButton classes """
 
-    # Plasma 2040 buttons
+    # Plasma 2350 buttons
     buttons = {
-        'A': HoldButton(12, 'A'),
-        'B': HoldButton(13, 'B'),
-        'U': HoldButton(23, 'U')
+        'A': HoldButton(12, pull_up=True, name='A'),
+        'U': HoldButton(22, pull_up=False, name='U')
     }
 
     async def keep_alive():
@@ -105,7 +112,7 @@ async def main():
             t += 1
 
     async def process_event(btn):
-        """ coro: passes button events to the system """
+        """ coro: responds to button events """
         while True:
             # wait until press_ev is set
             await btn.press_ev.wait()
@@ -114,7 +121,7 @@ async def main():
 
     # create tasks to test each button
     for b in buttons:
-        asyncio.create_task(buttons[b].poll_state())  # buttons self-poll
+        asyncio.create_task(buttons[b].poll_state())  # self-poll
         asyncio.create_task(process_event(buttons[b]))  # respond to event
     print('System initialised')
 

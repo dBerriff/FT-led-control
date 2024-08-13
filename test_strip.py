@@ -5,8 +5,7 @@
 import asyncio
 import time
 from colour_space import ColourSpace
-# from plasma_2040 import Plasma2040
-from dh_2040 import Dh2040
+from plasma_2040 import Plasma2040
 from ws2812 import Ws2812
 from pixel_strip import PixelStrip
 
@@ -29,7 +28,7 @@ def time_set_strip(nps_, rgb_):
 async def main():
     """ coro: test NeoPixel strip helper functions """
 
-    n_pixels = 119 + 119
+    n_pixels = 238
     # set board and strip chipset methods
     cs = ColourSpace()
     test_rgb = cs.rgb_lg('orange', 100)
@@ -37,10 +36,11 @@ async def main():
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
 
-    board = Dh2040()
+    board = Plasma2040()
+    board.set_onboard((0, 64, 0))
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
-    print(nps.driver.pin)
+    print(f'Driver pin: {nps.driver.pin}')
 
     time_set_strip(nps, test_rgb)
     time.sleep_ms(1000)
@@ -70,12 +70,13 @@ async def main():
     time.sleep_ms(20)
     for offset in range(1, n_pixels+1):
         off_list = range(0, offset)
-        print(off_list)
+        # print(off_list)
         on_list = range(offset, n_pixels)
         nps.set_list_rgb(off_list, (0, 0, 0))
         nps.set_list_rgb(on_list, test_rgb)
         nps.write()
         time.sleep_ms(20)
+    board.set_onboard((0, 0, 0))
 
 
 if __name__ == '__main__':

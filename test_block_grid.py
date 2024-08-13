@@ -21,6 +21,7 @@ async def main():
     # set board and strip chipset methods
     cs = ColourSpace()
     board = Plasma2040()
+    board.set_onboard((0, 64, 0))
     driver = Ws2812(board.DATA)
     pg = BlockGrid(driver, grid_cols, grid_rows, blocks, '5x7.json')
 
@@ -34,6 +35,7 @@ async def main():
     await pg.shift_string_rgb(' 3210', rgb)
     pg.clear_strip()
     await asyncio.sleep_ms(500)
+    board.set_onboard((0, 0, 0))
 
 
 if __name__ == '__main__':

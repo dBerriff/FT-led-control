@@ -118,8 +118,12 @@ class Grid(PixelStrip):
     @staticmethod
     def get_char_indices(file_name):
         """ return char pixel indices """
-        with open(file_name, 'r') as f:
-            retrieved = json.load(f)
+        try:
+            with open(file_name, 'r') as f:
+                retrieved = json.load(f)
+        except OSError:
+            print(f'File: {file_name} could not be opened for reading')
+            return None
         for ch in retrieved:
             retrieved[ch] = tuple(retrieved[ch])
         return retrieved
