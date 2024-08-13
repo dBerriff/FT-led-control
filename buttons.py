@@ -20,21 +20,22 @@ class Button:
 
     POLL_INTERVAL = const(20)  # ms; button self-poll period
 
-    def __init__(self, pin, pull_up=True, name=''):
-        if pull_up:  # most buttons
-            self._hw_in = Signal(
-                pin, Pin.IN, Pin.PULL_UP, invert=True)
-        else:  # e.g. Pimoroni Plasma 2350 User button
-            self._hw_in = Signal(
-                pin, Pin.IN, invert=True)
+    def __init__(self, pin, name='', pull_up=True):
+
         if name:
             self.name = name
         else:
-            self.name = str(pin)        
+            self.name = str(pin)
+
+        if pull_up:  # most buttons
+            self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
+        else:  # e.g. Pimoroni Plasma 2350 User button
+            self._hw_in = Signal(pin, Pin.IN, invert=True)
+
         self.states = {'wait': self.name + self.WAIT,
                        'click': self.name + self.CLICK
                        }
-        self.press_ev = asyncio.Event()  # starts cleared
+        self.press_ev = asyncio.Event()  # initialised as cleared
         self.state = self.states['wait']
 
     async def poll_state(self):
@@ -67,8 +68,8 @@ class HoldButton(Button):
     HOLD = const('2')
     T_HOLD = const(750)  # ms - adjust as required
 
-    def __init__(self, pin, pull_up=True, name=''):
-        super().__init__(pin, pull_up, name)
+    def __init__(self, pin, name='', pull_up=True):
+        super().__init__(pin, name, pull_up)
         self.states['hold'] = self.name + self.HOLD
 
     async def poll_state(self):
@@ -100,8 +101,8 @@ async def main():
 
     # Plasma 2350 buttons
     buttons = {
-        'A': HoldButton(12, pull_up=True, name='A'),
-        'U': HoldButton(23, pull_up=False, name='U')
+        'A': HoldButton(12, name='A'),
+        'U': HoldButton(22, name='U', pull_up=False)
     }
 
     async def keep_alive():
