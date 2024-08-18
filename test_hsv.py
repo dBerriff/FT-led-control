@@ -5,7 +5,7 @@
 import asyncio
 from pixel_strip import PixelStrip
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
+from plasma import Plasma2350
 from ws2812 import Ws2812
 
 
@@ -23,7 +23,7 @@ async def main():
     n_pixels = 119 + 119
     # set board and strip chipset methods
     cs = ColourSpace()
-    board = Plasma2040()
+    board = Plasma2350()
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
 
@@ -33,7 +33,6 @@ async def main():
     h = 0.0
     s = 1.0
     v = 0.5
-    
 
     for h_0 in range(0, 360, 6):
         for p in range(n_pixels):

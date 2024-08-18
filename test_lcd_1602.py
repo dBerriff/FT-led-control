@@ -1,5 +1,3 @@
-import machine
-from machine import Pin, I2C
 from lcd_1602 import LcdApi
 from time import sleep
 

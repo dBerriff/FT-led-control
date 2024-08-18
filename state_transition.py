@@ -6,7 +6,7 @@ import gc
 from colour_space import ColourSpace
 from lcd_1602 import LcdApi
 from pixel_strip import PixelStrip
-from plasma_2350 import Plasma2350
+from plasma import Plasma2350
 from v_time import VTime
 from ws2812 import Ws2812
 
@@ -253,7 +253,7 @@ async def main():
     driver = Ws2812(board.DATA)
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = LcdApi(scl=board.LCD_CLK, sda=board.LCD_DATA)
+    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA)
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
     # initialise

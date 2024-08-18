@@ -8,35 +8,36 @@ import machine
 import asyncio
 import random
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
+from plasma import Plasma2350
 from ws2812 import Ws2812
-from pixel_strip import PixelStrip, Grid
+from pixel_strip import Grid
 import time
 
-def time_set_strip(nps_, rgb_):
-    """ test and time fill-strip method """
-    rgb = rgb_
-    t_0 = time.ticks_us()
-    nps_.set_strip_rgb(rgb)
-    t_1 = time.ticks_us()
-    print(f'Time to fill array: {time.ticks_diff(t_1, t_0):,}us')
-    t_0 = time.ticks_us()
-    nps_.write()
-    t_1 = time.ticks_us()
-    print(f'Time to write to WS2812: {time.ticks_diff(t_1, t_0):,}us')
 
 async def main():
+    from adc import Adc
+
+    async def monitor_current(adc_):
+        """ monitor Plasma 2350 current """
+        while True:
+            print(f'{adc_.get_u16():,}')
+            await asyncio.sleep_ms(200)
+
     """ coro: test WS1802 grid methods """
+
     print(f'Processor f: {machine.freq():,}')
     grid_cols = 8
     grid_rows = 8
     # set board and strip chipset methods
     cs = ColourSpace()
-    board = Plasma2040()
+    board = Plasma2350()
     board.set_onboard((0, 64, 0))
     driver = Ws2812(board.DATA)
-    nps = PixelStrip(driver, grid_rows * grid_cols)
     pg = Grid(driver, grid_cols, grid_rows, '5x7.json')
+
+    adc_current = Adc('adc3')
+    asyncio.create_task(monitor_current(adc_current))
+
     off = (0, 0, 0)
     level = 64
 
@@ -46,15 +47,10 @@ async def main():
                    'teal', 'white', 'yellow']
     cl_len = len(colour_list)
 
-    pix_pause_ms = 0
+    pix_pause_ms = 20
     colour = colour_list[random.randrange(cl_len)]
     print(colour)
     rgb = cs.rgb_lg(colour, level)
-
-    time_set_strip(nps, rgb)
-    time.sleep_ms(1000)
-    nps.clear_strip()
-    time.sleep_ms(500)
 
     print('fill pixels as strip')
     await pg.traverse_strip_rgb(rgb, pix_pause_ms)
@@ -106,7 +102,11 @@ async def main():
     await asyncio.sleep_ms(1000)
 
     print('display strings')
-    await pg.display_string_rgb('MERG', rgb)
+    await pg.display_string_rgb('Pimoroni', rgb)
+    pg.clear_strip()
+    await asyncio.sleep_ms(1000)
+
+    await pg.display_string_rgb('Plasma 2350', rgb)
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
 

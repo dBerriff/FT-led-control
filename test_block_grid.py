@@ -6,7 +6,7 @@
 
 import asyncio
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
+from plasma import Plasma2350
 from ws2812 import Ws2812
 from pixel_strip import BlockGrid
 
@@ -20,7 +20,7 @@ async def main():
 
     # set board and strip chipset methods
     cs = ColourSpace()
-    board = Plasma2040()
+    board = Plasma2350()
     board.set_onboard((0, 64, 0))
     driver = Ws2812(board.DATA)
     pg = BlockGrid(driver, grid_cols, grid_rows, blocks, '5x7.json')
