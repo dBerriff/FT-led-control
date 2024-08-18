@@ -32,10 +32,10 @@ async def main():
     async def monitor_current(adc_):
         """ monitor Plasma 2350 current """
         while True:
-            print(f'{adc_.get_u16():,}')
+            # print(f'{adc_.get_u16():,}')
             await asyncio.sleep_ms(200)
 
-    n_pixels = 300
+    n_pixels = 200
     # set board and strip chipset methods
     cs = ColourSpace()
     test_rgb = cs.rgb_lg('orange', 100)
@@ -46,8 +46,8 @@ async def main():
 
     board = DriverBoard()
     print(board.NAME)
-    board.set_onboard((0, 64, 0))
-    driver = Ws2812(board.DATA)
+    board.set_onboard((0, 32, 0))
+    driver = Ws2812(board.strip_pins['dat'])
     nps = PixelStrip(driver, n_pixels)
     print(f'Driver pin: {nps.driver.pin}')
 

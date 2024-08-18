@@ -20,11 +20,11 @@ async def main():
         300 - magenta
     """
 
-    n_pixels = 119 + 119
+    n_pixels = 20
     # set board and strip chipset methods
     cs = ColourSpace()
     board = Plasma2350()
-    driver = Ws2812(board.DATA)
+    driver = Ws2812(board.strip_pins['dat'])
     nps = PixelStrip(driver, n_pixels)
 
     nps.clear_strip()

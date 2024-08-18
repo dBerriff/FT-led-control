@@ -22,7 +22,7 @@ async def main():
     cs = ColourSpace()
     board = Plasma2350()
     board.set_onboard((0, 64, 0))
-    driver = Ws2812(board.DATA)
+    driver = Ws2812(board.strip_pins['dat'])
     pg = BlockGrid(driver, grid_cols, grid_rows, blocks, '5x7.json')
 
     level = 64

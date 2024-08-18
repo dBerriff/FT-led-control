@@ -6,7 +6,7 @@ import gc
 from colour_space import ColourSpace
 from lcd_1602 import LcdApi
 from pixel_strip import PixelStrip
-from plasma import Plasma2350
+from plasma import Plasma2350 as DriverBoard
 from v_time import VTime
 from ws2812 import Ws2812
 
@@ -31,16 +31,13 @@ class DayNightST:
         if 'hm' in kwargs:
             self.hm_dict = kwargs['hm']
         else:
-            self.hm_dict = {}
+            self.hm_dict = dict()
         if 'lcd_s' in kwargs:
             self.lcd_str_dict = kwargs['lcd_s']
         else:
-            self.lcd_str_dict = {}
+            self.lcd_str_dict = dict()
 
         # state-transition logic
-        # outer key: current state
-        # inner key: button event as: '<name><event>'
-        # <event>: 1 is click, 2 is hold
         self.transitions = {
             'off': {'A1': self.set_day,
                     'B1': self.set_by_clock,
@@ -249,11 +246,11 @@ async def main():
 
     # instantiate system objects
     cs = ColourSpace()
-    board = Plasma2350()
-    driver = Ws2812(board.DATA)
+    board = DriverBoard()
+    driver = Ws2812(board.strip_pins['dat'])
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = LcdApi(scl=board.LCD_SCL, sda=board.LCD_SDA)
+    lcd = LcdApi(scl=board.i2c_pins['scl'], sda=board.i2c_pins['sda'])
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
     # initialise

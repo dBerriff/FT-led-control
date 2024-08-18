@@ -20,7 +20,7 @@ async def main():
     async def monitor_current(adc_):
         """ monitor Plasma 2350 current """
         while True:
-            print(f'{adc_.get_u16():,}')
+            # print(f'{adc_.get_u16():,}')
             await asyncio.sleep_ms(200)
 
     """ coro: test WS1802 grid methods """
@@ -31,8 +31,8 @@ async def main():
     # set board and strip chipset methods
     cs = ColourSpace()
     board = Plasma2350()
-    board.set_onboard((0, 64, 0))
-    driver = Ws2812(board.DATA)
+    board.set_onboard((0, 32, 0))
+    driver = Ws2812(board.strip_pins['dat'])
     pg = Grid(driver, grid_cols, grid_rows, '5x7.json')
 
     adc_current = Adc('adc3')

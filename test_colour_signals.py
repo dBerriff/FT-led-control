@@ -2,7 +2,7 @@
 
 import asyncio
 from colour_space import ColourSpace
-from plasma_2040 import Plasma2040
+from plasma import Plasma2350 as DriverBoard
 from ws2812 import Ws2812
 from pixel_strip import PixelStrip
 from colour_signals import ThreeAspect, FourAspect, encode_sig_colours
@@ -37,8 +37,8 @@ async def main():
 
     n_pixels = 30
     cs = ColourSpace()
-    board = Plasma2040()
-    driver = Ws2812(board.DATA)
+    board = DriverBoard()
+    driver = Ws2812(board.strip_pins['dat'])
     nps = PixelStrip(driver, n_pixels)
 
     level = 128

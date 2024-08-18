@@ -2,6 +2,7 @@
 """ implement press and hold buttons
     class Button implements a click button
     class HoldButton extends Button to include a hold event
+    - Pimoroni User buttons - name as 'U'
     - button methods are coroutines
     - create button.poll_state() as a task for a button to self-poll
 """
@@ -15,23 +16,22 @@ from time import ticks_ms, ticks_diff
 class Button:
     """ button with click state """
     # button states
-    WAIT = const('0')
-    CLICK = const('1')
+    WAIT = '0'
+    CLICK = '1'
 
     POLL_INTERVAL = const(20)  # ms; button self-poll period
 
-    def __init__(self, pin, name='', pull_up=True):
+    def __init__(self, pin, name=''):
 
         if name:
             self.name = name
         else:
             self.name = str(pin)
 
-        if pull_up:  # most buttons
-            self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
-        else:  # e.g. Pimoroni Plasma 2350 User button
+        if name == 'U':  # Pimoroni User button
             self._hw_in = Signal(pin, Pin.IN, invert=True)
-
+        else:
+            self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
         self.states = {'wait': self.name + self.WAIT,
                        'click': self.name + self.CLICK
                        }
@@ -65,11 +65,11 @@ class HoldButton(Button):
         - T_HOLD sets hold time in ms
     """
     # additional button state
-    HOLD = const('2')
+    HOLD = '2'
     T_HOLD = const(750)  # ms - adjust as required
 
-    def __init__(self, pin, name='', pull_up=True):
-        super().__init__(pin, name, pull_up)
+    def __init__(self, pin, name=''):
+        super().__init__(pin, name)
         self.states['hold'] = self.name + self.HOLD
 
     async def poll_state(self):
@@ -102,7 +102,7 @@ async def main():
     # Plasma 2350 buttons
     buttons = {
         'A': HoldButton(12, name='A'),
-        'U': HoldButton(22, name='U', pull_up=False)
+        'U': HoldButton(22, name='U')
     }
 
     async def keep_alive():
