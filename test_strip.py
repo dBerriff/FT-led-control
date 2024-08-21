@@ -5,7 +5,7 @@
 import asyncio
 import time
 from colour_space import ColourSpace
-from plasma import Plasma2350 as DriverBoard
+from plasma import Plasma2040 as DriverBoard
 from ws2812 import Ws2812
 from pixel_strip import PixelStrip
 
@@ -27,13 +27,6 @@ def time_set_strip(nps_, rgb_):
 
 async def main():
     """ coro: test NeoPixel strip helper functions """
-    from adc import Adc
-
-    async def monitor_current(adc_):
-        """ monitor Plasma 2350 current """
-        while True:
-            # print(f'{adc_.get_u16():,}')
-            await asyncio.sleep_ms(200)
 
     n_pixels = 200
     # set board and strip chipset methods
@@ -44,15 +37,12 @@ async def main():
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
 
-    board = DriverBoard()
+    board = DriverBoard()  # board parameters
     print(board.NAME)
-    board.set_onboard((0, 32, 0))
-    driver = Ws2812(board.strip_pins['dat'])
-    nps = PixelStrip(driver, n_pixels)
+    board.set_onboard((0, 32, 0))  # RGB LED
+    driver = Ws2812(board.strip_pins['dat'])  # for pixel-strip logic
+    nps = PixelStrip(driver, n_pixels)  #
     print(f'Driver pin: {nps.driver.pin}')
-
-    adc_current = Adc('adc3')
-    asyncio.create_task(monitor_current(adc_current))
 
     time_set_strip(nps, test_rgb)
     time.sleep_ms(1000)

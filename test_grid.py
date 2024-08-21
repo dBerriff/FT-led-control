@@ -8,35 +8,26 @@ import machine
 import asyncio
 import random
 from colour_space import ColourSpace
-from plasma import Plasma2350
+from plasma import Plasma2040, Plasma2350
 from ws2812 import Ws2812
 from pixel_strip import Grid
 import time
 
 
 async def main():
-    from adc import Adc
-
-    async def monitor_current(adc_):
-        """ monitor Plasma 2350 current """
-        while True:
-            # print(f'{adc_.get_u16():,}')
-            await asyncio.sleep_ms(200)
 
     """ coro: test WS1802 grid methods """
 
-    print(f'Processor f: {machine.freq():,}')
     grid_cols = 8
     grid_rows = 8
-    # set board and strip chipset methods
+
     cs = ColourSpace()
-    board = Plasma2350()
-    board.set_onboard((0, 32, 0))
+    board = Plasma2040()
+    print(board.NAME)
+    print(f'Processor f: {machine.freq():,}')
+    board.set_onboard((0, 15, 0))
     driver = Ws2812(board.strip_pins['dat'])
     pg = Grid(driver, grid_cols, grid_rows, '5x7.json')
-
-    adc_current = Adc('adc3')
-    asyncio.create_task(monitor_current(adc_current))
 
     off = (0, 0, 0)
     level = 64
@@ -106,13 +97,13 @@ async def main():
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
-    await pg.display_string_rgb('Plasma 2350', rgb)
+    await pg.display_string_rgb('Plasma 2040 or 2350', rgb)
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
     await pg.display_string_rgb('3210', rgb)
     pg.clear_strip()
-    await asyncio.sleep_ms(1000)
+    await asyncio.sleep_ms(500)
     board.set_onboard((0, 0, 0))
 
 

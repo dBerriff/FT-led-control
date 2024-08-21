@@ -253,8 +253,9 @@ async def main():
     lcd = LcdApi(scl=board.i2c_pins['scl'], sda=board.i2c_pins['sda'])
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
     system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
+
     # initialise
-    board.set_onboard((0, 15, 0))  # on
+    board.set_onboard((0, 1, 0))  # on
     await system.set_off()
     print('System initialised')
 

@@ -29,9 +29,10 @@ from colour_space import ColourSpace
 
 class PixelStrip:
     """ implement general pixel strip methods
-        driver implements pixel-specific methods
+        driver implements board and strip-logic attributes and methods
         - MicroPython NeoPixel interface is matched as per MP documentation
         - some code is repeated to avoid nested method calls
+        - method local variables are used where this avoids repeated dict lookup
     """
 
     def __init__(self, driver_, n_pixels_):
@@ -44,7 +45,7 @@ class PixelStrip:
         self.write = self.driver.write
         self.cs = ColourSpace()
 
-    # match MP NeoPixel interface
+    # match MP NeoPixel interface with len, setitem and getitem
 
     def __len__(self):
         """ number of pixels """
@@ -58,39 +59,40 @@ class PixelStrip:
         """ get array item """
         return self.arr[index]
 
+    # class methods
+
     def clear_strip(self):
         """ set all pixels off """
-        arr = self.arr
+        arr_ = self.arr
         for i in range(self.n_pixels):
-            arr[i] = 0
+            arr_[i] = 0
         self.write()
 
     def set_pixel(self, index, colour_u24):
-        """ set single pixel to 24-bit RGB
-            - duplicates __setitem__() """
+        """ set single pixel to 24-bit RGB (duplicates __setitem__) """
         self.arr[index] = colour_u24
 
     def set_strip(self, colour_u24):
         """ fill pixel with RGB """
-        arr = self.arr  # avoid repeated dict lookup
+        arr_ = self.arr
         for i in range(self.n_pixels):
-            arr[i] = colour_u24
+            arr_[i] = colour_u24
 
     def set_range(self, index_, count_, colour_u24):
         """ fill count_ pixels """
-        arr = self.arr
+        arr_ = self.arr
         i = index_ % self.n_pixels
         for _ in range(count_):
-            arr[i] = colour_u24
+            arr_[i] = colour_u24
             i += 1
             if i == self.n_pixels:
                 i = 0
 
     def set_list(self, index_list_, colour_u24):
         """ fill index_list pixels """
-        arr = self.arr
+        arr_ = self.arr
         for i in index_list_:
-            arr[i] = colour_u24
+            arr_[i] = colour_u24
 
     def set_pixel_rgb(self, index, rgb_):
         """ set pixel by RGB tuple """
@@ -111,8 +113,7 @@ class PixelStrip:
 
 class Grid(PixelStrip):
     """ extend NeoPixel to support BTF-Lighting 8x8 grid
-        - grid is wired 'snake' style;
-            coord_index dict corrects by lookup
+        - grid is wired 'snake' style; coord_index dict corrects
     """
 
     @staticmethod
@@ -136,7 +137,7 @@ class Grid(PixelStrip):
         self.charset = self.get_char_indices(charset_file)
         self.max_col = self.n_cols - 1
         self.max_row = self.n_rows - 1
-        # dict for (cols, rows) to pixel-index conversion
+        # build dict: (col, row) to pixel-index conversion
         self.coord_index = self.build_c_i_dict()
 
     def build_c_i_dict(self):
@@ -144,9 +145,9 @@ class Grid(PixelStrip):
             (c, r) coord -> list index
             - cols left to right, rows top to bottom
         """
-        c_i_dict = {}
-        max_row = self.max_row  # avoid repeated dict access
-        even = False  # rows 0 is even
+        c_i_dict = dict()
+        max_row = self.max_row
+        even = False  # toggle True for row 0
         for col in range(self.n_cols):
             base = col * self.n_rows
             even = not even
@@ -327,16 +328,3 @@ class BlockGrid(Grid):
             await asyncio.sleep_ms(pause_ms)
             await self.shift_grid()
         await asyncio.sleep_ms(pause_ms)
-
-
-async def main():
-    """ coro: test NeoPixel strip helper functions """
-    pass
-
-
-if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    finally:
-        asyncio.new_event_loop()  # clear retained state
-        print('execution complete')
