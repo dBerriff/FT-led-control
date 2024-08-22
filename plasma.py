@@ -35,9 +35,10 @@ class Plasma:
     """
         Pimoroni Plasma series of boards
         - control WS2812/APA102 LED strip
-        - hardwired GPIO pins are typically (see schematics):
+        - hardwired GPIO pins are (see schematics):
             -- strip_pins: LED strip
             -- i2c_pins: for LCD
+        - boards have different button configurations
     """
 
     NAME = ''
@@ -60,7 +61,6 @@ class Plasma2040(Plasma):
 
     def __init__(self):
         super().__init__()
-        # click/hold buttons
         self.buttons = {'A': HoldButton(self.BOARD_BTNS['A'], name='A'),
                         'B': HoldButton(self.BOARD_BTNS['B'], name='B'),
                         'U': HoldButton(self.BOARD_BTNS['U'], name='U')
@@ -74,7 +74,6 @@ class Plasma2350(Plasma):
 
     def __init__(self):
         super().__init__()
-        # click/hold buttons
         self.buttons = {'A': HoldButton(self.BOARD_BTNS['A'], name='A'),
                         'U': HoldButton(self.BOARD_BTNS['U'], name='U')
                         }

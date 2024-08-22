@@ -18,13 +18,27 @@ async def main():
 
     """ coro: test WS1802 grid methods """
 
+    def board_ident():
+        """ identifiy board by processor frequency
+            - obviously, over-clocking not allowed!
+        """
+        f = machine.freq()
+        if f == 125_000_000:
+            board = Plasma2040()
+        elif f == 150_000_000:
+            board = Plasma2350()
+        else:
+            board = None
+        return board
+
     grid_cols = 8
     grid_rows = 8
 
     cs = ColourSpace()
-    board = Plasma2040()
-    print(board.NAME)
-    print(f'Processor f: {machine.freq():,}')
+
+    board = board_ident()
+    print(f'Board type loaded: {board.NAME}')
+
     board.set_onboard((0, 15, 0))
     driver = Ws2812(board.strip_pins['dat'])
     pg = Grid(driver, grid_cols, grid_rows, '5x7.json')
@@ -97,7 +111,7 @@ async def main():
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
-    await pg.display_string_rgb('Plasma 2040 or 2350', rgb)
+    await pg.display_string_rgb(f'{board.NAME}', rgb)
     pg.clear_strip()
     await asyncio.sleep_ms(1000)
 
