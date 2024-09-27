@@ -8,9 +8,9 @@ class ColourSpace:
     """ 
         values and methods return 3 x 8-bit RGB tuple
         - gamma-correction is set from a lookup list
-        - methods are all class methods
-        - _lg, _l, _g:
-            -- suffix denotes: l: level,  g: gamma
+        - methods are all class methods; perhaps should just be functions?
+        - name suffixes: _lg, _l, _g:
+            -- l: level,  g: gamma
         -
     """
 
