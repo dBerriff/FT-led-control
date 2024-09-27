@@ -92,6 +92,7 @@ class ColourSpace:
     @staticmethod
     def hsv_rgb(hsv_):
         """
+            simplification of "standard" algorithm
             input: H: float 0.0...360.0º; SV: float 0.0...1.0
             return: RGB
         """
