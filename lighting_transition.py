@@ -1,4 +1,4 @@
-# state_transition.py
+# lighting_transition.py
 """ model ambient light state transitions """
 
 import asyncio
@@ -6,14 +6,15 @@ import gc
 from colour_space import ColourSpace
 from lcd_1602 import LcdApi
 from pixel_strip import PixelStrip
-from plasma import Plasma2350 as DriverBoard
+from plasma import Plasma2040 as DriverBoard
 from v_time import VTime
 from ws2812 import Ws2812
 
 
-class DayNightST:
+class LightingSystem:
     """
-        lighting State-Transition logic
+        lighting State-Transition system
+        - context for lighting states
         - dict stores: event: transitions
     """
 
@@ -250,9 +251,9 @@ async def main():
     driver = Ws2812(board.strip_pins['dat'])
     nps = PixelStrip(driver, n_pixels)
     buttons = board.buttons
-    lcd = LcdApi(scl=board.i2c_pins['scl'], sda=board.i2c_pins['sda'])
+    lcd = LcdApi({"sda": 0, "scl": 1})
     vt = VTime(t_mpy=clock_speed)  # fast virtual clock
-    system = DayNightST(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
+    system = LightingSystem(cs, nps, vt, lcd, hsv=state_hsv, hm=clock_hm, lcd_s=lcd_strings)
 
     # initialise
     board.set_onboard((0, 1, 0))  # on
@@ -267,7 +268,7 @@ async def main():
     
     await holding_task()
 
-    system.set_off()
+    await system.set_off()
     await asyncio.sleep_ms(200)
 
 

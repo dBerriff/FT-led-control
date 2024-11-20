@@ -22,10 +22,11 @@ async def main():
         """ identifiy board by processor frequency
             - obviously, over-clocking not allowed!
         """
+        from sys import implementation
         f = machine.freq()
-        if f == 125_000_000:
+        if 'RP2040' in implemenation._machine:
             board = Plasma2040()
-        elif f == 150_000_000:
+        elif 'RP2350' in implemenation._machine:
             board = Plasma2350()
         else:
             board = None

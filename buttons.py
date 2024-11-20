@@ -1,84 +1,122 @@
 # buttons.py
-""" implement press and hold buttons
-    class Button implements a click button
+"""
+    implement press and hold buttons
+    class Button implements a click event
     class HoldButton extends Button to include a hold event
-    - Pimoroni User buttons - name as 'U'
-    - button methods are coroutines
-    - create button.poll_state() as a task for a button to self-poll
+    - button methods are coroutines and include self-polling methods
+    class ButtonSet implements a group of buttons returning events via a buffer
 """
 
 import asyncio
-from machine import Pin, Signal  # Signal class wraps pull-up logic
-from micropython import const
+
 from time import ticks_ms, ticks_diff
+from machine import Pin, Signal
+from micropython import const
+
+
+class Buffer:
+    """
+        Single item buffer
+        In this context: interface between a button-group and the event consumer
+        - put_lock supports multiple data producers
+        - interface matches Queue
+    """
+
+    def __init__(self):
+        self._item = None
+        self.is_data = asyncio.Event()
+        self.is_space = asyncio.Event()
+        self.put_lock = asyncio.Lock()
+        self.get_lock = asyncio.Lock()
+        self.is_space.set()
+
+    async def put(self, item):
+        """ coro: add item to buffer
+            - put_lock supports multiple producers
+        """
+        async with self.put_lock:
+            await self.is_space.wait()
+            self._item = item
+            self.is_data.set()
+            self.is_space.clear()
+
+    async def get(self):
+        """ coro: remove item from buffer
+            - get_lock supports multiple consumers
+        """
+        async with self.get_lock:
+            await self.is_data.wait()
+            self.is_data.clear()
+            self.is_space.set()
+            return self._item
+
+    @property
+    def q_len(self):
+        """ match queue interface """
+        if self.is_data.is_set():
+            return 1
+        else:
+            return 0
 
 
 class Button:
-    """ button with click state """
+    """ button with click event"""
     # button states
-    WAIT = '0'
-    CLICK = '1'
+    WAIT = const('0')
+    CLICK = const('1')
 
-    POLL_INTERVAL = const(20)  # ms; button self-poll period
+    POLL_INTERVAL = const(20)  # ms
 
     def __init__(self, pin, name=''):
-
+        # Signal wraps pull-up logic with invert
+        self.pin = pin
+        self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
         if name:
             self.name = name
         else:
             self.name = str(pin)
-
-        if name == 'U':  # Pimoroni User button
-            self._hw_in = Signal(pin, Pin.IN, invert=True)
-        else:
-            self._hw_in = Signal(pin, Pin.IN, Pin.PULL_UP, invert=True)
-        self.states = {'wait': self.name + self.WAIT,
-                       'click': self.name + self.CLICK
-                       }
-        self.press_ev = asyncio.Event()  # initialised as cleared
-        self.state = self.states['wait']
+        self.mode = 'click'
+        self.active = True
+        # self.events = {'wait': self.name + '0', 'click': self.name + '1'}
+        self.press_ev = asyncio.Event()  # starts cleared
+        self.ev_type = self.WAIT
 
     async def poll_state(self):
         """ poll self for click event
             - event is set on button release
-            - event handler must call clear_state
+            - event handler must call clear_event
         """
         prev_pin_state = self._hw_in.value()
         while True:
             pin_state = self._hw_in.value()
             if pin_state != prev_pin_state:
                 if not pin_state:
-                    self.state = self.states['click']
+                    self.ev_type = self.CLICK
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
 
     def clear_state(self):
-        """ set state to 0 """
-        self.state = self.states['wait']
+        """ set event to 0 """
+        self.ev_type = self.WAIT
         self.press_ev.clear()
 
 
 class HoldButton(Button):
-    """
-        add button 'hold' state
-        - T_HOLD sets hold time in ms
-    """
-    # additional button state
-    HOLD = '2'
-    T_HOLD = const(750)  # ms - adjust as required
+    """ button add hold event """
+    HOLD = const('2')
+    T_HOLD = const(750)  # ms
 
     def __init__(self, pin, name=''):
         super().__init__(pin, name)
-        self.states['hold'] = self.name + self.HOLD
+        self.mode = 'click or hold'
 
     async def poll_state(self):
-        """
-            poll self for click or hold events
-            - ! button state must be cleared by event handler
+        """ poll self for click or hold events
+            - button event must be cleared by event handler
             - elapsed time measured in ms
         """
-        on_time = ticks_ms()
+        on_time = None
         prev_pin_state = self._hw_in.value()
         while True:
             pin_state = self._hw_in.value()
@@ -88,50 +126,92 @@ class HoldButton(Button):
                     on_time = time_stamp
                 else:
                     if ticks_diff(time_stamp, on_time) < self.T_HOLD:
-                        self.state = self.states['click']
+                        self.ev_type = self.CLICK
                     else:
-                        self.state = self.states['hold']
+                        self.ev_type = self.HOLD
                     self.press_ev.set()
                 prev_pin_state = pin_state
             await asyncio.sleep_ms(self.POLL_INTERVAL)
+
+    def __str__(self):
+        return f'{self.name} {self.ev_type}'
+
+    def __repr__(self):
+        return f'{self.name} {self.ev_type}'
+
+
+class ButtonGroup:
+    """
+        Instantiates a group of Button and/or HoldButton objects.
+        Event parameters are returned through a single-item buffer
+        Coro poll-buttons task must be created externally to avoid side effects
+        - buffer put() is coordinated with by btn_lock
+        - this is acquired and cleared by the calling method(s)
+    """
+
+    def __init__(self, button_set):
+        self.button_set = button_set
+        self.buffer = Buffer()
+        self.btn_lock = asyncio.Lock()
+
+    async def process_event(self, btn):
+        """ coro: passes a button event to the system """
+        while True:
+            await btn.press_ev.wait()
+            if not self.btn_lock.locked():
+                await self.buffer.put((btn.name, btn.ev_type))
+            btn.clear_state()
+
+    def poll_buttons(self):
+        """ buttons self-poll """
+        for b in self.button_set:
+            asyncio.create_task(b.poll_state())
+            asyncio.create_task(self.process_event(b))
+
+    def list_buttons(self):
+        """ print list of buttons """
+        print('Buttons:')
+        for b in self.button_set:
+            print(f'  pin: {b.pin}; name: {b.name}; mode: {b.mode}')
 
 
 async def main():
     """ coro: test Button and HoldButton classes """
 
-    # Plasma 2350 buttons
-    buttons = {
-        'A': HoldButton(12, name='A'),
-        'U': HoldButton(22, name='U')
-    }
+    class TestButtons:
 
-    async def keep_alive():
-        """ coro: to be awaited """
-        t = 0
-        while t < 60:
-            await asyncio.sleep(1)
-            t += 1
+        def __init__(self, btn_group_):
+            self.btn_group = btn_group_
 
-    async def process_event(btn):
-        """ coro: responds to button events """
-        while True:
-            # wait until press_ev is set
-            await btn.press_ev.wait()
-            print(btn.name, btn.state)
-            btn.clear_state()
+        async def process_button_input(self):
+            while True:
+                await self.btn_group.buffer.is_data.wait()
+                async with self.btn_group.btn_lock:  # block button input
+                    data = await self.btn_group.buffer.get()
+                    print(data)
+                    if data == ('D', '2'):
+                        break
+                    await asyncio.sleep_ms(3000)  # demonstrate blocking period
 
-    # create tasks to test each button
-    for b in buttons:
-        asyncio.create_task(buttons[b].poll_state())  # self-poll
-        asyncio.create_task(process_event(buttons[b]))  # respond to event
-    print('System initialised')
+    buttons = (HoldButton(6, 'A'),
+               HoldButton(7, 'B'),
+               HoldButton(8, 'C'),
+               HoldButton(9, 'D')
+               )
 
-    await keep_alive()  # run scheduler until keep_alive() times out
+    # ButtonGroup creates button-handling tasks; events are put() in buff
+    btn_group = ButtonGroup(buttons)
+    btn_group.poll_buttons()
+    btn_group.list_buttons()
+
+    test_buttons = TestButtons(btn_group)
+    print(test_buttons)
+    await test_buttons.process_button_input()
 
 
 if __name__ == '__main__':
     try:
         asyncio.run(main())
     finally:
-        asyncio.new_event_loop()  # clear retained state
+        asyncio.new_event_loop()  # clear retained event
         print('execution complete')
