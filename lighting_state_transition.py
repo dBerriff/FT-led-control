@@ -1,4 +1,4 @@
-# lighting_transition.py
+# lighting_state_transition.py
 """ model ambient light state transitions """
 
 import asyncio
@@ -9,6 +9,7 @@ from pixel_strip import PixelStrip
 from plasma import Plasma2040 as DriverBoard
 from v_time import VTime
 from ws2812 import Ws2812
+from lighting_states import Start, Off, Day, Night, Clock
 
 
 class LightingSystem:
@@ -39,22 +40,22 @@ class LightingSystem:
             self.lcd_str_dict = dict()
 
         # state-transition logic
-        self.transitions = {
-            'off': {'A1': self.set_day,
-                    'B1': self.set_by_clock,
-                    'U1': self.no_t},
-            'day': {'A1': self.set_night,
-                    'B1': self.no_t,
-                    'U2': self.set_off},
-            'night': {'A1': self.set_day,
-                      'B1': self.no_t,
-                      'U2': self.set_off},
-            'clock': {'A1': self.no_t,
-                      'B1': self.no_t,
-                      'B2': self.set_by_clock,
-                      'U2': self.set_off
-                      }
-        }
+        self.start_s = Start(self)
+        self.off_s = Off(self)
+        self.day_s = Day(self)
+        self.night_s = Night(self)
+        self.clock_s = Clock(self)
+
+        self.start_s.transitions = {'auto': self.off_s}
+        self.off_s.transitions =  {'A1': self.day_s,
+                                   'B1': self.clock_s}
+        self.day_s.transitions = {'A1': self.night_s,
+                                  'C2': self.off_s}
+        self.night_s.transitions = {'A1': self.day_s,
+                                    'C2': self.off_s}
+        self.clock_s.transitions = {'B2': self.clock_s,
+                                    'C2': self.off_s}
+
         self.fade_steps = 1000
         self.fade_pause = 20 * vt.m_interval // self.fade_steps  # over 20 v min
         self.vt.init_clock(
