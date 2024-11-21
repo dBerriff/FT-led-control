@@ -1,36 +1,8 @@
 # lighting_states.py
 
-# state-transition logic
-"""
-self.transitions = {
-    'off': {'A1': self.set_day,
-            'B1': self.set_by_clock,
-            'U1': self.no_t},
-    'day': {'A1': self.set_night,
-            'B1': self.no_t,
-            'U2': self.set_off},
-    'night': {'A1': self.set_day,
-              'B1': self.no_t,
-              'U2': self.set_off},
-    'clock': {'A1': self.no_t,
-              'B1': self.no_t,
-              'B2': self.set_by_clock,
-              'U2': self.set_off
-              }
-"""
-
 import asyncio
 
-from config import write_cf
 from lighting_state import LightingState
-
-
-class Off(LightingState):
-    """"""
-
-    def __init__(self, system):
-        super().__init__(system)
-        self.name = 'Start'
 
 
 class Start(LightingState):
@@ -49,22 +21,47 @@ class Start(LightingState):
         asyncio.create_task(self.system.transition(self.transitions['auto']))
 
 
-class Day(LightingState):
-    """"""
+class Off(LightingState):
+    """ state: lighting off, waiting for button input """
 
     def __init__(self, system):
         super().__init__(system)
-        self.name = 'Start'
+        self.name = 'Off'
 
+    async def state_task(self):
+        """ run while in state """
+        async with self.system.state_lock:
+            await asyncio.sleep_ms(2)
+
+
+class Day(LightingState):
+    """ state: lighting set to daytime HSV values """
+
+    def __init__(self, system):
+        super().__init__(system)
+        self.name = 'Day'
+
+    async def state_task(self):
+        """ run while in state """
+        async with self.system.state_lock:
+            await self.system.write_strip_by_state(self.name)
+            self.lcd.write_display(self.system.lcd_str_dict['state'],
+                                   self.system.lcd_str_dict[self.name])
 
 
 class Night(LightingState):
-    """"""
+    """ state: lighting set to daytime HSV values """
 
     def __init__(self, system):
         super().__init__(system)
-        self.name = 'Start'
+        self.name = 'Night'
 
+    async def state_task(self):
+        """ run while in state """
+        async with self.system.state_lock:
+            await self.system.write_strip_by_state(self.name)
+            self.lcd.write_display(self.system.lcd_str_dict['state'],
+                                   self.system.lcd_str_dict[self.name])
 
 
 class Clock(LightingState):
@@ -72,6 +69,11 @@ class Clock(LightingState):
 
     def __init__(self, system):
         super().__init__(system)
-        self.name = 'Start'
+        self.name = 'Clock'
 
-
+    async def state_task(self):
+        """ run while in state """
+        async with self.system.state_lock:
+            await self.system.write_strip_by_state(self.name)
+            self.lcd.write_display(self.system.lcd_str_dict['state'],
+                                   self.system.lcd_str_dict[self.name])

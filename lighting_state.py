@@ -1,6 +1,6 @@
 # lighting_state.py
 
-""" abstract ev_type class for system states """
+""" abstract state class for system states """
 
 import asyncio
 
@@ -8,9 +8,9 @@ import asyncio
 class LightingState:
     """
         Abstract Base Class for lighting states; system: LightingSystem is context
-        - each concrete ev_type:
+        - each concrete state:
             -- defines its associated events and response methods
-            -- system.state_lock waits for any previous ev_type task to complete
+            -- system.state_lock waits for any previous state task to complete
             -- system.transition_lock prevents concurrent transitions
     """
 
@@ -23,25 +23,22 @@ class LightingState:
         self.transitions = dict()  # loaded from dict definitions in InclineSystem
         self.remain = True
         self.run_flag = False
-        # localise pointers
-        self.adc_f = system.adc_f
-        self.adc_r = system.adc_r
 
     async def state_enter(self):
-        """ on ev_type entry """
+        """ on state entry """
         print(f'Enter state: {self.name}')
         await self.system.lcd.write_display(f'{self.name:<16}', f'{" ":<16}')
-        self.remain = True  # in ev_type: flag for while loops
+        self.remain = True  # in state: flag for while loops
         await self.schedule_tasks()
 
     async def schedule_tasks(self):
-        """ load ev_type tasks to run sequentially or concurrently (default) """
+        """ load state tasks to run sequentially or concurrently (default) """
         # await self.state_task()
         # await self.transition_trigger()
         await asyncio.gather(self.state_task(), self.transition_trigger())
 
     async def state_task(self):
-        """ run while in ev_type """
+        """ run while in state """
         async with self.system.state_lock:
             pass
 
@@ -63,7 +60,7 @@ class LightingState:
                         print(f'Event {ev} ignored')
 
     async def state_exit(self):
-        """ on ev_type exit """
+        """ on state exit """
         self.remain = False
         # allow looped tasks to end
         await asyncio.sleep_ms(20)

@@ -57,14 +57,10 @@ class Plasma:
 class Plasma2040(Plasma):
     """ Pimoroni Plasma 2040 """
     NAME = 'Plasma 2040'
-    BOARD_BTNS = {'A': 12, 'B': 13, 'U': 23}
 
     def __init__(self):
         super().__init__()
-        self.buttons = {'A': HoldButton(self.BOARD_BTNS['A'], name='A'),
-                        'B': HoldButton(self.BOARD_BTNS['B'], name='B'),
-                        'U': HoldButton(self.BOARD_BTNS['U'], name='U')
-                        }
+        self.buttons = {'A': 12, 'B': 13, 'U': 23}
 
 
 class Plasma2350(Plasma):
