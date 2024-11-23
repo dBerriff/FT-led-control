@@ -3,7 +3,7 @@
     Classes:
 
     Ws2812
-    Set pixel output for WS2812 LEDs (NeoPixels) by PIO state machine
+    Set pixel output for WS2812 LEDs (NeoPixels) by PIO phase machine
     WS2812 pixel words are coded as 32-bit GRBW with W = 0
     W byte is added by left-shift in PIO 'put'
     - >= 50µs pause required between strip writes

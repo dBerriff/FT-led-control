@@ -126,5 +126,5 @@ if __name__ == '__main__':
     try:
         asyncio.run(main())
     finally:
-        asyncio.new_event_loop()  # clear retained state
+        asyncio.new_event_loop()  # clear retained phase
         print('Execution complete')

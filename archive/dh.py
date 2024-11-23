@@ -7,16 +7,16 @@
     Gamma correction implicit in the Pimoroni software. 
     
     Script runs until powered off or Reset button pressed
-    - note: LED strip will retain state until powered off
-    - set state to 'off' before stopping the script
+    - note: LED strip will retain phase until powered off
+    - set phase to 'off' before stopping the script
     
     Three buttons are used: A, B and User (labelled BOOT)
     (RESET will stop the current script and run main.py, if present)
     - buttons have 2 states: 0: open; 1: pressed
     The system has 3 states:
 
-    - 'off': all LEDs off; this is the start state.
-        always returns system to 'off' state (does not stop code)
+    - 'off': all LEDs off; this is the start phase.
+        always returns system to 'off' phase (does not stop code)
 
     - 'day': day/night illumination; A-button sets and toggles day/night
 
@@ -92,7 +92,7 @@ sense = Analog(plasma2040.CURRENT_SENSE, plasma2040.ADC_GAIN, plasma2040.SHUNT_R
 strip_rgb = off_rgb
 set_strip(strip_rgb)
 sys_state = 'off'
-print('In state "off"')
+print('In phase "off"')
 day_night_state = 'day'  # default?
 
 fade_deltas = (0, 0, 0)
@@ -123,27 +123,27 @@ while True:
     elif button_u.read():
         btn_u_state = 1
 
-    # if event then possibly change system state
-    # fade change of state is handled separately
+    # if event then possibly change system phase
+    # fade change of phase is handled separately
     if any((btn_a_state, btn_b_state, btn_u_state)):
         print()
         print(f'button: a: {btn_a_state}, b: {btn_b_state}, u: {btn_u_state}')
         print(f'State: {sys_state}')
         if sys_state == 'off':
             if btn_a_state:
-                print('Set state "day"')
+                print('Set phase "day"')
                 strip_rgb = day_rgb
                 sys_state = 'day'
                 day_night_state = 'day'
-                led.set_rgb_u8(0, 64, 0)  # onboard green for this state
+                led.set_rgb_u8(0, 64, 0)  # onboard green for this phase
             elif btn_b_state:
-                print('Set state "fade"')
+                print('Set phase "fade"')
                 strip_rgb = day_rgb
                 sys_state = 'fade'
                 fade_state = 'down'
                 fade_percent = 0
                 fade_rgb = strip_rgb
-                led.set_rgb_u8(0, 0, 64)  # onboard blue for this state
+                led.set_rgb_u8(0, 0, 64)  # onboard blue for this phase
                 t_fade_0 = time.ticks_ms()
             elif btn_u_state:
                 pass
@@ -163,7 +163,7 @@ while True:
             elif btn_b_state:
                 pass
             elif btn_u_state:
-                print('Set state "off"')
+                print('Set phase "off"')
                 day_night_state = 'day'
                 strip_rgb = off_rgb
                 sys_state = 'off'
@@ -176,7 +176,7 @@ while True:
             elif btn_b_state:
                 pass
             elif btn_u_state:
-                print('Set state "off"')
+                print('Set phase "off"')
                 day_night_state = 'day'
                 strip_rgb = off_rgb
                 sys_state = 'off'
@@ -215,7 +215,7 @@ while True:
                     hold_start_ms = time.time()  # s
 
             elif fade_state == 'hold':
-                # hold state over?
+                # hold phase over?
                 if time.time() - hold_start_ms > hold_interval_s:
                     # set values for next fade
                     fade_state = 'up' if prev_fade == 'down' else 'down'

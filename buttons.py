@@ -14,51 +14,6 @@ from machine import Pin, Signal
 from micropython import const
 
 
-class Buffer:
-    """
-        Single item buffer
-        In this context: interface between a button-group and the event consumer
-        - put_lock supports multiple data producers
-        - interface matches Queue
-    """
-
-    def __init__(self):
-        self._item = None
-        self.is_data = asyncio.Event()
-        self.is_space = asyncio.Event()
-        self.put_lock = asyncio.Lock()
-        self.get_lock = asyncio.Lock()
-        self.is_space.set()
-
-    async def put(self, item):
-        """ coro: add item to buffer
-            - put_lock supports multiple producers
-        """
-        async with self.put_lock:
-            await self.is_space.wait()
-            self._item = item
-            self.is_data.set()
-            self.is_space.clear()
-
-    async def get(self):
-        """ coro: remove item from buffer
-            - get_lock supports multiple consumers
-        """
-        async with self.get_lock:
-            await self.is_data.wait()
-            self.is_data.clear()
-            self.is_space.set()
-            return self._item
-
-    @property
-    def q_len(self):
-        """ match queue interface """
-        if self.is_data.is_set():
-            return 1
-        else:
-            return 0
-
-
 class Button:
     """ button with click event"""
     # button states
@@ -149,9 +104,9 @@ class ButtonGroup:
         - this is acquired and cleared by the calling method(s)
     """
 
-    def __init__(self, button_set):
+    def __init__(self, button_set, buffer_):
         self.button_set = button_set
-        self.buffer = Buffer()
+        self.buffer = buffer_
         self.btn_lock = asyncio.Lock()
 
     async def process_event(self, btn):
@@ -159,7 +114,7 @@ class ButtonGroup:
         while True:
             await btn.press_ev.wait()
             if not self.btn_lock.locked():
-                await self.buffer.put((btn.name, btn.ev_type))
+                await self.buffer.put(btn.name + btn.ev_type)
             btn.clear_state()
 
     def poll_buttons(self):
