@@ -29,7 +29,7 @@ from colour_space import ColourSpace
 
 class PixelStrip:
     """ implement general pixel strip methods
-        driver implements board and strip-logic attributes and methods
+        driver implements board_ and strip-logic attributes and methods
         - MicroPython NeoPixel interface is matched as per MP documentation
         - some code is repeated to avoid nested method calls
         - method local variables are used where this avoids repeated dict lookup

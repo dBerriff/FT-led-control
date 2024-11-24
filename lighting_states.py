@@ -7,7 +7,7 @@ from lighting_state import LightingState
 
 class Start(LightingState):
     """
-        null phase to get started
+        null state to get started
         - immediately transitions to Stopped
     """
 
@@ -16,118 +16,124 @@ class Start(LightingState):
         self.name = 'Start'
 
     async def state_enter(self):
-        """ auto trigger to next phase """
-        print(f'Enter phase: {self.name}')
+        """ auto trigger to next state """
+        print(f'Enter state: {self.name}')
         asyncio.create_task(self.system.transition(self.transitions['auto']))
 
 
 class Off(LightingState):
-    """ phase: lighting off, waiting for button input """
+    """ state: lighting off, waiting for button input """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'Off'
 
     async def state_task(self):
-        """ run while in phase """
+        """ run while in state """
         async with self.system.state_lock:
             self.system.clear_strip()
             await asyncio.sleep_ms(2)
 
 
 class Day(LightingState):
-    """ phase: lighting set to daytime HSV values """
+    """ state: lighting set to daytime HSV values """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'Day'
 
     async def state_task(self):
-        """ run while in phase """
+        """ run while in state """
         async with self.system.state_lock:
             self.set_strip_rgb(self.state_rgb['Day'])
             self.write_strip()
-            self.lcd.write_display(self.system.lcd_str_dict['phase'],
-                                   self.system.lcd_str_dict[self.name])
+            self.lcd.write_display(self.system.lcd_str['state'],
+                                   self.system.lcd_str[self.name])
 
 
 class Night(LightingState):
-    """ phase: lighting set to daytime HSV values """
+    """ state: lighting set to daytime HSV values """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'Night'
 
     async def state_task(self):
-        """ run while in phase """
+        """ run while in state """
         async with self.system.state_lock:
             self.set_strip_rgb(self.state_rgb['Night'])
             self.write_strip()
-            self.lcd.write_display(self.system.lcd_str_dict['phase'],
-                                   self.system.lcd_str_dict[self.name])
+            self.lcd.write_display(self.system.lcd_str['state'],
+                                   self.system.lcd_str[self.name])
 
 
 class ClockDay(LightingState):
-    """"""
+    """
+        set state to Day under clock control
+        - state Off transitions to this state on B1 event
+    """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'ClockDay'
+        self.state_hsv = self.system.phase_hsv
+        self.dawn = self.system.phase_m['dawn_m']
+        self.dusk = self.system.phase_m['dusk_m']
 
     async def state_enter(self):
-        """ on phase entry """
-        print(f'Enter phase: {self.name}')
+        """ on state entry """
+        print(f'Enter state: {self.name}')
         await self.system.lcd.write_display(f'{self.name:<16}', f'{" ":<16}')
         self.remain = True  # in state: flag for while loops
         await self.schedule_tasks()
 
     async def state_task(self):
-        """ run while in phase """
-        # check to see if it is day
-        if self.system.phase_dict['dawn'] <= self.system.v_minutes < self.system.phase_dict['dusk']:
+        """ run while in state """
+        # if it is Day, set as Day, else transition to Night
+        if self.dawn <= self.system.v_minutes < self.dusk:  # Day
             async with self.system.state_lock:
-                print(f'{self.name}: fade to day...')
-                self.set_strip_rgb(self.state_rgb['Day'])
-                self.write_strip()
-                await asyncio.sleep_ms(1)
-                self.lcd.write_display(self.system.lcd_str_dict['Day'],
-                                       self.system.lcd_str_dict[self.name])
-        else:
+                await self.do_fade('Night', 'Mid')
+                await self.do_fade('Mid', 'Day')
+        else:  # Night
             await self.buffer.put('T1')
 
 
 class ClockNight(LightingState):
-    """"""
+    """ set state to Night under clock control """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'ClockNight'
+        self.state_hsv = self.system.phase_hsv
 
     async def state_enter(self):
-        """ on phase entry """
-        print(f'Enter phase: {self.name}')
+        """ on state entry """
+        print(f'Enter state: {self.name}')
         await self.system.lcd.write_display(f'{self.name:<16}', f'{" ":<16}')
         self.remain = True  # in state: flag for while loops
         await self.schedule_tasks()
 
     async def state_task(self):
-        """ run while in phase """
+        """ run while in state """
+        # can only transition here from Day
         async with self.system.state_lock:
-            print(f'{self.name}: fade to night...')
-            self.set_strip_rgb(self.state_rgb['Night'])
-            self.write_strip()
-            self.lcd.write_display(self.system.lcd_str_dict['phase'],
-                                   self.system.lcd_str_dict[self.name])
+            await self.do_fade('Day', 'Mid')
+            await self.do_fade('Mid', 'Night')
 
 
 class Finish(LightingState):
-    """ phase: finish execution """
+    """ state: finish execution """
 
     def __init__(self, system):
         super().__init__(system)
         self.name = 'Finish'
 
     async def schedule_tasks(self):
-        """ no phase tasks """
+        """ load state tasks to run sequentially """
+        await self.state_task()
+        # no further transitions
+
+    async def state_task(self):
+        """ flag completes system.run_system task """
         self.system.run = False
-        await asyncio.sleep_ms(200)  # for close-down
+        asyncio.sleep_ms(200)

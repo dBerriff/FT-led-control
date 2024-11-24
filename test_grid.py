@@ -19,7 +19,7 @@ async def main():
     """ coro: test WS1802 grid methods """
 
     def board_ident():
-        """ identifiy board by processor frequency
+        """ identifiy board_ by processor frequency
             - obviously, over-clocking not allowed!
         """
         from sys import implementation

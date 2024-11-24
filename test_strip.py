@@ -29,7 +29,7 @@ async def main():
     """ coro: test NeoPixel strip helper functions """
 
     n_pixels = 30
-    # set board and strip chipset methods
+    # set board_ and strip chipset methods
     cs = ColourSpace()
     test_rgb = cs.rgb_lg('orange', 100)
 
@@ -37,7 +37,7 @@ async def main():
                 cs.rgb_lg('red', 96),
                 cs.rgb_lg('green', 32)]
 
-    board = DriverBoard()  # board parameters
+    board = DriverBoard()  # board_ parameters
     print(board.NAME)
     board.set_onboard((0, 32, 0))  # RGB LED
     driver = Ws2812(board.strip_pins['dat'])  # for pixel-strip logic

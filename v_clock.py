@@ -24,7 +24,7 @@ class VClock:
     M_IN_DAY = const(24 * 60)
 
     def __init__(self, t_mpy=1):
-        self.m_ms = 60_000 // t_mpy
+        self.m_ms = 60_000 // t_mpy  # fraction of ms in 1 minute
         self._vt_m = 0
         self.minute_ev = asyncio.Event()  # virtual minute update
         asyncio.create_task(self.tick())
@@ -39,12 +39,12 @@ class VClock:
         self._vt_m = vt_m_
 
     async def tick(self):
-        """ run virtual clock at 1 tick/virtual-minute
+        """ run virtual clock at 1-tick/virtual-minute
             - v-minute duration specified in ms
         """
-        sleep_m_ms = self.m_ms
+        m_ms_ = self.m_ms
         while True:
-            await asyncio.sleep_ms(sleep_m_ms)
+            await asyncio.sleep_ms(m_ms_)
             self._vt_m += 1
             if self._vt_m == self.M_IN_DAY:
                 self._vt_m = 0

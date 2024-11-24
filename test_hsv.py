@@ -21,7 +21,7 @@ async def main():
     """
 
     n_pixels = 20
-    # set board and strip chipset methods
+    # set board_ and strip chipset methods
     cs = ColourSpace()
     board = Plasma2350()
     driver = Ws2812(board.strip_pins['dat'])

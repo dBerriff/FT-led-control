@@ -3,8 +3,8 @@
     Classes:
     PimoroniRGB: set onboard tri-colour LED
     Plasma: abstract class for Pimoroni Plasma boards
-    Plasma2040: Plasma 2040 board
-    Plasma2350: Plasma 2350 board
+    Plasma2040: Plasma 2040 board_
+    Plasma2350: Plasma 2350 board_
 """
 
 from machine import Pin, PWM, freq
